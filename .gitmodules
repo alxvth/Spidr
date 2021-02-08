@@ -1,0 +1,7 @@
+[submodule "external/HDILib"]
+	path = external/HDILib
+	url = https://github.com/biovault/HDILib.git
+	branch = release/1.2.2
+[submodule "external/hnswlib"]
+	path = external/hnswlib
+	url = https://github.com/nmslib/hnswlib.git
