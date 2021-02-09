@@ -22,7 +22,7 @@ std::tuple<std::vector<int>, std::vector<float>> ComputeHNSWkNN(const std::vecto
     std::vector<int> indices(numPoints * nn, -1);
     std::vector<float> distances_squared(numPoints * nn, -1);
 
-	spdlog::info("ComputeHNSWkNN: Build akNN Index");
+	spdlog::info("Distance calculation: Build akNN Index");
 
     hnswlib::HierarchicalNSW<float> appr_alg(space, numPoints);   // use default HNSW values for M, ef_construction random_seed
 
@@ -43,7 +43,7 @@ std::tuple<std::vector<int>, std::vector<float>> ComputeHNSWkNN(const std::vecto
         appr_alg.addPoint((void*)(dataFeatures.data() + (i*indMultiplier)), (hnswlib::labeltype) i);
     }
 #endif
-	spdlog::info("ComputeHNSWkNN: Search akNN Index");
+	spdlog::info("Distance calculation: Search akNN Index");
 
     // query dataset
 #ifdef NDEBUG

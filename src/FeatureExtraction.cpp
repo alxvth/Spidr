@@ -33,11 +33,14 @@ FeatureExtraction::FeatureExtraction() :
 
 
 void FeatureExtraction::compute() {
+	spdlog::info("Feature extraction: Started");
     computeHistogramFeatures();
+	spdlog::info("Feature extraction: Finished");
 }
 
 void FeatureExtraction::setup(const std::vector<unsigned int>& pointIds, const std::vector<float>& attribute_data, const Parameters& params) {
-    _featType = params._featureType;
+	spdlog::info("Feature extraction: Setup"); 
+	_featType = params._featureType;
     _numFeatureValsPerPoint = params._numFeatureValsPerPoint; 
 
     // Parameters
@@ -68,12 +71,12 @@ void FeatureExtraction::setup(const std::vector<unsigned int>& pointIds, const s
     else if(_featType == feature_type::LOCALMORANSI)
     {
         featFunct = &FeatureExtraction::calculateLISA;
-		spdlog::info("Feature extraction: LOCALMORANSI");
+		spdlog::info("Feature extraction: Local Moran's I");
     }
     else if (_featType == feature_type::LOCALGEARYC)
     {
         featFunct = &FeatureExtraction::calculateGearysC;
-        spdlog::info("Feature extraction: local Geary's C");
+        spdlog::info("Feature extraction: Local Geary's C");
     }
     else if (_featType == feature_type::PCLOUD)
     {
@@ -93,7 +96,7 @@ void FeatureExtraction::setup(const std::vector<unsigned int>& pointIds, const s
 		spdlog::error("Feature extraction: unknown feature type");
     }
 
-	spdlog::info("Feature extraction: Num neighbors (in each direction): {0} (total neighbors: {1}) Neighbor weighting: {2}", _neighborhoodSize, static_cast<unsigned int> (_neighborhoodWeighting));
+	spdlog::info("Feature extraction: Num neighbors (in each direction): {0} (total neighbors: {1}) Neighbor weighting: {2}", _locNeighbors , _neighborhoodSize, static_cast<unsigned int> (_neighborhoodWeighting));
 
 }
 
@@ -116,7 +119,7 @@ void FeatureExtraction::computeHistogramFeatures() {   // TODO: RENAME - not onl
 }
 
 void FeatureExtraction::initExtraction() {
-	spdlog::info("Feature extraction: init feature extraction");
+	spdlog::info("Feature extraction: Init feature extraction");
 
     _outFeatures.resize(_numPoints * _numFeatureValsPerPoint);
 
@@ -281,8 +284,6 @@ void FeatureExtraction::calculateSumAllDist(size_t pointInd, std::vector<float> 
 
     _outFeatures[pointInd * _numFeatureValsPerPoint + _numDims] = locHeight;
     _outFeatures[pointInd * _numFeatureValsPerPoint + _numDims + 1] = locWidth;
-
-    
 }
 
 

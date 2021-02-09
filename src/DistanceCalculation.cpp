@@ -81,11 +81,11 @@ void DistanceCalculation::setup(const std::vector<float> dataFeatures, const std
 }
 
 void DistanceCalculation::compute() {
-	spdlog::info("Distance calculation: started");
+	spdlog::info("Distance calculation: Started");
 
     computekNN();
 
-	spdlog::info("Distance calculation: finished");
+	spdlog::info("Distance calculation: Finished");
 
 }
 
