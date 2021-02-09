@@ -413,7 +413,6 @@ namespace hnswlib {
 
     public:
         QFSpace(size_t dim, size_t bin, size_t featureValsPerPoint, bin_sim ground_type = bin_sim::SIM_EUC) {
-            ////qDebug() << "Distance Calculation: Prepare QFSpace";
 
             fstdistfunc_ = QFSqr;
             // Not entirely sure why this only shows positive effects for high bin counts...
@@ -495,7 +494,6 @@ namespace hnswlib {
 
     public:
         HellingerSpace(size_t dim, size_t bin, size_t featureValsPerPoint) {
-            ////qDebug() << "Distance Calculation: Prepare HellingerSpace";
 
             fstdistfunc_ = HelSqr;
             params_ = { dim, bin };
@@ -1503,7 +1501,6 @@ namespace hnswlib {
     public:
         // ground_weight might be set to (0.5 * sd of all data * ground_dist_max^2) as im doi:10.1006/cviu.2001.0934
         EMDSpace(size_t dim, size_t bin, size_t featureValsPerPoint) {
-            ////qDebug() << "Distance Calculation: Prepare EMDSpace";
 
             fstdistfunc_ = EMD_sinkhorn;
 
@@ -1593,7 +1590,6 @@ namespace hnswlib {
     public:
         // ground_weight might be set to (0.5 * sd of all data * ground_dist_max^2) as im doi:10.1006/cviu.2001.0934
         MVNSpace(size_t dim, float weight, int imgWidth, const float* dataAttrBegin, const unsigned int numPoints) {
-            ////qDebug() << "Distance Calculation: Prepare MVNSpace";
 
             fstdistfunc_ = MVN_AttrSpa;
 
@@ -1610,8 +1606,6 @@ namespace hnswlib {
             else if (dim > 4)
                 L2distfunc_ = hnswlib::L2SqrSIMD4ExtResiduals;
 #endif
-
-            ////qDebug() << "Distance Calculation: Calculating normalization factors";
 
             // Calc normSpatial: Frobenius norm of spatial distance matrix
             std::vector<float> sumsSpatDist(numPoints);

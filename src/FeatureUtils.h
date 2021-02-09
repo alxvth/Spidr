@@ -2,10 +2,6 @@
 
 #include <cmath>
 #include <vector>
-#include <stdexcept>
-#include <algorithm>    // for_each_n
-#include <execution>    // par_unseq
-#include <numeric>      // iota
 
 
 typedef struct ImgSize{

@@ -44,6 +44,7 @@ add_library(${PROJECT} SHARED ${SOURCES})
 
 include_directories ("external/hnswlib/")
 include_directories ("external/HDILib/")
+include_directories ("external/spdlog/include/")
 include_directories(${Boost_INCLUDE_DIRS})
 
 if(MSVC)

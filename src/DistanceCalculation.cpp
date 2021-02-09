@@ -5,8 +5,7 @@
 #include "EvalUtils.h"
 
 #include "hnswlib/hnswlib.h"
-
-//#include <qDebug>
+#include "spdlog/spdlog-inl.h"
 
 #include <chrono>
 #include <algorithm>            // std::none_of
@@ -63,7 +62,7 @@ void DistanceCalculation::setup(const std::vector<float> dataFeatures, const std
 
         params._numPoints = _numPoints;
 
-        //qDebug() << "Distance calculation: Excluding" << numBackgroundPoints << " background points and respective features";
+		spdlog::info("Distance calculation: Excluding {} background points and respective features", numBackgroundPoints);
 
     }
 
@@ -75,24 +74,24 @@ void DistanceCalculation::setup(const std::vector<float> dataFeatures, const std
 
     assert(_dataFeatures.size() == (_numPoints * _numFeatureValsPerPoint));
 
-    //qDebug() << "Distance calculation: Feature values per point: " << _numFeatureValsPerPoint << "Number of NN to calculate" << _nn << ". Metric: " << (size_t)_knn_metric;
+	spdlog::info("Distance calculation: Feature values per point: {0}, Number of NN to calculate {1}. Metric: {2}", _numFeatureValsPerPoint, _nn, static_cast<size_t> (_knn_metric));
 
     // -1 would mark an unset feature
     assert(std::none_of(_dataFeatures.begin(), _dataFeatures.end(), [](float i) {return i == -1.0f; }));
 }
 
 void DistanceCalculation::compute() {
-    //qDebug() << "Distance calculation: started";
+	spdlog::info("Distance calculation: started");
 
     computekNN();
 
-    //qDebug() << "Distance calculation: finished";
+	spdlog::info("Distance calculation: finished");
 
 }
 
 void DistanceCalculation::computekNN() {
     
-    //qDebug() << "Distance calculation: Setting up metric space";
+	spdlog::info("Distance calculation: Setting up metric space");
     auto t_start_CreateHNSWSpace = std::chrono::steady_clock::now();
 
     // setup hsnw index
@@ -100,19 +99,19 @@ void DistanceCalculation::computekNN() {
     assert(space != NULL);
 
     auto t_end_CreateHNSWSpace = std::chrono::steady_clock::now();
-    //qDebug() << "Distance calculation: Build time metric space (sec): " << ((float)std::chrono::duration_cast<std::chrono::milliseconds> (t_end_CreateHNSWSpace - t_start_CreateHNSWSpace).count()) / 1000;
-    //qDebug() << "Distance calculation: Compute kNN";
+	spdlog::info("Distance calculation: Build time metric space (sec): {}", ((float)std::chrono::duration_cast<std::chrono::milliseconds> (t_end_CreateHNSWSpace - t_start_CreateHNSWSpace).count()) / 1000);
+    spdlog::info("Distance calculation: Compute kNN");
 
     auto t_start_ComputeDist = std::chrono::steady_clock::now();
 
     if (_knn_lib == knn_library::KNN_HNSW) {
-        //qDebug() << "Distance calculation: HNSWLib for knn computation";
+		spdlog::info("Distance calculation: HNSWLib for knn computation");
 
         std::tie(_knn_indices, _knn_distances_squared) = ComputeHNSWkNN(_dataFeatures, space, _numFeatureValsPerPoint, _numPoints, _nn);
 
     }
     else if (_knn_lib == knn_library::EXACT) {
-        //qDebug() << "Distance calculation: Exact kNN computation";
+		spdlog::info("Distance calculation: Exact kNN computation");
 
         std::tie(_knn_indices, _knn_distances_squared) = ComputeExactKNN(_dataFeatures, space, _numFeatureValsPerPoint, _numPoints, _nn);
 
@@ -121,12 +120,12 @@ void DistanceCalculation::computekNN() {
         // Save the entire distance matrix to disk. Then calc the exact kNN and perform the embedding
         // Note: You could also sort the distance matrix instead of recalculating it - but I'm lazy and will only use this for small data set where the performance is not an issue.
 
-        //qDebug() << "Distance calculation: Evaluation mode (exact) - Calc full distance matrix for writing to disk";
+		spdlog::info("Distance calculation: Evaluation mode (exact) - Calc full distance matrix for writing to disk");
         std::vector<int> all_dists_indices_to_Disk;
         std::vector<float> all_distances_squared_to_Disk;
         std::tie(all_dists_indices_to_Disk, all_distances_squared_to_Disk) = ComputeFullDistMat(_dataFeatures, space, _numFeatureValsPerPoint, _numPoints);
 
-        //qDebug() << "Distance calculation: Evaluation mode (exact) - Write full distance matrix to disk";
+		spdlog::info("Distance calculation: Evaluation mode (exact) - Write full distance matrix to disk");
 
         // Write (full) distance matricx amd IDs to disk
         std::string savePath = _embeddingName;
@@ -138,11 +137,11 @@ void DistanceCalculation::computekNN() {
         infoStr = "_nFpP_" + std::to_string(_numFeatureValsPerPoint) + "_nP_" + std::to_string(_numPoints) + "_nD_" + std::to_string(_numDims);
         writeVecToBinary(_dataFeatures, savePath + "_features" + infoStr + ".bin");
 
-        //qDebug() << "Distance calculation: Evaluation mode (exact) - Calc exact knn distance matrix for embedding";
+		spdlog::info("Distance calculation: Evaluation mode (exact) - Calc exact knn distance matrix for embedding");
         std::tie(_knn_indices, _knn_distances_squared) = ComputeExactKNN(_dataFeatures, space, _numFeatureValsPerPoint, _numPoints, _nn);
 
         // Write exact knn distances to disk
-        //qDebug() << "Distance calculation: Evaluation mode (exact) - Write knn distance matrix to disk";
+		spdlog::info("Distance calculation: Evaluation mode (exact) - Write knn distance matrix to disk");
         infoStr = "_nD_" + std::to_string(_numDims) + "_nP_" + std::to_string(_numPoints) + "_nN_" + std::to_string(_nn);
         writeVecToBinary(_knn_indices, savePath + "_knnInds" + infoStr + ".bin");
         writeVecToBinary(_knn_distances_squared, savePath + "_knnDists" + infoStr + ".bin");
@@ -151,11 +150,11 @@ void DistanceCalculation::computekNN() {
     else if (_knn_lib == knn_library::EVAL_KNN) {
         // Save the akNN distance matrix to disk. 
 
-        //qDebug() << "Distance calculation: Evaluation mode (akNN) - HNSWLib for knn computation";
+		spdlog::info("Distance calculation: Evaluation mode (akNN) - HNSWLib for knn computation");
         std::tie(_knn_indices, _knn_distances_squared) = ComputeHNSWkNN(_dataFeatures, space, _numFeatureValsPerPoint, _numPoints, _nn);
 
         // Write aknn distances to disk
-        //qDebug() << "Distance calculation: Evaluation mode (akNN) - Write aknn distance matrix to disk";
+		spdlog::info("Distance calculation: Evaluation mode (akNN) - Write aknn distance matrix to disk");
         std::string savePath = _embeddingName;
         std::string infoStr = "_nD_" + std::to_string(_numDims) + "_nP_" + std::to_string(_numPoints) + "_nN_" + std::to_string(_nn);
         writeVecToBinary(_knn_indices, savePath + "_aknnInds" + infoStr + ".bin");
@@ -164,7 +163,7 @@ void DistanceCalculation::computekNN() {
     }
 
     auto t_end_ComputeDist = std::chrono::steady_clock::now();
-    //qDebug() << "Distance calculation: Computation duration (sec): " << ((float)std::chrono::duration_cast<std::chrono::milliseconds> (t_end_ComputeDist - t_start_ComputeDist).count()) / 1000;
+	spdlog::info("Distance calculation: Computation duration (sec): {}", ((float)std::chrono::duration_cast<std::chrono::milliseconds> (t_end_ComputeDist - t_start_ComputeDist).count()) / 1000);
 
     // -1 would mark unset values
     assert(_knn_indices.size() == _numPoints * _nn);

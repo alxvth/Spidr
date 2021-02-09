@@ -3,28 +3,19 @@
 #include "KNNUtils.h"
 #include "AnalysisParameters.h"     // class Parameters
 
-#include "hnswlib/hnswlib.h"    // 
-
+#include "hnswlib/hnswlib.h" 
+#include "spdlog/spdlog-inl.h"
 #include "omp.h"
+#include <boost/histogram.hpp>
 
-//#include <qDebug>       // //qDebug
 #include <iterator>     // std::advance
-#include <algorithm>    // std::fill, std::find, std::swap_ranges
-#include <execution>    // std::execution::par_unseq
+#include <algorithm>    // std::fill, std::find, std::swap_ranges, std::copy
 #include <vector>       // std::vector, std::begin, std::end
-#include <array>        // std::array
 #include <numeric>      // std::iota
 #include <cmath>        // std::pow
 #include <utility>      // std::forward
 #include <chrono>       // std::chrono
-
-// for debugging
-#include <algorithm> // for copy
-#include <iterator> // for ostream_iterator
-
-// Boost might be more useful for higher dimensional histograms
-// but it's convinient for now
-#include <boost/histogram.hpp>
+#include <iterator>		// for ostream_iterator
 
 FeatureExtraction::FeatureExtraction() :
     _neighborhoodSize(1),
@@ -42,12 +33,7 @@ FeatureExtraction::FeatureExtraction() :
 
 
 void FeatureExtraction::compute() {
-    //qDebug() << "Feature extraction: started";
-
     computeHistogramFeatures();
-
-    //qDebug() << "Feature extraction: finished";
-
 }
 
 void FeatureExtraction::setup(const std::vector<unsigned int>& pointIds, const std::vector<float>& attribute_data, const Parameters& params) {
@@ -77,37 +63,37 @@ void FeatureExtraction::setup(const std::vector<unsigned int>& pointIds, const s
     if (_featType == feature_type::TEXTURE_HIST_1D)
     {
         featFunct = &FeatureExtraction::calculateHistogram;  // will be called as calculateHistogram(_pointIds[pointID], neighborValues);
-        //qDebug() << "Feature extraction: Type 1d texture histogram, Num Bins: " << _numHistBins;
+		spdlog::info("Feature extraction: Type 1d texture histogram, Num Bins: {}", _numHistBins);
     }
     else if(_featType == feature_type::LOCALMORANSI)
     {
         featFunct = &FeatureExtraction::calculateLISA;
-        //qDebug() << "Feature extraction: LOCALMORANSI";
+		spdlog::info("Feature extraction: LOCALMORANSI");
     }
     else if (_featType == feature_type::LOCALGEARYC)
     {
         featFunct = &FeatureExtraction::calculateGearysC;
-        //qDebug() << "Feature extraction: local Geary's C";
+        spdlog::info("Feature extraction: local Geary's C");
     }
     else if (_featType == feature_type::PCLOUD)
     {
         featFunct = &FeatureExtraction::allNeighborhoodIDs; // allNeighborhoodVals for using the data instead of the IDs
-        //qDebug() << "Feature extraction: Point cloud (just the neighborhood, no transformations)";
+		spdlog::info("Feature extraction: Point cloud (just the neighborhood, no transformations)");
     }
     else if (_featType == feature_type::MVN)
     {
         featFunct = &FeatureExtraction::calculateSumAllDist;
         _locNeighbors = 0;      // even better was to skip the neighborhood extraction during
         _neighborhoodSize = 1;  // feature calculation but this is the next best thing
-        //qDebug() << "Feature extraction: Preparation for Frobenius norm of attribute dist matrices";
+		spdlog::info("Feature extraction: Preparation for Frobenius norm of attribute dist matrices");
     }
     else
     {
         featFunct = NULL;
-        //qDebug() << "Feature extraction: unknown feature type";
+		spdlog::error("Feature extraction: unknown feature type");
     }
 
-    //qDebug() << "Feature extraction: Num neighbors (in each direction): " << _locNeighbors << "(total neighbors: " << _neighborhoodSize << ") Neighbor weighting: " << (unsigned int)_neighborhoodWeighting;
+	spdlog::info("Feature extraction: Num neighbors (in each direction): {0} (total neighbors: {1}) Neighbor weighting: {2}", _neighborhoodSize, static_cast<unsigned int> (_neighborhoodWeighting));
 
 }
 
@@ -123,14 +109,14 @@ void FeatureExtraction::computeHistogramFeatures() {   // TODO: RENAME - not onl
     extractFeatures();
 
     auto end = std::chrono::steady_clock::now();
-    //qDebug() << "Feature extraction: extraction duration (sec): " << ((float)std::chrono::duration_cast<std::chrono::milliseconds> (end - start).count()) / 1000;
+    spdlog::info("Feature extraction: extraction duration (sec): {}", ((float)std::chrono::duration_cast<std::chrono::milliseconds> (end - start).count()) / 1000);
 
     // if there is a -1 in the _outFeatures, this value was not set at all
     assert(std::none_of(_outFeatures.begin(), _outFeatures.end(), [](float i) {return i == -1.0f; }));
 }
 
 void FeatureExtraction::initExtraction() {
-    //qDebug() << "Feature extraction: init feature extraction";
+	spdlog::info("Feature extraction: init feature extraction");
 
     _outFeatures.resize(_numPoints * _numFeatureValsPerPoint);
 
@@ -151,7 +137,7 @@ void FeatureExtraction::initExtraction() {
 }
 
 void FeatureExtraction::extractFeatures() {
-    //qDebug() << "Feature extraction: extract features";
+	spdlog::info("Feature extraction: extract features");
 
     // convolve over all selected data points
 #ifdef NDEBUG

@@ -1,5 +1,9 @@
 #include "FeatureUtils.h"
 
+#include <execution>    // par_unseq
+#include <algorithm>    // for_each_n
+#include <numeric>      // iota
+
 
 template<typename T>
 void NormVector(std::vector<T>& vec, T normVal) {

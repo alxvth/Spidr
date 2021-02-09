@@ -1,5 +1,6 @@
 #pragma once
 #include "KNNUtils.h"
+#include "spdlog/spdlog-inl.h"
 
 
 metricPair MakeMetricPair(feature_type ft, distance_metric dm) {
@@ -21,7 +22,7 @@ std::tuple<std::vector<int>, std::vector<float>> ComputeHNSWkNN(const std::vecto
     std::vector<int> indices(numPoints * nn, -1);
     std::vector<float> distances_squared(numPoints * nn, -1);
 
-    //qDebug() << "ComputeHNSWkNN: Build akNN Index";
+	spdlog::info("ComputeHNSWkNN: Build akNN Index");
 
     hnswlib::HierarchicalNSW<float> appr_alg(space, numPoints);   // use default HNSW values for M, ef_construction random_seed
 
@@ -42,7 +43,7 @@ std::tuple<std::vector<int>, std::vector<float>> ComputeHNSWkNN(const std::vecto
         appr_alg.addPoint((void*)(dataFeatures.data() + (i*indMultiplier)), (hnswlib::labeltype) i);
     }
 #endif
-    //qDebug() << "ComputeHNSWkNN: Search akNN Index";
+	spdlog::info("ComputeHNSWkNN: Search akNN Index");
 
     // query dataset
 #ifdef NDEBUG
@@ -84,76 +85,76 @@ hnswlib::SpaceInterface<float>* CreateHNSWSpace(const distance_metric knn_metric
     if (knn_metric == distance_metric::METRIC_QF)
     {
         assert(numHistBins > 0);
-        //qDebug() << "Distance calculation: QFSpace as vector feature";
+		spdlog::info("Distance calculation: QFSpace as vector feature");
         space = new hnswlib::QFSpace(numDims, numHistBins, featureValsPerPoint);
     }
     else if (knn_metric == distance_metric::METRIC_EMD)
     {
         assert(numHistBins > 0);
-        //qDebug() << "Distance calculation: EMDSpace as vector feature";
+		spdlog::info("Distance calculation: EMDSpace as vector feature");
         space = new hnswlib::EMDSpace(numDims, numHistBins, featureValsPerPoint);
     }
     else if (knn_metric == distance_metric::METRIC_HEL)
     {
         assert(numHistBins > 0);
-        //qDebug() << "Distance calculation: HellingerSpace as vector feature metric";
+		spdlog::info("Distance calculation: HellingerSpace as vector feature metric");
         space = new hnswlib::HellingerSpace(numDims, numHistBins, featureValsPerPoint);
     }
     else if (knn_metric == distance_metric::METRIC_EUC)
     {
-        //qDebug() << "Distance calculation: EuclidenSpace (L2Space) as scalar feature metric";
+		spdlog::info("Distance calculation: EuclidenSpace (L2Space) as scalar feature metric");
         space = new hnswlib::L2Space(numDims);  // featureValsPerPoint = numDims
     }
     else if (knn_metric == distance_metric::METRIC_CHA)
     {
         assert(dataVecBegin != NULL);
-        //qDebug() << "Distance calculation: EuclidenSpace (ChamferSpace, Chamfer distance)";
+		spdlog::info("Distance calculation: EuclidenSpace (ChamferSpace, Chamfer distance)");
         space = new hnswlib::ChamferSpace(numDims, neighborhoodSize, neighborhoodWeighting, dataVecBegin, featureValsPerPoint);
     }
     else if (knn_metric == distance_metric::METRIC_SSD)
     {
         assert(dataVecBegin != NULL);
-        //qDebug() << "Distance calculation: EuclidenSpace (Sum of Squared Distances)";
+		spdlog::info("Distance calculation: EuclidenSpace (Sum of Squared Distances)");
         space = new hnswlib::SSDSpace(numDims, neighborhoodSize, neighborhoodWeighting, dataVecBegin, featureValsPerPoint);
     }
     else if (knn_metric == distance_metric::METRIC_HAU)
     {
         assert(dataVecBegin != NULL);
-        //qDebug() << "Distance calculation: EuclidenSpace (Hausdorff)";
+		spdlog::info("Distance calculation: EuclidenSpace (Hausdorff)");
         space = new hnswlib::HausdorffSpace(numDims, neighborhoodSize, neighborhoodWeighting, dataVecBegin, featureValsPerPoint);
     }
     else if (knn_metric == distance_metric::METRIC_MVN)
     {
         assert(dataVecBegin != NULL);
-        //qDebug() << "Distance calculation: MVN-Reduce - Spatial and Attribute distancec combined with weight " << weight;
+		spdlog::info("Distance calculation: MVN-Reduce - Spatial and Attribute distancec combined with weight {}", weight);
         space = new hnswlib::MVNSpace(numDims, weight, imgWidth, dataVecBegin, numPoints);
     }
     else if (knn_metric == distance_metric::METRIC_HAU_min)
     {
         assert(dataVecBegin != NULL);
-        //qDebug() << "Distance calculation: EuclidenSpace (Hausdorff, min)";
+		spdlog::info("Distance calculation: EuclidenSpace (Hausdorff, min)");
         space = new hnswlib::HausdorffSpace_min(numDims, neighborhoodSize, neighborhoodWeighting, dataVecBegin, featureValsPerPoint);
     }
     else if (knn_metric == distance_metric::METRIC_HAU_med)
     {
         assert(dataVecBegin != NULL);
-        //qDebug() << "Distance calculation: EuclidenSpace (Hausdorff, med)";
+		spdlog::info("Distance calculation: EuclidenSpace (Hausdorff, med)");
         space = new hnswlib::HausdorffSpace_median(numDims, neighborhoodSize, neighborhoodWeighting, dataVecBegin, featureValsPerPoint);
     }
     else if (knn_metric == distance_metric::METRIC_HAU_medmed)
     {
         assert(dataVecBegin != NULL);
-        //qDebug() << "Distance calculation: EuclidenSpace (Hausdorff, med)";
+		spdlog::info("Distance calculation: EuclidenSpace (Hausdorff, med)");
         space = new hnswlib::HausdorffSpace_medianmedian(numDims, neighborhoodSize, neighborhoodWeighting, dataVecBegin, featureValsPerPoint);
     }
     else if (knn_metric == distance_metric::METRIC_HAU_minmax)
     {
         assert(dataVecBegin != NULL);
-        //qDebug() << "Distance calculation: EuclidenSpace (Hausdorff, minmax)";
+		spdlog::info("Distance calculation: EuclidenSpace (Hausdorff, minmax)");
         space = new hnswlib::HausdorffSpace_minmax(numDims, neighborhoodSize, neighborhoodWeighting, dataVecBegin, featureValsPerPoint);
     }
     else
-        //qDebug() << "Distance calculation: ERROR: Distance metric unknown.";
+		spdlog::error("Distance calculation: ERROR: Distance metric unknown.");
 
     return space;
 }
