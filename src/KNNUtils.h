@@ -82,6 +82,18 @@ distance_metric GetDistMetricFromMetricPair(const metricPair metricPair);
 feature_type GetFeatureTypeFromMetricPair(const metricPair metricPair);
 
 /*!
+ * Used in SpidrSettingsWidget to set the distanceMetric/Feature Type pair
+ * Casts enum classes to unsigned int
+ * \param vec
+ * \param vecSize
+ * \return median
+ */
+template<typename T>
+T CalcMedian(std::vector<T> vec, size_t vecSize);
+template<typename T>
+T CalcMedian(std::vector<T> vec) { CalcMedian(vec, vec.size()); }
+
+/*!
  * Computes the similarities of bins of a 1D histogram.
  *
  * Entry A_ij refers to the sim between bin i and bin j. The diag entries should be 1, all others <= 1.
@@ -1183,16 +1195,13 @@ namespace hnswlib {
 
         assert(neighborhoodSize % 2 != 0); 
 
-        // find median of mins
+		// count FLT_MAX to determine median pos
+		size_t neighborhoodSize_c = neighborhoodSize - std::count(colDistMins.begin(), colDistMins.end(), FLT_MAX);
+		size_t neighborhoodSize_r = neighborhoodSize - std::count(rowDistMins.begin(), rowDistMins.end(), FLT_MAX);
 
-        std::nth_element(colDistMins.begin(), colDistMins.begin() + neighborhoodSize / 2, colDistMins.end());
-        std::nth_element(colDistMins.begin(), colDistMins.begin() + neighborhoodSize / 2 + 1, colDistMins.end());
-        float colMed = (colDistMins[neighborhoodSize / 2] + colDistMins[neighborhoodSize / 2 + 1]) / 2;
-
-        std::nth_element(rowDistMins.begin(), rowDistMins.begin() + neighborhoodSize / 2, rowDistMins.end());
-        std::nth_element(rowDistMins.begin(), rowDistMins.begin() + neighborhoodSize / 2 + 1, rowDistMins.end());
-        float rowMed = (rowDistMins[neighborhoodSize / 2] + rowDistMins[neighborhoodSize / 2 + 1]) / 2;
-
+		// find median of mins
+		float colMed = CalcMedian(colDistMins, neighborhoodSize_c);
+		float rowMed = CalcMedian(rowDistMins, neighborhoodSize_r);
 
         assert(colMed < FLT_MAX);
         assert(rowMed < FLT_MAX);
@@ -1311,43 +1320,20 @@ namespace hnswlib {
             neighborhoodSize_c = neighborhoodSize - std::count(colDists.begin(), colDists.end(), FLT_MAX);
             neighborhoodSize_r = neighborhoodSize - std::count(rowDists.begin(), rowDists.end(), FLT_MAX);
 
-            // calc median
-            if (neighborhoodSize_c % 2 != 0) {
-                std::nth_element(colDists.begin(), colDists.begin() + neighborhoodSize_c / 2, colDists.end());
-                std::nth_element(colDists.begin(), colDists.begin() + neighborhoodSize_c / 2 + 1, colDists.end());
-                colDistMeds[n] = (colDists[neighborhoodSize_c / 2] + colDists[neighborhoodSize_c / 2 + 1]) / 2;
-            }
-            else
-            {
-                std::nth_element(colDists.begin(), colDists.begin() + neighborhoodSize_c / 2, colDists.end());
-                colDistMeds[n] = colDists[neighborhoodSize_c / 2];
-            }
-
-            if (neighborhoodSize_r % 2 != 0) {
-                std::nth_element(rowDists.begin(), rowDists.begin() + neighborhoodSize_r / 2, rowDists.end());
-                std::nth_element(rowDists.begin(), rowDists.begin() + neighborhoodSize_r / 2 + 1, rowDists.end());
-                rowDistMeds[n] = (rowDists[neighborhoodSize_r / 2] + rowDists[neighborhoodSize_r / 2 + 1]) / 2;
-            }
-            else {
-                std::nth_element(rowDists.begin(), rowDists.begin() + neighborhoodSize_r / 2, rowDists.end());
-                rowDistMeds[n] = rowDists[neighborhoodSize_r / 2];
-
-            }
-
-
+			// find median of mins
+			colDistMeds[n] = CalcMedian(colDists, neighborhoodSize_c);
+			rowDistMeds[n] = CalcMedian(rowDists, neighborhoodSize_r);
         }
 
         assert(neighborhoodSize % 2 != 0);
 
-        // find median of medians
-        std::nth_element(colDistMeds.begin(), colDistMeds.begin() + neighborhoodSize / 2, colDistMeds.end());
-        std::nth_element(colDistMeds.begin(), colDistMeds.begin() + neighborhoodSize / 2 + 1, colDistMeds.end());
-        float colMed = (colDistMeds[neighborhoodSize / 2] + colDistMeds[neighborhoodSize / 2 + 1]) / 2;
+		// count FLT_MAX to determine median pos
+		neighborhoodSize_c = neighborhoodSize - std::count(colDistMeds.begin(), colDistMeds.end(), FLT_MAX);
+		neighborhoodSize_r = neighborhoodSize - std::count(rowDistMeds.begin(), rowDistMeds.end(), FLT_MAX);
 
-        std::nth_element(rowDistMeds.begin(), rowDistMeds.begin() + neighborhoodSize / 2, rowDistMeds.end());
-        std::nth_element(rowDistMeds.begin(), rowDistMeds.begin() + neighborhoodSize / 2 + 1, rowDistMeds.end());
-        float rowMed = (rowDistMeds[neighborhoodSize / 2] + rowDistMeds[neighborhoodSize / 2 + 1]) / 2;
-
+		// find median of medians
+		float colMed = CalcMedian(colDistMeds, neighborhoodSize_c);
+		float rowMed = CalcMedian(rowDistMeds, neighborhoodSize_r);
 
         assert(colMed < FLT_MAX);
         assert(rowMed < FLT_MAX);

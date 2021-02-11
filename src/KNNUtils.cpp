@@ -15,6 +15,26 @@ feature_type GetFeatureTypeFromMetricPair(const metricPair metricPair) {
     return std::get<0>(metricPair);
 }
 
+template<typename T>
+T CalcMedian(std::vector<T> vec, size_t vecSize) {
+	T median;
+
+	size_t n = vecSize / 2;
+	std::nth_element(vec.begin(), vec.begin() + n, vec.end());
+	T vn = vec[n];
+	if (vecSize % 2 == 1)	// uneven length
+	{
+		median = vn;
+	}
+	else					// even length, median is average of the central two items
+	{
+		std::nth_element(vec.begin(), vec.begin() + n - 1, vec.end());
+		median = 0.5*(vn + vec[n - 1]);
+	}
+
+	return median;
+}
+template float CalcMedian<float>(std::vector<float> vec, size_t vecSize);
 
 template<typename T>
 std::tuple<std::vector<int>, std::vector<float>> ComputeHNSWkNN(const std::vector<T>& dataFeatures, hnswlib::SpaceInterface<float> *space, size_t indMultiplier, size_t numPoints, unsigned int nn) {
