@@ -51,9 +51,6 @@ private:
 
     void computekNN();
 
-//signals:
- // TODO: add slots that change _knn_lib and _knn_metric when widgets emit signal
-
 private:
     // Options
     feature_type _featureType;                      /*!<> */

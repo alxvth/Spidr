@@ -221,24 +221,22 @@ void FeatureExtraction::calculateLISA(size_t pointInd, std::vector<float> neighb
 
     float neigh_diff_from_mean_sum = 0;
     float diff_from_mean = 0;
-    float local_neighborhoodWeightsSum = _neighborhoodWeightsSum;   // 0?
+	float local_neighborhoodWeightsSum = 0;
 
     for (size_t dim = 0; dim < _numDims; dim++) {
         neigh_diff_from_mean_sum = 0;
-        //local_neighborhoodWeightsSum = _neighborhoodWeightsSum;
         for (size_t neighbor = 0; neighbor < _neighborhoodSize; neighbor++) {
             if (neighborIDs[neighbor] == -1)
-            {
-                //local_neighborhoodWeightsSum -= _neighborhoodWeights[neighbor];  // should this be here?
                 continue; // skip if neighbor is outside image
-            }
-            neigh_diff_from_mean_sum += _neighborhoodWeights[neighbor] * (neighborValues[neighbor * _numDims + dim] - _meanVals[dim]);
+
+			neigh_diff_from_mean_sum += _neighborhoodWeights[neighbor] * (neighborValues[neighbor * _numDims + dim] - _meanVals[dim]);
+			local_neighborhoodWeightsSum += _neighborhoodWeights[neighbor];
         }
         diff_from_mean = (_attribute_data[pointInd * _numDims + dim] - _meanVals[dim]);
         // (local_neighborhoodWeightsSum / _varVals[dim]) is the proportionality factor between the local LOCALMORANSI and the global Moran's I
         // such that sum LOCALMORANSI = (local_neighborhoodWeightsSum / _varVals[dim]) * I. Thus, the division by _varVals in the next line yields sum LOCALMORANSI = I. 
         // Cf. 10.1111/j.1538-4632.1995.tb00338.x 
-        _outFeatures[pointInd * _numDims + dim] = (local_neighborhoodWeightsSum / _varVals[dim]) * diff_from_mean * neigh_diff_from_mean_sum;
+        _outFeatures[pointInd * _numDims + dim] = (diff_from_mean / (local_neighborhoodWeightsSum * _varVals[dim])) * neigh_diff_from_mean_sum;
 
         // check if local_neighborhoodWeightsSum equals _neighborhoodWeightsSum for full spatial neighborhoods
         assert((std::find(neighborIDs.begin(), neighborIDs.end(), -1) == neighborIDs.end()) ? (local_neighborhoodWeightsSum == _neighborhoodWeightsSum) : true);
@@ -253,7 +251,7 @@ void FeatureExtraction::calculateGearysC(size_t pointInd, std::vector<float> nei
 
     float diff_from_neigh_sum = 0;
     float diff_from_neigh = 0;
-    float local_neighborhoodWeightsSum = _neighborhoodWeightsSum;   // 0?
+	float local_neighborhoodWeightsSum = 0;
 
     for (size_t dim = 0; dim < _numDims; dim++) {
         diff_from_neigh_sum = 0;
@@ -261,12 +259,11 @@ void FeatureExtraction::calculateGearysC(size_t pointInd, std::vector<float> nei
         //local_neighborhoodWeightsSum = _neighborhoodWeightsSum;
         for (size_t neighbor = 0; neighbor < _neighborhoodSize; neighbor++) {
             if (neighborIDs[neighbor] == -1)
-            {
-                //local_neighborhoodWeightsSum -= _neighborhoodWeights[neighbor];  // should this be here?
                 continue; // skip if neighbor is outside image
-            }
-            diff_from_neigh = _attribute_data[pointInd * _numDims + dim] - neighborValues[neighbor * _numDims + dim];
+
+			diff_from_neigh = _attribute_data[pointInd * _numDims + dim] - neighborValues[neighbor * _numDims + dim];
             diff_from_neigh_sum += _neighborhoodWeights[neighbor] * (diff_from_neigh * diff_from_neigh);
+			local_neighborhoodWeightsSum += _neighborhoodWeights[neighbor];
         }
         // given that the _neighborhoodWeights sum up to 1, _varVals is the proportionality factor between the local Geary and the global Geary's C
         // such that sum lC = _varVals * gC. Thus, the division by _varVals in the next line yields sum lC = gC. Cf. 10.1111/j.1538-4632.1995.tb00338.x
