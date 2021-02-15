@@ -1024,7 +1024,7 @@ namespace hnswlib {
 
 
     // ---------------
-//    Point cloud distance (Hausdorff _min distances)
+//    Point cloud distance (Hausdorff _minmax distances)
 // ---------------
 
 
@@ -1168,8 +1168,8 @@ namespace hnswlib {
         std::vector<float> rowDistMins(neighborhoodSize, FLT_MAX);
         float distN1N2 = 0;
 
-        float medN1 = FLT_MAX;
-        float medN2 = FLT_MAX;
+        float colMed = FLT_MAX;
+        float rowMed = FLT_MAX;
 
         // Euclidean dist between all neighbor pairs
         // Take the min of all dists from a item in neigh1 to all items in Neigh2 (colDist) and vice versa (rowDist)
@@ -1186,22 +1186,26 @@ namespace hnswlib {
                 distN1N2 = L2distfunc_(dataVectorBegin + (idsN1[n1] * ndim), dataVectorBegin + (idsN2[n2] * ndim), &ndim);
 
                 if (distN1N2 < colDistMins[n1])
-                    colDistMins[n1] = weights[n1] * distN1N2;
+                    colDistMins[n1] = distN1N2;
 
                 if (distN1N2 < rowDistMins[n2])
-                    rowDistMins[n2] = weights[n2] * distN1N2;
+                    rowDistMins[n2] = distN1N2;
             }
         }
 
-        assert(neighborhoodSize % 2 != 0); 
+		assert(neighborhoodSize % 2 != 0); 
+
+		// weight minima
+		std::transform(colDistMins.begin(), colDistMins.end(), weights.begin(), colDistMins.begin(), [](float min, float weight) {if (min < FLT_MAX) { return min * weight; } else { return FLT_MAX; }});
+		std::transform(rowDistMins.begin(), rowDistMins.end(), weights.begin(), rowDistMins.begin(), [](float min, float weight) {if (min < FLT_MAX) { return min * weight; } else { return FLT_MAX; }});
 
 		// count FLT_MAX to determine median pos
 		size_t neighborhoodSize_c = neighborhoodSize - std::count(colDistMins.begin(), colDistMins.end(), FLT_MAX);
 		size_t neighborhoodSize_r = neighborhoodSize - std::count(rowDistMins.begin(), rowDistMins.end(), FLT_MAX);
 
 		// find median of mins
-		float colMed = CalcMedian(colDistMins, neighborhoodSize_c);
-		float rowMed = CalcMedian(rowDistMins, neighborhoodSize_r);
+		colMed = CalcMedian(colDistMins, neighborhoodSize_c);
+		rowMed = CalcMedian(rowDistMins, neighborhoodSize_r);
 
         assert(colMed < FLT_MAX);
         assert(rowMed < FLT_MAX);
@@ -1321,11 +1325,15 @@ namespace hnswlib {
             neighborhoodSize_r = neighborhoodSize - std::count(rowDists.begin(), rowDists.end(), FLT_MAX);
 
 			// find median of mins
-			colDistMeds[n] = CalcMedian(colDists, neighborhoodSize_c);
-			rowDistMeds[n] = CalcMedian(rowDists, neighborhoodSize_r);
+			colDistMeds[n] = FLT_MAX ? neighborhoodSize_c == 0 : CalcMedian(colDists, neighborhoodSize_c);
+			rowDistMeds[n] = FLT_MAX ? neighborhoodSize_c == 0 : CalcMedian(rowDists, neighborhoodSize_r);
         }
 
         assert(neighborhoodSize % 2 != 0);
+
+		// weight medians
+		std::transform(colDistMeds.begin(), colDistMeds.end(), weights.begin(), colDistMeds.begin(), [](float min, float weight) {if (min < FLT_MAX) { return min * weight; } else { return FLT_MAX; }});
+		std::transform(rowDistMeds.begin(), rowDistMeds.end(), weights.begin(), rowDistMeds.begin(), [](float min, float weight) {if (min < FLT_MAX) { return min * weight; } else { return FLT_MAX; }});
 
 		// count FLT_MAX to determine median pos
 		neighborhoodSize_c = neighborhoodSize - std::count(colDistMeds.begin(), colDistMeds.end(), FLT_MAX);
