@@ -112,7 +112,7 @@ void FeatureExtraction::computeHistogramFeatures() {   // TODO: RENAME - not onl
     extractFeatures();
 
     auto end = std::chrono::steady_clock::now();
-    spdlog::info("Feature extraction: extraction duration (sec): {}", ((float)std::chrono::duration_cast<std::chrono::milliseconds> (end - start).count()) / 1000);
+    spdlog::info("Feature extraction: Extraction duration (sec): {}", ((float)std::chrono::duration_cast<std::chrono::milliseconds> (end - start).count()) / 1000);
 
     // if there is a -1 in the _outFeatures, this value was not set at all
     assert(std::none_of(_outFeatures.begin(), _outFeatures.end(), [](float i) {return i == -1.0f; }));
@@ -140,7 +140,7 @@ void FeatureExtraction::initExtraction() {
 }
 
 void FeatureExtraction::extractFeatures() {
-	spdlog::info("Feature extraction: extract features");
+	spdlog::info("Feature extraction: Extract features");
 
     // convolve over all selected data points
 #ifdef NDEBUG
