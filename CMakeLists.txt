@@ -24,6 +24,10 @@ set(LIB
 	src/FeatureExtraction.cpp
 	src/DistanceCalculation.h
 	src/DistanceCalculation.cpp
+	src/SpidrAnalysis.h
+	src/SpidrAnalysis.cpp
+	src/TsneComputation.h
+	src/TsneComputation.cpp
 	src/AnalysisParameters.h
 )
 
@@ -35,10 +39,15 @@ set(UTILS
 	src/EvalUtils.h
 )
 
-set(SOURCES ${LIB} ${UTILS})
+set(EXAMPLES
+	examples/ArtificialImage.h
+)
+
+set(SOURCES ${LIB} ${UTILS} ${EXAMPLES})
 
 source_group(Lib FILES ${LIB})
 source_group(Utils FILES ${UTILS})
+source_group(Examples FILES ${EXAMPLES})
 
 add_library(${PROJECT} SHARED ${SOURCES})
 
