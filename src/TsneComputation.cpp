@@ -36,9 +36,6 @@ _continueFromIteration(0)
     _nn = _perplexity * _perplexity_multiplier + 1;
 }
 
-TsneComputation::~TsneComputation()
-{
-}
 
 void TsneComputation::computeGradientDescent()
 {
