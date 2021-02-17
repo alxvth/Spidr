@@ -37,7 +37,6 @@ int main() {
 
 	// Settings
 
-
 	// Compute embedding
 
 	// Save embedding

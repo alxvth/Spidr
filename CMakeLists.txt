@@ -39,21 +39,18 @@ set(UTILS
 	src/EvalUtils.h
 )
 
-set(EXAMPLES
-	examples/ArtificialImage.h
-)
-
-set(SOURCES ${LIB} ${UTILS} ${EXAMPLES})
+set(SOURCES ${LIB} ${UTILS})
 
 source_group(Lib FILES ${LIB})
 source_group(Utils FILES ${UTILS})
-source_group(Examples FILES ${EXAMPLES})
 
 add_library(${PROJECT} SHARED ${SOURCES})
 
 include_directories ("external/hnswlib/")
 include_directories ("external/HDILib/")
 include_directories ("external/spdlog/include/")
+include_directories ("external/glad/include/")
+include_directories ("external/glfw/include/")
 include_directories(${Boost_INCLUDE_DIRS})
 
 if(MSVC)

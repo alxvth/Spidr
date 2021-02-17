@@ -11,51 +11,12 @@
 #include "hdi/utils/scoped_timers.h"
 #include "spdlog/spdlog-inl.h"
 
-
+// not present in glfw 3.1.2
+#ifndef GLFW_FALSE
+#define GLFW_FALSE 0
+#endif
 
 // Change this to glad and glfw as in https://github.com/biovault/nptsne
-class OffscreenBuffer : public QWindow
-{
-public:
-    OffscreenBuffer()
-    {
-        setSurfaceType(QWindow::OpenGLSurface);
-
-        create();
-    }
-
-    QOpenGLContext* getContext() { return _context; }
-
-    void initialize()
-    {
-        QOpenGLContext* globalContext = QOpenGLContext::globalShareContext();
-        _context = new QOpenGLContext(this);
-        _context->setFormat(globalContext->format());
-
-        if (!_context->create())
-            qFatal("Cannot create requested OpenGL context.");
-
-        _context->makeCurrent(this);
-        if (!gladLoadGL()) {
-            qFatal("No OpenGL context is currently bound, therefore OpenGL function loading has failed.");
-        }
-    }
-
-    void bindContext()
-    {
-        _context->makeCurrent(this);
-    }
-
-    void releaseContext()
-    {
-        _context->doneCurrent();
-    }
-
-private:
-    QOpenGLContext* _context;
-};
-
-OffscreenBuffer* offBuffer;
 
 TsneComputation::TsneComputation() :
 _iterations(1000),
@@ -155,12 +116,29 @@ void TsneComputation::initGradientDescent()
     tsneParams._exaggeration_factor = 4 + _numPoints / 60000.0;
     _A_tSNE.setTheta(std::min(0.5, std::max(0.0, (_numPoints - 1000.0)*0.00005)));
 
-    // Create a context local to this thread that shares with the global share context
-    offBuffer = new OffscreenBuffer();
-    offBuffer->initialize();
+    // Create a offscreen window
+	if (!glfwInit()) {
+		throw std::runtime_error("Unable to initialize GLFW.");
+	}
+#ifdef __APPLE__
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
+	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+#endif
+	glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);  // invisible - ie offscreen, window
+	_offscreen_context = glfwCreateWindow(640, 480, "", NULL, NULL);
+	if (_offscreen_context == NULL) {
+		glfwTerminate();
+		throw std::runtime_error("Failed to create GLFW window");
+	}
+	glfwMakeContextCurrent(_offscreen_context);
 
+	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
+		glfwTerminate();
+		throw std::runtime_error("Failed to initialize OpenGL context");
+	}
     // Initialize GPGPU-SNE
-    offBuffer->bindContext();
     _GPGPU_tSNE.initialize(_probabilityDistribution, &_embedding, tsneParams);
     
     copyFloatOutput();
@@ -198,7 +176,8 @@ void TsneComputation::embed()
 
             elapsed += t;
         }
-        offBuffer->releaseContext();
+		glfwDestroyWindow(_offscreen_context);
+		glfwTerminate();
 
         copyFloatOutput();
         

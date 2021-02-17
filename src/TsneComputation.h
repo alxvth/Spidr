@@ -1,5 +1,11 @@
 #pragma once
 
+#ifdef __APPLE__
+#include "glad/glad_3_3.h"
+#define __gl3_h_
+#endif
+#include <GLFW/glfw3.h>
+
 #include "hdi/dimensionality_reduction/hd_joint_probability_generator.h"
 #include "hdi/dimensionality_reduction/sparse_tsne_user_def_probabilities.h"
 #include "hdi/dimensionality_reduction/gradient_descent_tsne_texture.h"
@@ -102,4 +108,5 @@ private:
     bool _isMarkedForDeletion;
 
     int _continueFromIteration;
+	GLFWwindow* _offscreen_context;
 };
