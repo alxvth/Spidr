@@ -50,7 +50,7 @@ source_group(Headers FILES ${HEADERS})
 source_group(Lib FILES ${LIB})
 source_group(Utils FILES ${UTILS})
 
-add_library(${PROJECT} STATIC ${SOURCES}) #  ${CMAKE_CURRENT_SOURCE_DIR}/external/glad/src/glad.c
+add_library(${PROJECT} STATIC ${SOURCES})
 
 # Request C++17
 set_property(TARGET ${PROJECT} PROPERTY CXX_STANDARD 17)
@@ -60,7 +60,6 @@ include_directories(src)
 include_directories("external/hnswlib/")
 include_directories("external/HDILib/HDI/include")
 include_directories("external/spdlog/include/")
-#include_directories("external/glad/include/")
 include_directories("external/glfw/include/")
 include_directories(${Boost_INCLUDE_DIRS})
 include_directories(${OPENGL_INCLUDE_DIRS} )
