@@ -1,7 +1,7 @@
 #include "FeatureExtraction.h"
 
 #include "KNNUtils.h"
-#include "AnalysisParameters.h"     // class Parameters
+#include "SpidrAnalysisParameters.h"     // class SpidrParameters
 
 #include "hnswlib/hnswlib.h" 
 #include "spdlog/spdlog-inl.h"
@@ -38,12 +38,12 @@ void FeatureExtraction::compute() {
 	spdlog::info("Feature extraction: Finished");
 }
 
-void FeatureExtraction::setup(const std::vector<unsigned int>& pointIds, const std::vector<float>& attribute_data, const Parameters& params) {
+void FeatureExtraction::setup(const std::vector<unsigned int>& pointIds, const std::vector<float>& attribute_data, const SpidrParameters& params) {
 	spdlog::info("Feature extraction: Setup"); 
 	_featType = params._featureType;
     _numFeatureValsPerPoint = params._numFeatureValsPerPoint; 
 
-    // Parameters
+    // SpidrParameters
     _numHistBins = params._numHistBins;
     _locNeighbors = params._numLocNeighbors;
     _neighborhoodWeighting = params._neighWeighting;

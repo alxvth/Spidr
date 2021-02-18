@@ -1,6 +1,6 @@
 #include "DistanceCalculation.h"
 
-#include "AnalysisParameters.h"
+#include "SpidrAnalysisParameters.h"
 #include "KNNUtils.h"
 #include "EvalUtils.h"
 
@@ -19,11 +19,11 @@ DistanceCalculation::DistanceCalculation() :
 }
 
 
-void DistanceCalculation::setup(const std::vector<float> dataFeatures, const std::vector<unsigned int> backgroundIDsGlobal, Parameters& params) {
+void DistanceCalculation::setup(const std::vector<float> dataFeatures, const std::vector<unsigned int> backgroundIDsGlobal, SpidrParameters& params) {
     _featureType = params._featureType;
     _numFeatureValsPerPoint = params._numFeatureValsPerPoint;
 
-    // Parameters
+    // SpidrParameters
     _knn_lib = params._aknn_algorithm;
     _knn_metric = params._aknn_metric;
     _nn = params._nn;

@@ -1,6 +1,8 @@
 #pragma once
 #include "KNNUtils.h"
+#include "KNNDists.h"
 #include "spdlog/spdlog-inl.h"
+#include "hnswlib/hnswlib.h"
 
 
 metricPair MakeMetricPair(feature_type ft, distance_metric dm) {
@@ -35,6 +37,35 @@ T CalcMedian(std::vector<T> vec, size_t vecSize) {
 	return median;
 }
 template float CalcMedian<float>(std::vector<float> vec, size_t vecSize);
+
+
+std::vector<float> BinSimilarities(size_t num_bins, bin_sim sim_type, float sim_weight) {
+	std::vector<float> A(num_bins*num_bins, -1);
+	size_t ground_dist_max = num_bins - 1;
+
+	if (sim_type == bin_sim::SIM_EUC) {
+		for (int i = 0; i < (int)num_bins; i++) {
+			for (int j = 0; j < (int)num_bins; j++) {
+				A[i * num_bins + j] = 1 - (float(std::abs(i - j)) / float(ground_dist_max));
+			}
+		}
+	}
+	else if (sim_type == bin_sim::SIM_EXP) {
+		for (int i = 0; i < (int)num_bins; i++) {
+			for (int j = 0; j < (int)num_bins; j++) {
+				A[i * num_bins + j] = ::std::exp(-1 * sim_weight * float(std::abs(i - j)));
+			}
+		}
+	}
+	else if (sim_type == bin_sim::SIM_UNI) {
+		std::fill(A.begin(), A.end(), 1);
+	}
+
+	// if there is a -1 in A, this value was not set (invalid ground_type option selected)
+	assert(std::find(A.begin(), A.end(), -1) == A.end());
+
+	return A;
+}
 
 template<typename T>
 std::tuple<std::vector<int>, std::vector<float>> ComputeHNSWkNN(const std::vector<T>& dataFeatures, hnswlib::SpaceInterface<float> *space, size_t indMultiplier, size_t numPoints, unsigned int nn) {
@@ -97,6 +128,58 @@ std::tuple<std::vector<int>, std::vector<float>> ComputeHNSWkNN(const std::vecto
 // Resolve linker errors with explicit instantiation, https://isocpp.org/wiki/faq/templates#separate-template-fn-defn-from-decl
 template std::tuple<std::vector<int>, std::vector<float>> ComputeHNSWkNN<float>(const std::vector<float>& dataFeatures, hnswlib::SpaceInterface<float> *space, size_t indMultiplier, size_t numPoints, unsigned int nn);
 template std::tuple<std::vector<int>, std::vector<float>> ComputeHNSWkNN<unsigned int>(const std::vector<unsigned int>& dataFeatures, hnswlib::SpaceInterface<float> *space, size_t indMultiplier, size_t numPoints, unsigned int nn);
+
+
+template<typename T>
+std::tuple<std::vector<int>, std::vector<float>> ComputeExactKNN(const std::vector<T> dataFeatures, hnswlib::SpaceInterface<float> *space, size_t featureSize, size_t numPoints, unsigned int nn, bool sort) {
+	std::vector<std::pair<int, float>> indices_distances;
+	std::vector<int> knn_indices;
+	std::vector<float> knn_distances_squared;
+
+	indices_distances.resize(numPoints);
+	knn_indices.resize(numPoints*nn, -1);
+	knn_distances_squared.resize(numPoints*nn, -1.0f);
+
+	hnswlib::DISTFUNC<float> distfunc = space->get_dist_func();
+	void* params = space->get_dist_func_param();
+
+	// For each point, calc distances to all other
+	// and take the nn smallest as kNN
+	for (int i = 0; i < (int)numPoints; i++) {
+		// Calculate distance to all points  using the respective metric
+#ifdef NDEBUG
+#pragma omp parallel for
+#endif
+		for (int j = 0; j < (int)numPoints; j++) {
+			indices_distances[j] = std::make_pair(j, distfunc(dataFeatures.data() + i * featureSize, dataFeatures.data() + j * featureSize, params));
+		}
+
+		if (sort)
+		{
+			// sort all distances to point i
+			std::sort(indices_distances.begin(), indices_distances.end(), [](std::pair<int, float> a, std::pair<int, float> b) {return a.second < b.second; });
+		}
+
+		// Take the first nn indices 
+		std::transform(indices_distances.begin(), indices_distances.begin() + nn, knn_indices.begin() + i * nn, [](const std::pair<int, float>& p) { return p.first; });
+		// Take the first nn distances 
+		std::transform(indices_distances.begin(), indices_distances.begin() + nn, knn_distances_squared.begin() + i * nn, [](const std::pair<int, float>& p) { return p.second; });
+	}
+
+	return std::make_tuple(knn_indices, knn_distances_squared);
+}
+// Resolve linker errors with explicit instantiation, https://isocpp.org/wiki/faq/templates#separate-template-fn-defn-from-decl
+template std::tuple<std::vector<int>, std::vector<float>> ComputeExactKNN<float>(const std::vector<float> dataFeatures, hnswlib::SpaceInterface<float> *space, size_t indMultiplier, size_t numPoints, unsigned int nn, bool sort);
+template std::tuple<std::vector<int>, std::vector<float>> ComputeExactKNN<unsigned int>(const std::vector<unsigned int> dataFeatures, hnswlib::SpaceInterface<float> *space, size_t featureSize, size_t numPoints, unsigned int nn, bool sort);
+
+template<typename T>
+std::tuple<std::vector<int>, std::vector<float>> ComputeFullDistMat(const std::vector<T> dataFeatures, hnswlib::SpaceInterface<float> *space, size_t featureSize, size_t numPoints) {
+	// set nn = numPoints and sort = false
+	return ComputeExactKNN(dataFeatures, space, featureSize, numPoints, numPoints, false);
+}
+// Resolve linker errors with explicit instantiation, https://isocpp.org/wiki/faq/templates#separate-template-fn-defn-from-decl
+template std::tuple<std::vector<int>, std::vector<float>> ComputeFullDistMat<float>(const std::vector<float> dataFeatures, hnswlib::SpaceInterface<float> *space, size_t featureSize, size_t numPoints);
+template std::tuple<std::vector<int>, std::vector<float>> ComputeFullDistMat<unsigned int>(const std::vector<unsigned int> dataFeatures, hnswlib::SpaceInterface<float> *space, size_t featureSize, size_t numPoints);
 
 
 hnswlib::SpaceInterface<float>* CreateHNSWSpace(const distance_metric knn_metric, const size_t numDims, const size_t neighborhoodSize, const loc_Neigh_Weighting neighborhoodWeighting, const size_t featureValsPerPoint, const size_t numHistBins, const float* dataVecBegin, float weight, int imgWidth, int numPoints) {
@@ -179,15 +262,3 @@ hnswlib::SpaceInterface<float>* CreateHNSWSpace(const distance_metric knn_metric
     return space;
 }
 
-const size_t NumFeatureValsPerPoint(const feature_type featureType, const size_t numDims, const size_t numHistBins, const size_t neighborhoodSize) {
-    size_t featureSize = 0;
-    switch (featureType) {
-    case feature_type::TEXTURE_HIST_1D: featureSize = numDims * numHistBins; break;
-    case feature_type::LOCALMORANSI:            // same as Geary's C
-    case feature_type::LOCALGEARYC:          featureSize = numDims; break;
-    case feature_type::PCLOUD:          featureSize = neighborhoodSize; break; // numDims * neighborhoodSize for copying data instead of IDs
-    case feature_type::MVN:             featureSize = numDims + 2; break; // for each point: attr vals and x&y pos
-    }
-
-    return featureSize;
-}
