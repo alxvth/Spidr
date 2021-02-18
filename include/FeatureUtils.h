@@ -3,70 +3,8 @@
 #include <cmath>
 #include <vector>
 
+#include "SpidrAnalysisParameters.h"
 
-typedef struct ImgSize{
-	int width;
-	int height;
-
-	ImgSize() : width(-1), height(-1) {};
-	ImgSize(int width, int hight) : width(width), height(height) {};
-
-} ImgSize;
-
-/*! Types of neighborhood features
- *
- */
-enum class feature_type : unsigned int
-{
-    TEXTURE_HIST_1D = 0,    /*!< Histograms of data point neighborhood, vector feature */
-    LOCALMORANSI = 1,       /*!< Local Moran's I (Local Indicator of Spatial Associations), scalar feaure */
-    LOCALGEARYC = 2,        /*!< Local Geary's C (Local Indicator of Spatial Associations), scalar feature */
-    PCLOUD = 3,             /*!< Point cloud, i.e. just the neighborhood, no transformations*/
-    MVN = 4,                /*!< MVN-Reduce, see 10.2312/euroviss, computes Frobenius norms of spatial and attribute distance matrices*/
-};
-
-// Heuristic for setting the histogram bin size
-enum class histBinSizeHeuristic : unsigned int
-{
-    MANUAL = 0,    /*!< Manually  adjust histogram bin size */
-    SQRT = 1,      /*!< ceil(sqrt(n)), n = neighborhood size */
-    STURGES = 2,   /*!< ceil(log_2(n))+1, n = neighborhood size */
-    RICE = 3,      /*!< ceil(2*pow(n, 1/3)), n = neighborhood size */
-};
-
-
-/*! Weighting of local neighborhoods
- * Used e.g. in histogram creation, spatial weighting in LOCALMORANSI and Point cloud distance
- */
-enum class loc_Neigh_Weighting : unsigned int
-{
-    WEIGHT_UNIF = 0,    /*!< Uniform weighting (all 1) */
-    WEIGHT_BINO = 1,    /*!< Weighting binomial approximation of 2D gaussian */
-    WEIGHT_GAUS = 2,    /*!< Weighting given by 2D gaussian */
-};
-
-/*!
- * 
- * 
- */
-enum class norm_vec : unsigned int
-{
-    NORM_NONE = 0,   /*!< No normalization */
-    NORM_MAX = 1,   /*!< Normalization such that max = 1 (usually center value) */
-    NORM_SUM = 2,   /*!< Normalization such that sum = 1 */
-};
-
-/*!
- * 
- * 
- */
-enum class bin_size : unsigned int
-{
-    MANUAL = 0,     /*!<> */
-    SQRT = 1,       /*!<> */
-    STURGES = 2,    /*!<> */
-    RICE = 3,       /*!<> */
-};
 
 /*! Normalizes all values in vec wrt to normVal
  * Basically normedVec[i] = vec[i] / normVal

@@ -19,11 +19,11 @@ void SpidrAnalysis::setupData(const std::vector<float>& attribute_data, const st
     _params._embeddingName = embeddingName;
     _params._dataVecBegin = _attribute_data.data();          // used in point cloud distance
 
-	spdlog::info("SpidrAnalysis: Num data points: {0} Num dims: {1} Image size (width, height): {2}", _params._numPoints, _params._numDims, _params._imgSize.width, _params._imgSize.height);
+	spdlog::info("SpidrAnalysis: Setup data with number of points: {0}, num dims: {1, image size (width, height): {2}", _params._numPoints, _params._numDims, _params._imgSize.width, _params._imgSize.height);
 }
 
-void SpidrAnalysis::initializeAnalysisSettings(const unsigned int featType, const unsigned int kernelWeightType, const size_t numLocNeighbors, const size_t numHistBins,\
-                                               const unsigned int aknnAlgType, const unsigned int aknnMetric, const float MVNweight, \
+void SpidrAnalysis::initializeAnalysisSettings(const feature_type featType, const loc_Neigh_Weighting kernelWeightType, const size_t numLocNeighbors, const size_t numHistBins,\
+                                               const knn_library aknnAlgType, const distance_metric aknnMetric, const float MVNweight, \
                                                const int numIterations, const int perplexity, const int exaggeration, const int expDecay) {
     // initialize Feature Extraction Settings
     setFeatureType(featType);
@@ -45,10 +45,11 @@ void SpidrAnalysis::initializeAnalysisSettings(const unsigned int featType, cons
 
     // Derived parameters
     setNumFeatureValsPerPoint(); 
+	spdlog::info("SpidrAnalysis: Initialized all settings");
 }
 
 
-void SpidrAnalysis::spatialAnalysis() {
+void SpidrAnalysis::compute() {
 
     // Extract features
     _featExtraction.setup(_pointIDsGlobal, _attribute_data, _params);
@@ -68,12 +69,12 @@ void SpidrAnalysis::spatialAnalysis() {
 }
 
 
-void SpidrAnalysis::setFeatureType(const int feature_type_index) {
-    _params._featureType = static_cast<feature_type> (feature_type_index);
+void SpidrAnalysis::setFeatureType(const feature_type feature_type) {
+    _params._featureType = feature_type;
 }
 
-void SpidrAnalysis::setKernelWeight(const int loc_Neigh_Weighting_index) {
-    _params._neighWeighting = static_cast<loc_Neigh_Weighting> (loc_Neigh_Weighting_index);
+void SpidrAnalysis::setKernelWeight(const loc_Neigh_Weighting loc_Neigh_Weighting) {
+    _params._neighWeighting = loc_Neigh_Weighting;
 }
 
 void SpidrAnalysis::setNumLocNeighbors(const size_t num) {
@@ -86,12 +87,12 @@ void SpidrAnalysis::setNumHistBins(const size_t num) {
     _params._numHistBins = num;
 }
 
-void SpidrAnalysis::setKnnAlgorithm(const int knn_library_index) {
-    _params._aknn_algorithm = static_cast<knn_library> (knn_library_index);
+void SpidrAnalysis::setKnnAlgorithm(const knn_library knn_library) {
+    _params._aknn_algorithm = knn_library;
 }
 
-void SpidrAnalysis::setDistanceMetric(const int distance_metric_index) {
-    _params._aknn_metric = static_cast<distance_metric> (distance_metric_index);
+void SpidrAnalysis::setDistanceMetric(const distance_metric distance_metric) {
+    _params._aknn_metric = distance_metric;
 }
 
 void SpidrAnalysis::setPerplexity(const unsigned perplexity) {
@@ -195,6 +196,6 @@ void SpidrAnalysis::stopComputation() {
     _tsne.stopGradientDescent();
 }
 
-const Parameters SpidrAnalysis::getParameters() {
+const SpidrParameters SpidrAnalysis::getParameters() {
     return _params;
 }

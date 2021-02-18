@@ -20,41 +20,47 @@ find_package(Eigen3 3.3 REQUIRED)
 find_package(OpenGL REQUIRED )
 find_package(OpenMP REQUIRED)
 
+set(HEADERS 
+	include/FeatureExtraction.h
+	include/DistanceCalculation.h
+	include/SpidrAnalysis.h
+	include/TsneComputation.h
+	include/SpidrAnalysisParameters.h
+    include/KNNUtils.h
+	include/FeatureUtils.h
+)
+
 set(LIB
-	src/FeatureExtraction.h
 	src/FeatureExtraction.cpp
-	src/DistanceCalculation.h
 	src/DistanceCalculation.cpp
-	src/SpidrAnalysis.h
 	src/SpidrAnalysis.cpp
-	src/TsneComputation.h
 	src/TsneComputation.cpp
-	src/AnalysisParameters.h
 )
 
 set(UTILS
-    src/KNNUtils.h
     src/KNNUtils.cpp
-	src/FeatureUtils.h
+    src/KNNDists.h
 	src/FeatureUtils.cpp
 	src/EvalUtils.h
 )
 
-set(SOURCES ${LIB} ${UTILS})
+set(SOURCES ${HEADERS} ${LIB} ${UTILS})
 
+source_group(Headers FILES ${HEADERS})
 source_group(Lib FILES ${LIB})
 source_group(Utils FILES ${UTILS})
 
-add_library(${PROJECT} SHARED ${SOURCES})
+add_library(${PROJECT} STATIC ${SOURCES}) #  ${CMAKE_CURRENT_SOURCE_DIR}/external/glad/src/glad.c
 
 # Request C++17
 set_property(TARGET ${PROJECT} PROPERTY CXX_STANDARD 17)
 
+include_directories(include)
+include_directories(src)
 include_directories("external/hnswlib/")
 include_directories("external/HDILib/HDI/include")
 include_directories("external/spdlog/include/")
-include_directories("external/glad/include/")
-include_directories("external/glad/src/")
+#include_directories("external/glad/include/")
 include_directories("external/glfw/include/")
 include_directories(${Boost_INCLUDE_DIRS})
 include_directories(${OPENGL_INCLUDE_DIRS} )
@@ -90,11 +96,7 @@ add_definitions(-DGLFW_INCLUDE_NONE)
 
 target_link_libraries(${PROJECT} ${OPENGL_LIBRARIES} glfw )
 
-#add_subdirectory("external/glad")
-#target_link_libraries(${PROJECT} glad)
-
 # link to precompiled HDILib 
-
 if(MSVC)
     MESSAGE( STATUS "Linking Windows libraries...")
     target_link_libraries(${PROJECT} debug "${CMAKE_CURRENT_SOURCE_DIR}/external/HDILib/HDI/Win/Debug/hdidimensionalityreduction.lib")

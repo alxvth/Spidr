@@ -1,6 +1,6 @@
 #include "TsneComputation.h"
 
-#include "AnalysisParameters.h"
+#include "SpidrAnalysisParameters.h"
 #include "EvalUtils.h"
 
 #include <algorithm>            // std::min, max
@@ -44,8 +44,8 @@ void TsneComputation::computeGradientDescent()
     embed();
 }
 
-void TsneComputation::setup(const std::vector<int> knn_indices, const std::vector<float> knn_distances, const Parameters params) {
-    // Parameters
+void TsneComputation::setup(const std::vector<int> knn_indices, const std::vector<float> knn_distances, const SpidrParameters params) {
+    // SpidrParameters
     _iterations = params._numIterations;
     _perplexity = params._perplexity;
     _exaggerationIter = params._exaggeration;

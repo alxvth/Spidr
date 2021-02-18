@@ -4,7 +4,7 @@
 #include <vector>
 #include <string>   
 
-class Parameters;
+class SpidrParameters;
 enum class knn_library : size_t;
 enum class distance_metric : size_t;
 enum class feature_type : unsigned int;
@@ -39,7 +39,7 @@ public:
      * \param dataFeatures
      * \param backgroundIDsGlobal
      */
-    void setup(const std::vector<float> dataFeatures, const std::vector<unsigned int> backgroundIDsGlobal, Parameters& params);
+    void setup(const std::vector<float> dataFeatures, const std::vector<unsigned int> backgroundIDsGlobal, SpidrParameters& params);
 
     /*!
      * 

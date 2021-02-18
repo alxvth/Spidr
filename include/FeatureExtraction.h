@@ -4,7 +4,7 @@
 
 #include <vector>
 
-class Parameters;
+class SpidrParameters;
 enum class loc_Neigh_Weighting : unsigned int;
 enum class feature_type : unsigned int;
 
@@ -39,7 +39,7 @@ public:
      * \param attribute_data
      * \param params
      */
-    void setup(const std::vector<unsigned int>& pointIds, const std::vector<float>& attribute_data, const Parameters& params);
+    void setup(const std::vector<unsigned int>& pointIds, const std::vector<float>& attribute_data, const SpidrParameters& params);
 
     /*!
      * 

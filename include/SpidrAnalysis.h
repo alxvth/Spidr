@@ -3,7 +3,7 @@
 #include "TsneComputation.h"
 #include "DistanceCalculation.h"
 #include "FeatureExtraction.h"
-#include "AnalysisParameters.h"
+#include "SpidrAnalysisParameters.h"
 #include "FeatureUtils.h"
 #include "KNNUtils.h"
 
@@ -30,7 +30,14 @@ public:
      * \param backgroundIDsGlobal ID of points which are not used during the t-SNE embedding - but will inform the feature extraction and distance calculation
      */
     void setupData(const std::vector<float>& attribute_data, const std::vector<unsigned int>& pointIDsGlobal, \
-                   const size_t numDimensions, const ImgSize imgSize, const std::string embeddingName, std::vector<unsigned int>& backgroundIDsGlobal);
+		const size_t numDimensions, const ImgSize imgSize, const std::string embeddingName, std::vector<unsigned int>& backgroundIDsGlobal = std::vector<unsigned int>());
+
+	/*!
+	 *
+	 *
+	 */
+	void compute();
+
 
     // release openGL context of the t-SNE computation
     /*!
@@ -53,8 +60,8 @@ public:
      * \param perplexity
      * \param exaggeration
      */
-    void initializeAnalysisSettings(const unsigned int featType, const unsigned int kernelType, const size_t numLocNeighbors, const size_t numHistBins, \
-                                    const unsigned int aknnAlgType, const unsigned int aknnMetric, const float MVNweight, \
+    void initializeAnalysisSettings(const feature_type featType, const loc_Neigh_Weighting kernelType, const size_t numLocNeighbors, const size_t numHistBins, \
+                                    const knn_library aknnAlgType, const distance_metric aknnMetric, const float MVNweight, \
                                     const int numIterations, const int perplexity, const int exaggeration, const int expDecay);
 
     // Getter
@@ -70,16 +77,11 @@ public:
 
     const std::vector<float> &outputWithBackground();
 
-    const Parameters getParameters();
+    const SpidrParameters getParameters();
 
 
 private:
     
-    /*!
-     * 
-     * 
-     */
-    void spatialAnalysis();
 
     // Setter
 
@@ -87,13 +89,13 @@ private:
     *
     * \param feature_type_index, see enum class feature_type in FeatureUtils.h
     */
-    void setFeatureType(const int feature_type_index);
+    void setFeatureType(const feature_type feature_type_index);
 
     /*! Sets feature type as in enum class loc_Neigh_Weighting in FeatureUtils.h
     *
     * \param loc_Neigh_Weighting_index, see enum class loc_Neigh_Weighting in FeatureUtils.h
     */
-    void setKernelWeight(const int loc_Neigh_Weighting_index);
+    void setKernelWeight(const loc_Neigh_Weighting loc_Neigh_Weighting_index);
 
     /*! Sets the number of spatially local pixel neighbors in each direction. Sets _params._kernelWidth and _params._neighborhoodSize as well*/
     void setNumLocNeighbors(const size_t num);
@@ -105,13 +107,13 @@ private:
     *
     * \param knn_library_index, see enum class feature_type in KNNUtils.h
     */
-    void setKnnAlgorithm(const int knn_library_index);
+    void setKnnAlgorithm(const knn_library knn_library_index);
 
     /*! Sets knn algorithm type as in enum class distance_metric in KNNUtils.h
     *
     * \param distance_metric_index, see enum class distance_metric in KNNUtils.h
     */
-    void setDistanceMetric(const int distance_metric_index);
+    void setDistanceMetric(const distance_metric distance_metric_index);
 
     /*! Sets the perplexity and automatically determines the number of approximated kNN
     * nn = 3 * perplexity
@@ -146,7 +148,7 @@ private:
     std::vector<float> _attribute_data;         /*!<> */
     std::vector<unsigned int> _pointIDsGlobal;  /*!<> */
     std::vector<unsigned int> _backgroundIDsGlobal;  /*!< ID of points which are not used during the t-SNE embedding - but will inform the feature extraction and distance calculation > */
-    Parameters _params;                         /*!<> */
+    SpidrParameters _params;                         /*!<> */
     std::vector<float> _emd_with_backgound;
 };
 

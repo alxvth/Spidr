@@ -1,29 +1,51 @@
 cmake_minimum_required(VERSION 3.1.0)
 
-# Set C++11 language standard
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(PROJECT "SpidrExample")
+PROJECT(${PROJECT})
 
-project(SpidrExample CXX)
+find_package(OpenGL REQUIRED )
+find_package(OpenMP REQUIRED)
 
-find_package(OpenMP)
-if (APPLE)
-    find_package(OpenMP)
-    find_package(OpenGL REQUIRED)
+get_filename_component(SPIDR_DIR ${CMAKE_CURRENT_SOURCE_DIR} DIRECTORY)
+include_directories("${SPIDR_DIR}/include")
+include_directories("${SPIDR_DIR}/external/HDILib/HDI/include")
+include_directories("${SPIDR_DIR}/external/glfw/include/")
+
+add_executable(${PROJECT} ArtificialImage.cpp)
+
+# Set C++17 language standard
+set_property(TARGET ${PROJECT} PROPERTY CXX_STANDARD 17)
+
+# Prevent glfw including the OpenGL headers
+# On Windows and Linux these come from glad in the HDILib
+add_definitions(-DGLFW_INCLUDE_NONE)
+
+# link to precompiled SpidrLib 
+if(MSVC)
+    MESSAGE( STATUS "Linking Windows libraries...")
+    target_link_libraries(${PROJECT} debug "${SPIDR_DIR}/Build/Debug/Spidr.lib")
+    target_link_libraries(${PROJECT} optimized "${SPIDR_DIR}/Build/Release/Spidr.lib")
+
+    target_link_libraries(${PROJECT} debug "${SPIDR_DIR}/external/HDILib/HDI/Win/Debug/hdidimensionalityreduction.lib")
+    target_link_libraries(${PROJECT} debug "${SPIDR_DIR}/external/HDILib/HDI/Win/Debug/hdidata.lib")
+    target_link_libraries(${PROJECT} debug "${SPIDR_DIR}/external/HDILib/HDI/Win/Debug/hdiutils.lib")
+    target_link_libraries(${PROJECT} optimized "${SPIDR_DIR}/external/HDILib/HDI/Win/Release/hdidimensionalityreduction.lib")
+    target_link_libraries(${PROJECT} optimized "${SPIDR_DIR}/external/HDILib/HDI/Win/Release/hdidata.lib")
+    target_link_libraries(${PROJECT} optimized "${SPIDR_DIR}/external/HDILib/HDI/Win/Release/hdiutils.lib")
+
+    target_link_libraries(${PROJECT} debug "${SPIDR_DIR}/external/HDILib/Flann/Win/Debug/flann_cpp_s.lib")
+    target_link_libraries(${PROJECT} optimized "${SPIDR_DIR}/external/HDILib/Flann/Win/Release/flann_cpp_s.lib")
+
+    target_link_libraries(${PROJECT} debug "${SPIDR_DIR}/Build/external/glfw/src/Debug/glfw3.lib")
+    target_link_libraries(${PROJECT} optimized "${SPIDR_DIR}//Build/external/glfw/src/Release/glfw3.lib")	
+
 else()
-    find_package(OpenMP REQUIRED)
-endif()
+	message(ERROR, "Only windows tested")    
+endif(MSVC)
 
-add_executable(spidrExample ArtificialImage.cpp)
-if (WIN32)
-    target_link_libraries(example PRIVATE ${CONAN_LIBS} OpenMP::OpenMP_CXX ${CMAKE_DL_LIBS})
+if(OPENMP_FOUND)
+	message (STATUS "OpenMP found ${OpenMP_CXX_LIB_NAMES}")
+	target_link_libraries(${PROJECT} OpenMP::OpenMP_CXX)
 else()
-    # Force the lib order for linking
-    if (CMAKE_HOST_SYSTEM_NAME MATCHES "Linux")  
-        target_link_libraries(example PRIVATE lz4;hdidimensionalityreduction;hdidata;hdiutils OpenMP::OpenMP_CXX ${CMAKE_DL_LIBS})
-    elseif (OPENMP_FOUND)
-        target_link_libraries(example PRIVATE lz4;hdidimensionalityreduction;hdidata;hdiutils OpenMP::OpenMP_CXX ${CMAKE_DL_LIBS}  ${OPENGL_LIBRARIES})
-    else()
-        target_link_libraries(example PRIVATE lz4;hdidimensionalityreduction;hdidata;hdiutils ${CMAKE_DL_LIBS}  ${OPENGL_LIBRARIES})
-    endif()
+    message(WARNING, "OpenMP not found!")    
 endif()
