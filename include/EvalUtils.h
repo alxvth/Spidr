@@ -1,7 +1,6 @@
 #pragma once
 
 #include <vector>
-#include <fstream>
 #include <string>
 
 /*! Write vector contents to disk
@@ -12,8 +11,4 @@
  * \param writePath Target path
  */
 template<typename T>
-void writeVecToBinary(std::vector<T> vec, std::string writePath) {
-    std::ofstream fout(writePath, std::ofstream::out | std::ofstream::binary);
-    fout.write(reinterpret_cast<const char*>(vec.data()), vec.size() * sizeof(T));
-    fout.close();
-}
+void writeVecToBinary(std::vector<T> vec, std::string writePath);

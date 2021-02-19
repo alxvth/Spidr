@@ -4,9 +4,6 @@ set(PROJECT "Spidr")
 
 PROJECT(${PROJECT})
 
-set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
-set(CMAKE_INCLUDE_CURRENT_DIR ON)
-
 if(MSVC)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /DWIN32 /EHsc /MP")
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /NODEFAULTLIB:LIBCMT")
@@ -28,6 +25,8 @@ set(HEADERS
 	include/SpidrAnalysisParameters.h
     include/KNNUtils.h
 	include/FeatureUtils.h
+	include/EvalUtils.h
+    include/KNNDists.h
 )
 
 set(LIB
@@ -39,9 +38,8 @@ set(LIB
 
 set(UTILS
     src/KNNUtils.cpp
-    src/KNNDists.h
 	src/FeatureUtils.cpp
-	src/EvalUtils.h
+	src/EvalUtils.cpp
 )
 
 set(SOURCES ${HEADERS} ${LIB} ${UTILS})
@@ -56,7 +54,6 @@ add_library(${PROJECT} STATIC ${SOURCES})
 set_property(TARGET ${PROJECT} PROPERTY CXX_STANDARD 17)
 
 include_directories(include)
-include_directories(src)
 include_directories("external/hnswlib/")
 include_directories("external/HDILib/HDI/include")
 include_directories("external/spdlog/include/")

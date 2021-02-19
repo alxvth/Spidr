@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-@author: alexander vieth
+@author: alexander vieth, 2021
 """
 
 import numpy as np
@@ -85,10 +85,6 @@ embedding = embedding.reshape((numPoints, 2))
 # Image dimensions
 numX = 32
 numY = 32
-
-# Misc settings
-# embedding right, image left (0) - or reverse (1)
-plotOrder = 1
 
 # Map embedding positions to color
 embeddingColors = assign_embedding_colors(embedding, colorMapPath, rot90=3)
