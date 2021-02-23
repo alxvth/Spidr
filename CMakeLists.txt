@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.1.0)
 
-set(PROJECT "Spidr")
+set(PROJECT "SpidrLib")
 
 PROJECT(${PROJECT})
 
@@ -45,35 +45,33 @@ source_group(Utils FILES ${UTILS})
 add_library(${PROJECT} STATIC ${SOURCES})
 
 # Request C++17
-set_property(TARGET ${PROJECT} PROPERTY CXX_STANDARD 17)
+target_compile_features(${PROJECT} PRIVATE cxx_std_17)
 
-include_directories(include)
-include_directories("external/hnswlib/")
-include_directories("external/HDILib/HDI/include")
-include_directories("external/spdlog/include/")
-include_directories("external/glfw/include/")
-include_directories(${Boost_INCLUDE_DIRS})
-include_directories(${OPENGL_INCLUDE_DIRS} )
+target_include_directories(${PROJECT} PUBLIC "include")
+target_include_directories(${PROJECT} PUBLIC "external/HDILib/HDI/include")
+target_include_directories(${PROJECT} PUBLIC ${Boost_INCLUDE_DIRS})
 
 if(MSVC)
 	ADD_DEFINITIONS(/arch:AVX)
 	add_definitions(-DUSE_SSE)
 	add_definitions(-DUSE_AVX)
-    include_directories ("external/HDILib/Flann/Win/include")
+    target_include_directories(${PROJECT} PUBLIC "external/HDILib/Flann/Win/include")
 endif(MSVC)
 
 if(OPENMP_FOUND)
 	message (STATUS "OpenMP found ${OpenMP_CXX_LIB_NAMES}")
-	target_link_libraries(${PROJECT} OpenMP::OpenMP_CXX)
+	target_link_libraries(${PROJECT} PUBLIC OpenMP::OpenMP_CXX)
 else()
     message(WARNING, "OpenMP not found!")    
 endif()
 
-target_link_libraries(${PROJECT} ${Boost_LIBRARIES})
-target_link_libraries(${PROJECT} Eigen3::Eigen)
+target_link_libraries(${PROJECT} PUBLIC ${Boost_LIBRARIES})
+target_link_libraries(${PROJECT} PUBLIC Eigen3::Eigen)
 
-set( GLFW_BUILD_DOCS OFF CACHE BOOL  "GLFW lib only" )
-set( GLFW_INSTALL OFF CACHE BOOL  "GLFW lib only" )
+set(GLFW_BUILD_DOCS OFF CACHE BOOL "GLFW lib only" )
+set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "disable GLFX examples")
+set(GLFW_BUILD_TESTS OFF CACHE BOOL "disable GLFX tests") 
+set(GLFW_INSTALL OFF CACHE BOOL "GLFW lib only" )
 add_subdirectory("external/glfw")
 
 if( MSVC )
@@ -84,20 +82,26 @@ endif()
 # On Windows and Linux these come from glad in the HDILib
 add_definitions(-DGLFW_INCLUDE_NONE)
 
-target_link_libraries(${PROJECT} ${OPENGL_LIBRARIES} glfw )
+target_include_directories(${PROJECT} PUBLIC "${CMAKE_SOURCE_DIR}/external/glfw/include")
+target_link_libraries(${PROJECT} PUBLIC glfw)
+
+target_include_directories(${PROJECT} PUBLIC "external/spdlog/include")
+target_include_directories(${PROJECT} PUBLIC "external/hnswlib")
 
 # link to precompiled HDILib 
 if(MSVC)
     MESSAGE( STATUS "Linking Windows libraries...")
-    target_link_libraries(${PROJECT} debug "${CMAKE_CURRENT_SOURCE_DIR}/external/HDILib/HDI/Win/Debug/hdidimensionalityreduction.lib")
-    target_link_libraries(${PROJECT} debug "${CMAKE_CURRENT_SOURCE_DIR}/external/HDILib/HDI/Win/Debug/hdidata.lib")
-    target_link_libraries(${PROJECT} debug "${CMAKE_CURRENT_SOURCE_DIR}/external/HDILib/HDI/Win/Debug/hdiutils.lib")
-    target_link_libraries(${PROJECT} optimized "${CMAKE_CURRENT_SOURCE_DIR}/external/HDILib/HDI/Win/Release/hdidimensionalityreduction.lib")
-    target_link_libraries(${PROJECT} optimized "${CMAKE_CURRENT_SOURCE_DIR}/external/HDILib/HDI/Win/Release/hdidata.lib")
-    target_link_libraries(${PROJECT} optimized "${CMAKE_CURRENT_SOURCE_DIR}/external/HDILib/HDI/Win/Release/hdiutils.lib")
+	
+    target_link_libraries(${PROJECT} PUBLIC debug "${CMAKE_CURRENT_SOURCE_DIR}/external/HDILib/HDI/Win/Debug/hdidimensionalityreduction.lib")
+    target_link_libraries(${PROJECT} PUBLIC debug "${CMAKE_CURRENT_SOURCE_DIR}/external/HDILib/HDI/Win/Debug/hdidata.lib")
+    target_link_libraries(${PROJECT} PUBLIC debug "${CMAKE_CURRENT_SOURCE_DIR}/external/HDILib/HDI/Win/Debug/hdiutils.lib")
+    target_link_libraries(${PROJECT} PUBLIC optimized "${CMAKE_CURRENT_SOURCE_DIR}/external/HDILib/HDI/Win/Release/hdidimensionalityreduction.lib")
+    target_link_libraries(${PROJECT} PUBLIC optimized "${CMAKE_CURRENT_SOURCE_DIR}/external/HDILib/HDI/Win/Release/hdidata.lib")
+    target_link_libraries(${PROJECT} PUBLIC optimized "${CMAKE_CURRENT_SOURCE_DIR}/external/HDILib/HDI/Win/Release/hdiutils.lib")
 
-    target_link_libraries(${PROJECT} debug "${CMAKE_CURRENT_SOURCE_DIR}/external/HDILib/Flann/Win/Debug/flann_cpp_s.lib")
-    target_link_libraries(${PROJECT} optimized "${CMAKE_CURRENT_SOURCE_DIR}/external/HDILib/Flann/Win/Release/flann_cpp_s.lib")
+    target_link_libraries(${PROJECT} PUBLIC debug "${CMAKE_CURRENT_SOURCE_DIR}/external/HDILib/Flann/Win/Debug/flann_cpp_s.lib")
+    target_link_libraries(${PROJECT} PUBLIC optimized "${CMAKE_CURRENT_SOURCE_DIR}/external/HDILib/Flann/Win/Release/flann_cpp_s.lib")
+	
 else()
 	message(ERROR, "Only windows tested")    
 endif(MSVC)
