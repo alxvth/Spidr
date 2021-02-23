@@ -4,7 +4,6 @@ set(PROJECT "SpidrLib")
 
 PROJECT(${PROJECT})
 
-
 # use header-only libs, thus no components specified
 find_package(Boost REQUIRED) 
 find_package(Eigen3 3.3 REQUIRED)
@@ -17,10 +16,10 @@ set(HEADERS
 	include/SpidrAnalysis.h
 	include/TsneComputation.h
 	include/SpidrAnalysisParameters.h
-    include/KNNUtils.h
+	include/KNNUtils.h
 	include/FeatureUtils.h
 	include/EvalUtils.h
-    include/KNNDists.h
+	include/KNNDists.h
 )
 
 set(LIB
@@ -31,7 +30,7 @@ set(LIB
 )
 
 set(UTILS
-    src/KNNUtils.cpp
+	src/KNNUtils.cpp
 	src/FeatureUtils.cpp
 	src/EvalUtils.cpp
 )
@@ -65,9 +64,6 @@ else()
     message(WARNING, "OpenMP not found!")    
 endif()
 
-target_link_libraries(${PROJECT} PUBLIC ${Boost_LIBRARIES})
-target_link_libraries(${PROJECT} PUBLIC Eigen3::Eigen)
-
 set(GLFW_BUILD_DOCS OFF CACHE BOOL "GLFW lib only" )
 set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "disable GLFX examples")
 set(GLFW_BUILD_TESTS OFF CACHE BOOL "disable GLFX tests") 
@@ -87,6 +83,9 @@ target_link_libraries(${PROJECT} PUBLIC glfw)
 
 target_include_directories(${PROJECT} PUBLIC "external/spdlog/include")
 target_include_directories(${PROJECT} PUBLIC "external/hnswlib")
+
+target_link_libraries(${PROJECT} PUBLIC ${Boost_LIBRARIES})
+target_link_libraries(${PROJECT} PUBLIC Eigen3::Eigen)
 
 # link to precompiled HDILib 
 if(MSVC)

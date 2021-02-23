@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.1.0)
 set(PROJECT "SpidrExample")
 PROJECT(${PROJECT})
 
-add_executable(${PROJECT} ArtificialImage.cpp)
+add_executable(${PROJECT} SpidrExample.cpp)
 
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../ ${CMAKE_CURRENT_BINARY_DIR}/SpidrLib)
 target_link_libraries(${PROJECT} PUBLIC SpidrLib)
