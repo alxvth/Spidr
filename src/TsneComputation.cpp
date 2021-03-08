@@ -16,8 +16,6 @@
 #define GLFW_FALSE 0
 #endif
 
-// Change this to glad and glfw as in https://github.com/biovault/nptsne
-
 TsneComputation::TsneComputation() :
 _iterations(1000),
 _numTrees(4),
