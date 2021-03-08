@@ -1,16 +1,16 @@
-cmake_minimum_required(VERSION 3.1.0)
+cmake_minimum_required(VERSION 3.17)
 
-set(PROJECT "SpidrExample")
-PROJECT(${PROJECT})
+set(SPIDREXAMPLE "SpidrExample")
+PROJECT(${SPIDREXAMPLE})
 
-add_executable(${PROJECT} SpidrExample.cpp)
+add_executable(${SPIDREXAMPLE} SpidrExample.cpp)
 
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../ ${CMAKE_CURRENT_BINARY_DIR}/SpidrLib)
-target_link_libraries(${PROJECT} PUBLIC SpidrLib)
+target_link_libraries(${SPIDREXAMPLE} PUBLIC SpidrLib)
 
 # On Windows and Linux these come from glad in the HDILib which is linked against in the SpidrLib
 # Prevent glfw including the OpenGL headers. It's important to define this AFTER linking against SpidrLib
 add_definitions(-DGLFW_INCLUDE_NONE)
 
 # Set C++17 language standard
-target_compile_features(${PROJECT} PUBLIC cxx_std_17)
+target_compile_features(${SPIDREXAMPLE} PUBLIC cxx_std_17)
