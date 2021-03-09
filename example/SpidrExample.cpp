@@ -11,13 +11,16 @@ std::vector<float> readData(const std::string fileName);
 void writeData(const std::vector<float> data, const std::string fileName);
 
 int main() {
-	// Set data info
-	std::filesystem::path projectDir = std::filesystem::current_path().parent_path();
+	// set data info
+	const std::filesystem::path projectDir = std::filesystem::current_path().parent_path();
 	const std::string fileName = "CheckeredBoxes_2Ch_32.bin";
 	const std::string emebddingName = "CheckeredBoxes_2Ch_32_sp-tSNE_Chamfer.bin";
 
+	const std::string loadPath = projectDir.string() + "/data/" + fileName;
+	const std::string savePath = projectDir.string() + "/data/" + emebddingName;
+
 	// load data
-	const std::vector<float> data = readData(projectDir.string() + "/data/" + fileName);
+	const std::vector<float> data = readData(loadPath);
 
 	// image data
 	const size_t numPoints = 32 * 32;
@@ -26,7 +29,7 @@ int main() {
 	std::vector<unsigned int> pointIDsGlobal(numPoints);
 	std::iota(pointIDsGlobal.begin(), pointIDsGlobal.end(), 0);
 
-	// Spidr settings
+	// spidr settings
 	SpidrAnalysis spidr;
 	const feature_type featureType = feature_type::PCLOUD;
 	const knn_library knnLibrary = knn_library::KNN_HNSW;
@@ -39,14 +42,14 @@ int main() {
 	const int exaggeration = 250;
 	const int expDecay = 70;
 
-	// Compute spatially informed embedding
+	// compute spatially informed embedding
 	spidr.setupData(data, pointIDsGlobal, numDims, imgSize, emebddingName);
 	spidr.initializeAnalysisSettings(featureType, loc_Neigh_Weighting::WEIGHT_UNIF, spatialNeighborsInEachDirection, 0, knnLibrary, distanceMetric, 0, numIterations, perplexity, exaggeration, expDecay);
 	spidr.compute();
-	std::vector<float> embedding = spidr.output();
+	const std::vector<float> embedding = spidr.output();
 
-	// Save embedding
-	writeData(embedding, projectDir.string() + "/data/" + emebddingName);
+	// save embedding
+	writeData(embedding, savePath);
 
     return 0;
 }
