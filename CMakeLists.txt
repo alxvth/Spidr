@@ -4,11 +4,14 @@ set(SPIDRLIB "SpidrLib")
 
 PROJECT(${SPIDRLIB})
 
-# use header-only libs, thus no components specified
-find_package(Boost REQUIRED) 
+find_package(Boost REQUIRED) # use header-only libs, thus no components specified
 find_package(Eigen3 3.3 REQUIRED)
-find_package(OpenGL REQUIRED )
+find_package(OpenGL REQUIRED)
 find_package(OpenMP REQUIRED)
+
+if(Eigen3_FOUND)
+	message("Eigen3 found")
+endif()
 
 set(HEADERS 
 	include/FeatureExtraction.h
@@ -48,7 +51,6 @@ target_compile_features(${SPIDRLIB} PRIVATE cxx_std_17)
 
 target_include_directories(${SPIDRLIB} PUBLIC "include")
 target_include_directories(${SPIDRLIB} PUBLIC "external/HDILib/HDI/include")
-target_include_directories(${SPIDRLIB} PUBLIC ${Boost_INCLUDE_DIRS})
 
 set(USE_AVX OFF CACHE BOOL "Don't use AVX by default" )
 if(${USE_AVX})
@@ -87,8 +89,8 @@ target_link_libraries(${SPIDRLIB} PUBLIC glfw)
 
 target_include_directories(${SPIDRLIB} PUBLIC "external/spdlog/include")
 target_include_directories(${SPIDRLIB} PUBLIC "external/hnswlib")
+target_include_directories(${SPIDRLIB} PUBLIC ${Boost_INCLUDE_DIRS})
 
-target_link_libraries(${SPIDRLIB} PUBLIC ${Boost_LIBRARIES})
 target_link_libraries(${SPIDRLIB} PUBLIC Eigen3::Eigen)
 
 if(MSVC)
