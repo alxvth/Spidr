@@ -4,11 +4,14 @@ set(SPIDRLIB "SpidrLib")
 
 PROJECT(${SPIDRLIB})
 
-# use header-only libs, thus no components specified
-find_package(Boost REQUIRED) 
+find_package(Boost REQUIRED) # use header-only libs, thus no components specified
 find_package(Eigen3 3.3 REQUIRED)
-find_package(OpenGL REQUIRED )
+find_package(OpenGL REQUIRED)
 find_package(OpenMP REQUIRED)
+
+if(Eigen3_FOUND)
+	message("Eigen3 found")
+endif()
 
 set(HEADERS 
 	include/FeatureExtraction.h
@@ -48,14 +51,17 @@ target_compile_features(${SPIDRLIB} PRIVATE cxx_std_17)
 
 target_include_directories(${SPIDRLIB} PUBLIC "include")
 target_include_directories(${SPIDRLIB} PUBLIC "external/HDILib/HDI/include")
-target_include_directories(${SPIDRLIB} PUBLIC ${Boost_INCLUDE_DIRS})
 
-if(MSVC)
-	ADD_DEFINITIONS(/arch:AVX)
-	add_definitions(-DUSE_SSE)
+set(USE_AVX OFF CACHE BOOL "Don't use AVX by default" )
+if(${USE_AVX})
 	add_definitions(-DUSE_AVX)
-    target_include_directories(${SPIDRLIB} PUBLIC "external/HDILib/Flann/Win/include")
-endif(MSVC)
+	if( MSVC )
+		ADD_DEFINITIONS(/arch:AVX)
+	endif()
+	message ("USE AVX")
+endif()
+
+add_definitions(-DUSE_SSE)
 
 if(OPENMP_FOUND)
 	message (STATUS "OpenMP found ${OpenMP_CXX_LIB_NAMES}")
@@ -83,14 +89,14 @@ target_link_libraries(${SPIDRLIB} PUBLIC glfw)
 
 target_include_directories(${SPIDRLIB} PUBLIC "external/spdlog/include")
 target_include_directories(${SPIDRLIB} PUBLIC "external/hnswlib")
+target_include_directories(${SPIDRLIB} PUBLIC ${Boost_INCLUDE_DIRS})
 
-target_link_libraries(${SPIDRLIB} PUBLIC ${Boost_LIBRARIES})
 target_link_libraries(${SPIDRLIB} PUBLIC Eigen3::Eigen)
 
-# link to precompiled HDILib 
 if(MSVC)
     MESSAGE( STATUS "Linking Windows libraries...")
-	
+
+	# link to precompiled HDILib 
     target_link_libraries(${SPIDRLIB} PUBLIC debug "${CMAKE_CURRENT_SOURCE_DIR}/external/HDILib/HDI/Win/Debug/hdidimensionalityreduction.lib")
     target_link_libraries(${SPIDRLIB} PUBLIC debug "${CMAKE_CURRENT_SOURCE_DIR}/external/HDILib/HDI/Win/Debug/hdidata.lib")
     target_link_libraries(${SPIDRLIB} PUBLIC debug "${CMAKE_CURRENT_SOURCE_DIR}/external/HDILib/HDI/Win/Debug/hdiutils.lib")
@@ -100,7 +106,10 @@ if(MSVC)
 
     target_link_libraries(${SPIDRLIB} PUBLIC debug "${CMAKE_CURRENT_SOURCE_DIR}/external/HDILib/Flann/Win/Debug/flann_cpp_s.lib")
     target_link_libraries(${SPIDRLIB} PUBLIC optimized "${CMAKE_CURRENT_SOURCE_DIR}/external/HDILib/Flann/Win/Release/flann_cpp_s.lib")
-	
+
+	# link to precompiled FLANN 
+    target_include_directories(${SPIDRLIB} PUBLIC "external/HDILib/Flann/Win/include")
+
 else()
 	message(ERROR, "Only windows tested")    
 endif(MSVC)

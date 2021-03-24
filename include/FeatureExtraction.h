@@ -42,18 +42,11 @@ public:
     void setup(const std::vector<unsigned int>& pointIds, const std::vector<float>& attribute_data, const SpidrParameters& params);
 
     /*!
-     * 
-     * 
-     */
+	* Calculates features, basically calls initExtraction and extractFeatures
+	*/
     void compute();
 
 private:
-
-    /**
-    * Calculates histgram features
-    * basically calls initExtraction and extractFeatures
-    */
-    void computeHistogramFeatures();
 
     /*! Inits some summary values of the data depending on the feature type and resizes the output
      * The summary values are min, max, mean and var per dimension. Not all

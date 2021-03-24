@@ -34,7 +34,23 @@ FeatureExtraction::FeatureExtraction() :
 
 void FeatureExtraction::compute() {
 	spdlog::info("Feature extraction: Started");
-    computeHistogramFeatures();
+
+	// init, i.e. identify min and max per dimension for histogramming
+	initExtraction();
+
+	// all _outFeatures have to be -1 to, so we can easily check later if the were all assigned
+	assert(std::all_of(_outFeatures.begin(), _outFeatures.end(), [](float i) {return i == -1.0f; }));
+	auto start = std::chrono::steady_clock::now();
+
+	// convolution over all points to create histograms
+	extractFeatures();
+
+	auto end = std::chrono::steady_clock::now();
+	spdlog::info("Feature extraction: Extraction duration (sec): {}", ((float)std::chrono::duration_cast<std::chrono::milliseconds> (end - start).count()) / 1000);
+
+	// if there is a -1 in the _outFeatures, this value was not set at all
+	assert(std::none_of(_outFeatures.begin(), _outFeatures.end(), [](float i) {return i == -1.0f; }));
+
 	spdlog::info("Feature extraction: Finished");
 }
 
@@ -98,24 +114,6 @@ void FeatureExtraction::setup(const std::vector<unsigned int>& pointIds, const s
 
 	spdlog::info("Feature extraction: Num neighbors (in each direction): {0} (total neighbors: {1}) Neighbor weighting: {2}", _locNeighbors , _neighborhoodSize, static_cast<unsigned int> (_neighborhoodWeighting));
 
-}
-
-void FeatureExtraction::computeHistogramFeatures() {   // TODO: RENAME - not only histogram features anymore
-    // init, i.e. identify min and max per dimension for histogramming
-    initExtraction();
-
-    // all _outFeatures have to be -1 to, so we can easily check later if the were all assigned
-    assert(std::all_of(_outFeatures.begin(), _outFeatures.end(), [](float i) {return i == -1.0f; }));
-    auto start = std::chrono::steady_clock::now();
-
-    // convolution over all points to create histograms
-    extractFeatures();
-
-    auto end = std::chrono::steady_clock::now();
-    spdlog::info("Feature extraction: Extraction duration (sec): {}", ((float)std::chrono::duration_cast<std::chrono::milliseconds> (end - start).count()) / 1000);
-
-    // if there is a -1 in the _outFeatures, this value was not set at all
-    assert(std::none_of(_outFeatures.begin(), _outFeatures.end(), [](float i) {return i == -1.0f; }));
 }
 
 void FeatureExtraction::initExtraction() {
