@@ -75,7 +75,7 @@ std::tuple<std::vector<int>, std::vector<float>> ComputeHNSWkNN(const std::vecto
 
 	spdlog::info("Distance calculation: Build akNN Index");
 
-    hnswlib::HierarchicalNSW<float> appr_alg(space, numPoints);   // use default HNSW values for M, ef_construction random_seed
+    hnswlib::HierarchicalNSW<float> appr_alg(space, numPoints, 16, 200, 0);   // use default HNSW values for M, ef_construction random_seed
 
     // add data points: each data point holds _numDims*_numHistBins values
     appr_alg.addPoint((void*)dataFeatures.data(), (std::size_t) 0);
