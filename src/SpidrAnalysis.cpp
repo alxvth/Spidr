@@ -1,6 +1,7 @@
 #include "SpidrAnalysis.h"
 
 #include <cmath>
+#include <algorithm>
 #include "spdlog/spdlog-inl.h"
 
 
@@ -11,6 +12,7 @@ void SpidrAnalysis::setupData(const std::vector<float>& attribute_data, const st
     _attribute_data = attribute_data;
     _pointIDsGlobal = pointIDsGlobal;
     _backgroundIDsGlobal = backgroundIDsGlobal;
+    std::sort(_backgroundIDsGlobal.begin(), _backgroundIDsGlobal.end());
 
     // Set parameters
     _params._numPoints = _pointIDsGlobal.size();
@@ -20,6 +22,9 @@ void SpidrAnalysis::setupData(const std::vector<float>& attribute_data, const st
     _params._dataVecBegin = _attribute_data.data();          // used in point cloud distance
 
 	spdlog::info("SpidrAnalysis: Setup data with number of points: {0}, num dims: {1}, image size (width, height): {2}", _params._numPoints, _params._numDims, _params._imgSize.width, _params._imgSize.height);
+    if(!_backgroundIDsGlobal.empty())
+        spdlog::info("SpidrAnalysis: Excluding {} background points and respective features", _backgroundIDsGlobal.size());
+
 }
 
 void SpidrAnalysis::initializeAnalysisSettings(const feature_type featType, const loc_Neigh_Weighting kernelWeightType, const size_t numLocNeighbors, const size_t numHistBins,\
@@ -52,7 +57,7 @@ void SpidrAnalysis::initializeAnalysisSettings(const feature_type featType, cons
 void SpidrAnalysis::compute() {
 
     // Extract features
-    _featExtraction.setup(_pointIDsGlobal, _attribute_data, _params);
+    _featExtraction.setup(_pointIDsGlobal, _attribute_data, _params, &_backgroundIDsGlobal);
     _featExtraction.compute();
     const std::vector<float> dataFeats = _featExtraction.output();
 
