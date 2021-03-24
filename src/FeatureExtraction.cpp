@@ -9,7 +9,7 @@
 #include <boost/histogram.hpp>
 
 #include <iterator>     // std::advance
-#include <algorithm>    // std::fill, std::find, std::swap_ranges, std::copy
+#include <algorithm>    // std::fill, std::find, std::swap_ranges, std::copy, std::set_difference
 #include <vector>       // std::vector, std::begin, std::end
 #include <numeric>      // std::iota
 #include <cmath>        // std::pow
@@ -20,7 +20,8 @@
 FeatureExtraction::FeatureExtraction() :
     _neighborhoodSize(1),
     _numHistBins(5),
-    _stopFeatureComputation(false)
+    _stopFeatureComputation(false),
+    _backgroundIDsGlobal(nullptr)
 {
     // square neighborhood
     _locNeighbors = ((_neighborhoodSize * 2) + 1) * ((_neighborhoodSize * 2) + 1);
@@ -49,12 +50,13 @@ void FeatureExtraction::compute() {
 	spdlog::info("Feature extraction: Extraction duration (sec): {}", ((float)std::chrono::duration_cast<std::chrono::milliseconds> (end - start).count()) / 1000);
 
 	// if there is a -1 in the _outFeatures, this value was not set at all
-	assert(std::none_of(_outFeatures.begin(), _outFeatures.end(), [](float i) {return i == -1.0f; }));
+    // except if there was background defined, then just go ahead
+	assert(!(_backgroundIDsGlobal->empty() != std::none_of(_outFeatures.begin(), _outFeatures.end(), [](float i) {return i == -1.0f; })));
 
 	spdlog::info("Feature extraction: Finished");
 }
 
-void FeatureExtraction::setup(const std::vector<unsigned int>& pointIds, const std::vector<float>& attribute_data, const SpidrParameters& params) {
+void FeatureExtraction::setup(const std::vector<unsigned int>& pointIds, const std::vector<float>& attribute_data, const SpidrParameters& params, std::vector<unsigned int>* backgroundIDsGlobal) {
 	spdlog::info("Feature extraction: Setup"); 
 	_featType = params._featureType;
     _numFeatureValsPerPoint = params._numFeatureValsPerPoint; 
@@ -76,6 +78,7 @@ void FeatureExtraction::setup(const std::vector<unsigned int>& pointIds, const s
     _numPoints = _pointIds.size();
     _numDims = params._numDims;
     _attribute_data = attribute_data;
+    _backgroundIDsGlobal = backgroundIDsGlobal;
 
     assert(_attribute_data.size() == _numPoints * _numDims);
 
@@ -140,21 +143,52 @@ void FeatureExtraction::initExtraction() {
 void FeatureExtraction::extractFeatures() {
 	spdlog::info("Feature extraction: Extract features");
 
-    // convolve over all selected data points
+    // skip if background is given, 
+    if (!_backgroundIDsGlobal->empty()) {
+
+        std::vector<unsigned int> all_IDs(_numPoints);
+        std::vector<unsigned int> foreground_IDs;
+        std::iota(all_IDs.begin(), all_IDs.end(), 0);
+        std::set_difference(all_IDs.begin(), all_IDs.end(), _backgroundIDsGlobal->begin(), _backgroundIDsGlobal->end(), std::inserter(foreground_IDs, foreground_IDs.begin()));
+
+        // visual studio onlu supports open mp 2.0
 #ifdef NDEBUG
 #pragma omp parallel for
 #endif
-    for (int pointID = 0; pointID < (int)_numPoints; pointID++) {
-        // get neighborhood ids of the current point
-        std::vector<int> neighborIDs = neighborhoodIndices(_pointIds[pointID], _locNeighbors, _imgSize, _pointIds);
-        assert(neighborIDs.size() == _neighborhoodSize);
+        for (int i = 0; i < foreground_IDs.size(); i++) {
+            //int pointID = foreground_IDs[i];
 
-        // get neighborhood values of the current point
-        std::vector<float> neighborValues = getNeighborhoodValues(neighborIDs, _attribute_data, _neighborhoodSize, _numDims);
-        assert(std::find(neighborValues.begin(), neighborValues.end(), -1) == neighborValues.end());
+            // get neighborhood ids of the current point
+            std::vector<int> neighborIDs = neighborhoodIndices(_pointIds[foreground_IDs[i]], _locNeighbors, _imgSize, _pointIds);
+            assert(neighborIDs.size() == _neighborhoodSize);
 
-        // calculate feature(s) for neighborhood
-        (this->*featFunct)(_pointIds[pointID], neighborValues, neighborIDs);  // function pointer defined above
+            // get neighborhood values of the current point
+            std::vector<float> neighborValues = getNeighborhoodValues(neighborIDs, _attribute_data, _neighborhoodSize, _numDims);
+            assert(std::find(neighborValues.begin(), neighborValues.end(), -1) == neighborValues.end());
+
+            // calculate feature(s) for neighborhood
+            (this->*featFunct)(_pointIds[foreground_IDs[i]], neighborValues, neighborIDs);  // function pointer defined above
+
+        }
+    }
+    else
+    {
+        // convolve over all selected data points
+#ifdef NDEBUG
+#pragma omp parallel for
+#endif
+        for (int pointID = 0; pointID < (int)_numPoints; pointID++) {
+            // get neighborhood ids of the current point
+            std::vector<int> neighborIDs = neighborhoodIndices(_pointIds[pointID], _locNeighbors, _imgSize, _pointIds);
+            assert(neighborIDs.size() == _neighborhoodSize);
+
+            // get neighborhood values of the current point
+            std::vector<float> neighborValues = getNeighborhoodValues(neighborIDs, _attribute_data, _neighborhoodSize, _numDims);
+            assert(std::find(neighborValues.begin(), neighborValues.end(), -1) == neighborValues.end());
+
+            // calculate feature(s) for neighborhood
+            (this->*featFunct)(_pointIds[pointID], neighborValues, neighborIDs);  // function pointer defined above
+        }
     }
 }
 

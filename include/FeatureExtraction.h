@@ -39,7 +39,7 @@ public:
      * \param attribute_data
      * \param params
      */
-    void setup(const std::vector<unsigned int>& pointIds, const std::vector<float>& attribute_data, const SpidrParameters& params);
+    void setup(const std::vector<unsigned int>& pointIds, const std::vector<float>& attribute_data, const SpidrParameters& params, std::vector<unsigned int>* backgroundIDsGlobal);
 
     /*!
 	* Calculates features, basically calls initExtraction and extractFeatures
@@ -140,12 +140,13 @@ private:
     size_t       _numPoints;                        /*!<> */
     std::vector<unsigned int> _pointIds;            /*!<> */
     std::vector<float> _attribute_data;             /*!<> */
+    std::vector<unsigned int>* _backgroundIDsGlobal;  /*!<> */
     std::vector<float> _minMaxVals;                 /*!< Extrema for each dimension/channel, i.e. [min_Ch0, max_Ch0, min_Ch1, max_Ch1, ...] */
     std::vector<float> _meanVals;                   /*!< Avg for each dimension/channel, i.e. [mean_Ch0, meam_Ch1, ...] */
     std::vector<float> _varVals;                    /*!< Variance estimate for each dimension/channel, i.e. [mean_Ch0, meam_Ch1, ...] */
 
     // Output
-    /*! Histogram features for each item.
+    /*! Features for each item.
     * In case of 1D histograms for each data point there are _inputData.getNumDimensions() histograms 
     * with _numHistBins values, i.e. size _numPoints * _numDims * _numHistBins.
     * Else, the features are the local Indicator of Spatial Association features for each item.

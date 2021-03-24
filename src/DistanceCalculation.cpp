@@ -62,8 +62,6 @@ void DistanceCalculation::setup(const std::vector<float> dataFeatures, const std
 
         params._numPoints = _numPoints;
 
-		spdlog::info("Distance calculation: Excluding {} background points and respective features", numBackgroundPoints);
-
     }
 
     // Output
@@ -77,7 +75,8 @@ void DistanceCalculation::setup(const std::vector<float> dataFeatures, const std
 	spdlog::info("Distance calculation: Feature values per point: {0}, Number of NN to calculate {1}. Metric: {2}", _numFeatureValsPerPoint, _nn, static_cast<size_t> (_knn_metric));
 
     // -1 would mark an unset feature
-    assert(std::none_of(_dataFeatures.begin(), _dataFeatures.end(), [](float i) {return i == -1.0f; }));
+    // except if there was background defined, then just go ahead
+    assert(!(backgroundIDsGlobal.empty() != std::none_of(_dataFeatures.begin(), _dataFeatures.end(), [](float i) {return i == -1.0f; })));
 }
 
 void DistanceCalculation::compute() {
