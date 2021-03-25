@@ -149,7 +149,6 @@ void FeatureExtraction::extractFeatures() {
 
     // skip if background is given, 
     if (!_backgroundIDsGlobal->empty() && !_forceCalcBackgroundFeatures) {
-
         std::vector<unsigned int> all_IDs(_numPoints);
         std::vector<unsigned int> foreground_IDs;
         std::iota(all_IDs.begin(), all_IDs.end(), 0);

@@ -29,7 +29,7 @@ void SpidrAnalysis::setupData(const std::vector<float>& attribute_data, const st
 
 void SpidrAnalysis::initializeAnalysisSettings(const feature_type featType, const loc_Neigh_Weighting kernelWeightType, const size_t numLocNeighbors, const size_t numHistBins,\
                                                const knn_library aknnAlgType, const distance_metric aknnMetric, const float MVNweight, \
-                                               const int numIterations, const int perplexity, const int exaggeration, const int expDecay) {
+                                               const int numIterations, const int perplexity, const int exaggeration, const int expDecay, bool forceCalcBackgroundFeatures) {
     // initialize Feature Extraction Settings
     setFeatureType(featType);
     setKernelWeight(kernelWeightType);
@@ -50,6 +50,9 @@ void SpidrAnalysis::initializeAnalysisSettings(const feature_type featType, cons
 
     // Derived parameters
     setNumFeatureValsPerPoint(); 
+
+    setForceCalcBackgroundFeatures(forceCalcBackgroundFeatures);
+
 	spdlog::info("SpidrAnalysis: Initialized all settings");
 }
 
@@ -130,6 +133,10 @@ void SpidrAnalysis::setNumFeatureValsPerPoint() {
 
 void SpidrAnalysis::setMVNWeight(const float weight) {
     _params._MVNweight = weight;
+}
+
+void SpidrAnalysis::setForceCalcBackgroundFeatures(const bool CalcBackgroundFeatures) {
+    _params._forceCalcBackgroundFeatures = CalcBackgroundFeatures;
 }
 
 const size_t SpidrAnalysis::getNumEmbPoints() {
