@@ -76,7 +76,7 @@ void DistanceCalculation::setup(const std::vector<float> dataFeatures, const std
 
     // -1 would mark an unset feature
     // except if there was background defined, then just go ahead
-    assert(!(backgroundIDsGlobal.empty() != std::none_of(_dataFeatures.begin(), _dataFeatures.end(), [](float i) {return i == -1.0f; })));
+    assert(!((backgroundIDsGlobal.empty() || params._forceCalcBackgroundFeatures) != std::none_of(_dataFeatures.begin(), _dataFeatures.end(), [](float i) {return i == FLT_MAX; })));
 }
 
 void DistanceCalculation::compute() {
