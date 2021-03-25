@@ -59,9 +59,11 @@ void SpidrAnalysis::compute() {
     // Extract features
     _featExtraction.setup(_pointIDsGlobal, _attribute_data, _params, &_backgroundIDsGlobal);
     _featExtraction.compute();
+    spdlog::info("SpidrAnalysis: Get computed feature values");
     const std::vector<float> dataFeats = _featExtraction.output();
 
     // Caclculate distances and kNN
+    spdlog::info("SpidrAnalysis: Set up distance calculation");
     _distCalc.setup(dataFeats, _backgroundIDsGlobal, _params);
     _distCalc.compute();
     const std::vector<int> knn_indices = _distCalc.get_knn_indices();
@@ -181,7 +183,10 @@ const std::vector<float>& SpidrAnalysis::outputWithBackground() {
 
         // add (0,0) to embedding at background positions
         size_t emdCounter = 0;
-        for (size_t globalIDCounter = 0; globalIDCounter < _pointIDsGlobal.size(); globalIDCounter++) {
+#ifdef NDEBUG
+#pragma omp parallel for
+#endif
+        for (int globalIDCounter = 0; globalIDCounter < _pointIDsGlobal.size(); globalIDCounter++) {
             // if background, insert (0,0)
             if (std::find(_backgroundIDsGlobal.begin(), _backgroundIDsGlobal.end(), globalIDCounter) != _backgroundIDsGlobal.end()) {
                 _emd_with_backgound[2 * globalIDCounter] = minx;
