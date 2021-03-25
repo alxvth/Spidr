@@ -19,7 +19,8 @@ DistanceCalculation::DistanceCalculation() :
 }
 
 
-void DistanceCalculation::setup(const std::vector<float> dataFeatures, const std::vector<unsigned int> backgroundIDsGlobal, SpidrParameters& params) {
+void DistanceCalculation::setup(const std::vector<float>& dataFeatures, const std::vector<unsigned int>& backgroundIDsGlobal, SpidrParameters& params) {
+    spdlog::info("Distance calculation: Setup");
     _featureType = params._featureType;
     _numFeatureValsPerPoint = params._numFeatureValsPerPoint;
 
@@ -45,6 +46,8 @@ void DistanceCalculation::setup(const std::vector<float> dataFeatures, const std
         _dataFeatures = dataFeatures;
     }
     else {
+        spdlog::info("Distance calculation: Do not consider background IDs");
+        // TODO: This is quite slow and probably easy to speed up
         // if background IDs are given, delete the respective knn indices and distances
         std::vector<float> dataFeaturesFilt;
         for (unsigned int i = 0; i < _numPoints; i++) {
