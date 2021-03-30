@@ -59,10 +59,12 @@ public:
      * \param numIterations
      * \param perplexity
      * \param exaggeration
+     * \param expDecay
+     * \param forceCalcBackgroundFeatures
      */
     void initializeAnalysisSettings(const feature_type featType, const loc_Neigh_Weighting kernelType, const size_t numLocNeighbors, const size_t numHistBins, \
                                     const knn_library aknnAlgType, const distance_metric aknnMetric, const float MVNweight, \
-                                    const int numIterations, const int perplexity, const int exaggeration, const int expDecay);
+                                    const int numIterations, const int perplexity, const int exaggeration, const int expDecay, bool forceCalcBackgroundFeatures=false);
 
     // Getter
     const size_t getNumEmbPoints();
@@ -137,6 +139,8 @@ private:
 
     /*! Sets the spatial-attribut distance weight, 0 for only attributes and 1 for only spatial */
     void setMVNWeight(const float weight);
+
+    void setForceCalcBackgroundFeatures(const bool forceCalcBackgroundFeatures);
 
 private:
     // worker classes

@@ -139,10 +139,10 @@ static const size_t NumFeatureValsPerPoint(const feature_type featureType, const
  */
 class SpidrParameters {
 public:
-	SpidrParameters() :
-		_nn(-1), _numPoints(-1), _numDims(-1), _imgSize(-1, -1), _embeddingName(""), _dataVecBegin(NULL),
-		_featureType(feature_type::TEXTURE_HIST_1D), _neighWeighting(loc_Neigh_Weighting::WEIGHT_UNIF), _numLocNeighbors(-1), _numHistBins(-1),
-		_kernelWidth(0), _neighborhoodSize(0), _numFeatureValsPerPoint(0),
+    SpidrParameters() :
+        _nn(-1), _numPoints(-1), _numDims(-1), _imgSize(-1, -1), _embeddingName(""), _dataVecBegin(NULL),
+        _featureType(feature_type::TEXTURE_HIST_1D), _neighWeighting(loc_Neigh_Weighting::WEIGHT_UNIF), _numLocNeighbors(-1), _numHistBins(-1),
+        _kernelWidth(0), _neighborhoodSize(0), _numFeatureValsPerPoint(0), _forceCalcBackgroundFeatures(false),
 		_aknn_algorithm(knn_library::KNN_HNSW), _aknn_metric(distance_metric::METRIC_QF), _MVNweight(0),
 		_perplexity(30), _perplexity_multiplier(3), _numIterations(1000), _exaggeration(250)
 	{}
@@ -150,10 +150,10 @@ public:
 	SpidrParameters(size_t numPoints, size_t numDims, ImgSize imgSize, std::string embeddingName, const float* dataVecBegin,
 		feature_type featureType, loc_Neigh_Weighting neighWeighting, size_t numLocNeighbors, size_t numHistBins,
 		knn_library aknn_algorithm, distance_metric aknn_metric, float MVNweight,
-		float perplexity, int numIterations, int exaggeration) :
+		float perplexity, int numIterations, int exaggeration, bool forceCalcBackgroundFeatures = false) :
 		_numPoints(numPoints), _numDims(numDims), _imgSize(imgSize), _embeddingName(embeddingName), _dataVecBegin(dataVecBegin),
 		_featureType(featureType), _neighWeighting(neighWeighting), _numLocNeighbors(numLocNeighbors), _numHistBins(numHistBins),
-		_aknn_algorithm(aknn_algorithm), _aknn_metric(aknn_metric), _MVNweight(MVNweight),
+		_aknn_algorithm(aknn_algorithm), _aknn_metric(aknn_metric), _MVNweight(MVNweight), _forceCalcBackgroundFeatures(forceCalcBackgroundFeatures),
 		_perplexity(perplexity), _perplexity_multiplier(3), _numIterations(numIterations), _exaggeration(exaggeration)
 	{
 		_nn = _perplexity * _perplexity_multiplier + 1;
@@ -178,6 +178,7 @@ public:
 	size_t              _neighborhoodSize;      /*!< _kernelWidth * _kernelWidth> */
 	size_t              _numLocNeighbors;       /*!<> */
 	size_t              _numHistBins;           /*!<> */
+    bool                _forceCalcBackgroundFeatures; /*!<> */
 	// distance
 	size_t              _nn;                    // number of nearest neighbors, determined by _perplexity*_perplexity_multiplier + 1
 	knn_library         _aknn_algorithm;        /*!<> */

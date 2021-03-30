@@ -132,6 +132,7 @@ private:
     std::vector<float> _neighborhoodWeights;        /*!< Weightings of neighborhood kernel */
     float _neighborhoodWeightsSum;                  /*!< Sum of weightings in neighborhood kernel */
     size_t       _numHistBins;                      /*!< Number of bins in each histogram */
+    bool _forceCalcBackgroundFeatures;              /*!< Force calculation of features for background data */
 
     // Data
     // Input

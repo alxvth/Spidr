@@ -39,7 +39,7 @@ public:
      * \param dataFeatures
      * \param backgroundIDsGlobal
      */
-    void setup(const std::vector<float> dataFeatures, const std::vector<unsigned int> backgroundIDsGlobal, SpidrParameters& params);
+    void setup(const std::vector<float>& dataFeatures, const std::vector<unsigned int>& backgroundIDsGlobal, SpidrParameters& params);
 
     /*!
      * 

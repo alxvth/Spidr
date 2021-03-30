@@ -117,7 +117,7 @@ unsigned int SturgesBinSize(unsigned int numItems) {
 }
 
 unsigned int RiceBinSize(unsigned int numItems) {
-    return int(2 * std::ceil(std::pow(numItems, 1.0/3)));
+    return int(std::ceil((2 * std::pow(numItems, 1.0/3))));
 }
 
 std::vector<int> neighborhoodIndices(const unsigned int pointInd, const size_t locNeighbors, const ImgSize imgSize, const std::vector<unsigned int>& pointIds) {

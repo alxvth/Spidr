@@ -40,7 +40,7 @@ void FeatureExtraction::compute() {
 	initExtraction();
 
 	// all _outFeatures have to be -1 to, so we can easily check later if the were all assigned
-	assert(std::all_of(_outFeatures.begin(), _outFeatures.end(), [](float i) {return i == -1.0f; }));
+	assert(std::all_of(_outFeatures.begin(), _outFeatures.end(), [](float i) {return i == FLT_MAX; }));
 	auto start = std::chrono::steady_clock::now();
 
 	// convolution over all points to create histograms
@@ -51,7 +51,7 @@ void FeatureExtraction::compute() {
 
 	// if there is a -1 in the _outFeatures, this value was not set at all
     // except if there was background defined, then just go ahead
-	assert(!(_backgroundIDsGlobal->empty() != std::none_of(_outFeatures.begin(), _outFeatures.end(), [](float i) {return i == -1.0f; })));
+	assert(!((_backgroundIDsGlobal->empty() || _forceCalcBackgroundFeatures) != std::none_of(_outFeatures.begin(), _outFeatures.end(), [](float i) {return i == FLT_MAX; })));
 
 	spdlog::info("Feature extraction: Finished");
 }
@@ -79,6 +79,10 @@ void FeatureExtraction::setup(const std::vector<unsigned int>& pointIds, const s
     _numDims = params._numDims;
     _attribute_data = attribute_data;
     _backgroundIDsGlobal = backgroundIDsGlobal;
+    _forceCalcBackgroundFeatures = params._forceCalcBackgroundFeatures;
+
+    if (_backgroundIDsGlobal->empty() && _forceCalcBackgroundFeatures)
+        spdlog::warn("Feature extraction: Cannot force to calc features to background if no background is given");
 
     assert(_attribute_data.size() == _numPoints * _numDims);
 
@@ -124,8 +128,8 @@ void FeatureExtraction::initExtraction() {
 
     _outFeatures.resize(_numPoints * _numFeatureValsPerPoint);
 
-    // fill such that _outFeatures are always initialized to -1
-    std::fill(_outFeatures.begin(), _outFeatures.end(), -1.0f);
+    // fill such that _outFeatures are always initialized to FLT_MAX
+    std::fill(_outFeatures.begin(), _outFeatures.end(), FLT_MAX);
 
     // calculate other help values specific to feature type
     if (_featType == feature_type::TEXTURE_HIST_1D) {
@@ -144,8 +148,7 @@ void FeatureExtraction::extractFeatures() {
 	spdlog::info("Feature extraction: Extract features");
 
     // skip if background is given, 
-    if (!_backgroundIDsGlobal->empty()) {
-
+    if (!_backgroundIDsGlobal->empty() && !_forceCalcBackgroundFeatures) {
         std::vector<unsigned int> all_IDs(_numPoints);
         std::vector<unsigned int> foreground_IDs;
         std::iota(all_IDs.begin(), all_IDs.end(), 0);
