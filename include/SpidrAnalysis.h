@@ -9,6 +9,7 @@
 
 #include <vector>
 #include <string>
+#include <tuple>     // std::tuple
 
 /*!
  * 
@@ -70,6 +71,7 @@ public:
     const size_t getNumEmbPoints();
     const size_t getNumImagePoints();
     bool embeddingIsRunning();
+
     /*!
      * 
      * 
@@ -81,6 +83,9 @@ public:
 
     const SpidrParameters getParameters();
 
+	const std::vector<float> getDataFeatures();
+
+	const std::tuple<std::vector<int>, std::vector<float>> getKNN();
 
 private:
     
@@ -144,16 +149,22 @@ private:
 
 private:
     // worker classes
-    FeatureExtraction _featExtraction;          /*!<> */
-    DistanceCalculation _distCalc;              /*!<> */
-    TsneComputation _tsne;                      /*!<> */
+    FeatureExtraction _featExtraction;					/*!<> */
+    DistanceCalculation _distCalc;						/*!<> */
+    TsneComputation _tsne;								/*!<> */
     
-    // data and setting
-    std::vector<float> _attribute_data;         /*!<> */
-    std::vector<unsigned int> _pointIDsGlobal;  /*!<> */
-    std::vector<unsigned int> _backgroundIDsGlobal;  /*!< ID of points which are not used during the t-SNE embedding - but will inform the feature extraction and distance calculation > */
-    SpidrParameters _params;                         /*!<> */
+    // data and settings
+    std::vector<float> _attribute_data;					/*!<> */
+    std::vector<unsigned int> _pointIDsGlobal;			/*!<> */
+    std::vector<unsigned int> _backgroundIDsGlobal;		/*!< ID of points which are not used during the t-SNE embedding - but will inform the feature extraction and distance calculation > */
+    SpidrParameters _params;							/*!<> */
     std::vector<float> _emd_with_backgound;
+
+	// features and knn
+	std::vector<float> _dataFeats;						/*!<> */
+	std::vector<int> _knn_indices ;						/*!<> */
+	std::vector<float> _knn_distances_squared;			/*!<> */
+
 };
 
 

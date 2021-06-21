@@ -63,16 +63,16 @@ void SpidrAnalysis::compute() {
     _featExtraction.setup(_pointIDsGlobal, _attribute_data, _params, &_backgroundIDsGlobal);
     _featExtraction.compute();
     spdlog::info("SpidrAnalysis: Get computed feature values");
-    const std::vector<float> dataFeats = _featExtraction.output();
+	_dataFeats = _featExtraction.output();
 
     // Caclculate distances and kNN
-    _distCalc.setup(dataFeats, _backgroundIDsGlobal, _params);
+    _distCalc.setup(_dataFeats, _backgroundIDsGlobal, _params);
     _distCalc.compute();
-    const std::vector<int> knn_indices = _distCalc.get_knn_indices();
+	_knn_indices = _distCalc.get_knn_indices();
     const std::vector<float> knn_distances_squared = _distCalc.get_knn_distances_squared();
 
     // Compute t-SNE with the given data
-    _tsne.setup(knn_indices, knn_distances_squared, _params);
+    _tsne.setup(_knn_indices, _knn_distances_squared, _params);
     _tsne.compute();
 
 	spdlog::info("SpidrAnalysis: Finished");
@@ -213,4 +213,12 @@ void SpidrAnalysis::stopComputation() {
 
 const SpidrParameters SpidrAnalysis::getParameters() {
     return _params;
+}
+
+const std::vector<float> SpidrAnalysis::getDataFeatures() {
+	return _dataFeats;
+}
+
+const std::tuple<std::vector<int>, std::vector<float>> SpidrAnalysis::getKNN() {
+	return std::make_tuple(_knn_indices, _knn_distances_squared);
 }
