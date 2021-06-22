@@ -33,17 +33,28 @@ public:
     void setupData(const std::vector<float>& attribute_data, const std::vector<unsigned int>& pointIDsGlobal, \
 		const size_t numDimensions, const ImgSize imgSize, const std::string embeddingName, std::vector<unsigned int>& backgroundIDsGlobal = std::vector<unsigned int>());
 
-	/*!
-	 *
-	 *
+	/*! Compute feature extraction and embedding
+	 * Calls computeFeatures, computekNN and computeEmbedding
 	 */
 	void compute();
 
+	/*! Compute Features from raw data
+	 * sets _dataFeats 
+	 */
+	void computeFeatures();
 
-    // release openGL context of the t-SNE computation
+	/*! Based on _dataFeats, compute kNN
+	 * sets _knn_indices and _knn_distances_squared
+	 */
+	void computekNN();
+
+	/*! Compute t-SNE embedding
+	 *
+	 */
+	void computeEmbedding();
+
     /*!
-     * 
-     * 
+     * release openGL context of the t-SNE computation
      */
     void stopComputation();
 
@@ -72,14 +83,15 @@ public:
     const size_t getNumImagePoints();
     bool embeddingIsRunning();
 
-    /*!
-     * 
-     * 
-     * \return 
+    /*! Return embdding
+	 *
      */
     const std::vector<float> &output();
 
-    const std::vector<float> &outputWithBackground();
+	/*! Return embdding with background
+	 * Checks if during setupData() any background points were specified and, if so, adds them into a corner in the embedding
+	 */
+	const std::vector<float> &outputWithBackground();
 
     const SpidrParameters getParameters();
 

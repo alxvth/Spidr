@@ -57,26 +57,37 @@ void SpidrAnalysis::initializeAnalysisSettings(const feature_type featType, cons
 }
 
 
-void SpidrAnalysis::compute() {
-
-    // Extract features
-    _featExtraction.setup(_pointIDsGlobal, _attribute_data, _params, &_backgroundIDsGlobal);
-    _featExtraction.compute();
-    spdlog::info("SpidrAnalysis: Get computed feature values");
+void SpidrAnalysis::computeFeatures() {
+	_featExtraction.setup(_pointIDsGlobal, _attribute_data, _params, &_backgroundIDsGlobal);
+	_featExtraction.compute();
+	spdlog::info("SpidrAnalysis: Get computed feature values");
 	_dataFeats = _featExtraction.output();
 
-    // Caclculate distances and kNN
-    _distCalc.setup(_dataFeats, _backgroundIDsGlobal, _params);
-    _distCalc.compute();
+}
+
+void SpidrAnalysis::computekNN() {
+	_distCalc.setup(_dataFeats, _backgroundIDsGlobal, _params);
+	_distCalc.compute();
 	_knn_indices = _distCalc.get_knn_indices();
-    const std::vector<float> knn_distances_squared = _distCalc.get_knn_distances_squared();
+	_knn_distances_squared = _distCalc.get_knn_distances_squared();
+}
+
+void SpidrAnalysis::computeEmbedding() {
+	_tsne.setup(_knn_indices, _knn_distances_squared, _params);
+	_tsne.compute();
+}
+
+void SpidrAnalysis::compute() {
+	// Extract features
+	computeFeatures();
+
+    // Caclculate distances and kNN
+	computekNN();
 
     // Compute t-SNE with the given data
-    _tsne.setup(_knn_indices, _knn_distances_squared, _params);
-    _tsne.compute();
+	computeEmbedding();
 
 	spdlog::info("SpidrAnalysis: Finished");
-
 }
 
 
