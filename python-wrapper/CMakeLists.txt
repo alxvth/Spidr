@@ -5,7 +5,9 @@ PROJECT(${SPIDRWRAPPER})
 
 # add python wrapper lib
 add_subdirectory(pybind11)
-pybind11_add_module(${SPIDRWRAPPER} SpidrWrapper.cpp)
+pybind11_add_module(${SPIDRWRAPPER} 
+	src/SpidrBind.cpp
+	src/SpidrWrapper.cpp)
 
 # add Spidr lib
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../ ${CMAKE_CURRENT_BINARY_DIR}/SpidrLib)

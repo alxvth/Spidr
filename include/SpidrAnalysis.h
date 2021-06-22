@@ -33,6 +33,27 @@ public:
     void setupData(const std::vector<float>& attribute_data, const std::vector<unsigned int>& pointIDsGlobal, \
 		const size_t numDimensions, const ImgSize imgSize, const std::string embeddingName, std::vector<unsigned int>& backgroundIDsGlobal = std::vector<unsigned int>());
 
+	/*! Set the parameters of the entire Analysis
+	 * Use the input from e.g a GUI
+	 *
+	 * \param featType
+	 * \param kernelInd
+	 * \param numLocNeighbors
+	 * \param numHistBins
+	 * \param aknnAlgInd
+	 * \param aknnMetInd
+	 * \param MVNweight
+	 * \param numIterations
+	 * \param perplexity
+	 * \param exaggeration
+	 * \param expDecay
+	 * \param forceCalcBackgroundFeatures
+	 */
+	void initializeAnalysisSettings(const feature_type featType, const loc_Neigh_Weighting kernelType, const size_t numLocNeighbors, const size_t numHistBins, \
+		const knn_library aknnAlgType, const distance_metric aknnMetric, const float MVNweight, \
+		const int numIterations, const int perplexity, const int exaggeration, const int expDecay, bool forceCalcBackgroundFeatures = false);
+
+
 	/*! Compute feature extraction and embedding
 	 * Calls computeFeatures, computekNN and computeEmbedding
 	 */
@@ -57,26 +78,6 @@ public:
      * release openGL context of the t-SNE computation
      */
     void stopComputation();
-
-    /*! Set the parameters of the entire Analysis
-     * Use the input from e.g a GUI
-     * 
-     * \param featType
-     * \param kernelInd
-     * \param numLocNeighbors
-     * \param numHistBins
-     * \param aknnAlgInd
-     * \param aknnMetInd
-     * \param MVNweight
-     * \param numIterations
-     * \param perplexity
-     * \param exaggeration
-     * \param expDecay
-     * \param forceCalcBackgroundFeatures
-     */
-    void initializeAnalysisSettings(const feature_type featType, const loc_Neigh_Weighting kernelType, const size_t numLocNeighbors, const size_t numHistBins, \
-                                    const knn_library aknnAlgType, const distance_metric aknnMetric, const float MVNweight, \
-                                    const int numIterations, const int perplexity, const int exaggeration, const int expDecay, bool forceCalcBackgroundFeatures=false);
 
     // Getter
     const size_t getNumEmbPoints();

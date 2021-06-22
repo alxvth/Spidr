@@ -7,7 +7,7 @@ typedef struct ImgSize {
 	int height;
 
 	ImgSize() : width(-1), height(-1) {};
-	ImgSize(int width, int hight) : width(width), height(height) {};
+	ImgSize(int width, int height) : width(width), height(height) {};
 
 } ImgSize;
 
@@ -97,7 +97,7 @@ enum class norm_vec : unsigned int
 
 /*!
  *
- *
+ * TODO: remove, duplicate of histBinSizeHeuristic
  */
 enum class bin_size : unsigned int
 {
