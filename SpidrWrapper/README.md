@@ -6,7 +6,7 @@ Creates python bindings for the SpidrLib, based on [this](https://github.com/pyb
 Make sure, that the external pybind11 submodule is present. 
 
 ```bash
-pip install ./cmake_example
+pip install ./SpidrWrapper --use-feature=in-tree-build
 ```
 
 ## Usage

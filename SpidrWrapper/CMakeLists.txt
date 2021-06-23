@@ -3,8 +3,9 @@ cmake_minimum_required(VERSION 3.17)
 set(SPIDRWRAPPER "SpidrWrapper")
 project(${SPIDRWRAPPER})
 
-# hacky hack
-set(SPIDRLIB_DIR "D:/Documents/Project 2020a/Spidr/Code")
+# works with newer pip versions or option --use-feature=in-tree-build for older
+set(SPIDRLIB_DIR ${PROJECT_SOURCE_DIR}/..)
+message(${SPIDRLIB_DIR})
 
 # add python wrapper lib
 add_subdirectory(pybind11)
