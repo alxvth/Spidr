@@ -8,6 +8,6 @@
 	path = external/glfw
 	url = https://github.com/glfw/glfw/
 [submodule "python-wrapper/pybind11"]
-	path = SpidrWrapper/pybind11
+	path = python_wrapper/pybind11
 	url = https://github.com/pybind/pybind11
 	branch = stable
