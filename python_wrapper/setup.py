@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+# From the pybind11 CMake example at https://github.com/pybind/cmake_example
+
 import os
 import sys
 import subprocess
