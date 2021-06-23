@@ -1,6 +1,9 @@
 #include <pybind11/pybind11.h>
 #include "SpidrWrapper.h"
 
+#define STRINGIFY(x) #x
+#define MACRO_STRINGIFY(x) STRINGIFY(x)
+
 namespace py = pybind11;
 
 PYBIND11_MODULE(SpidrWrapper, m) {
@@ -8,21 +11,21 @@ PYBIND11_MODULE(SpidrWrapper, m) {
 
 	// ENUMS
 	py::enum_<distance_metric>(m, "DistMetric", "Distance metric, the choice of distance will set the feature type: scalar, hsitogram or point cloud")
-		.value("dist.QF_hist", distance_metric::METRIC_QF)
-		.value("dist.EMD_hist", distance_metric::METRIC_EMD)
-		.value("dist.Hel_hist", distance_metric::METRIC_HEL)
-		.value("dist.Chamfer_pc", distance_metric::METRIC_CHA)
-		.value("dist.Hausdorff_pc", distance_metric::METRIC_HAU)
-		.value("dist.Euclidean_scal", distance_metric::METRIC_EUC);
+		.value("QF_hist", distance_metric::METRIC_QF)
+		.value("EMD_hist", distance_metric::METRIC_EMD)
+		.value("Hel_hist", distance_metric::METRIC_HEL)
+		.value("Chamfer_pc", distance_metric::METRIC_CHA)
+		.value("Hausdorff_pc", distance_metric::METRIC_HAU)
+		.value("Euclidean_scal", distance_metric::METRIC_EUC);
 
 	py::enum_<loc_Neigh_Weighting>(m, "WeightLoc", "Distance metric, the choice of distance will set the feature type: scalar, hsitogram or point cloud")
-		.value("weight.uniform", loc_Neigh_Weighting::WEIGHT_UNIF)
-		.value("weight.bino", loc_Neigh_Weighting::WEIGHT_BINO)
-		.value("weight.gauss", loc_Neigh_Weighting::WEIGHT_GAUS);
+		.value("uniform", loc_Neigh_Weighting::WEIGHT_UNIF)
+		.value("bino", loc_Neigh_Weighting::WEIGHT_BINO)
+		.value("gauss", loc_Neigh_Weighting::WEIGHT_GAUS);
 
 	py::enum_<knn_library>(m, "KnnAlgorithm", "Distance metric, the choice of distance will set the feature type: scalar, hsitogram or point cloud")
-		.value("knn.hnsw", knn_library::KNN_HNSW)
-		.value("knn.exact", knn_library::EXACT);
+		.value("hnsw", knn_library::KNN_HNSW)
+		.value("exact", knn_library::EXACT);
 
 	py::class_<SpidrWrapper> spidrAnalysis(m, "SpidrAnalysis");
 
@@ -55,10 +58,12 @@ PYBIND11_MODULE(SpidrWrapper, m) {
 		py::arg("imgHight"),
 		py::arg("backgroundIDsGlobal") = py::none());
 
+
 #ifdef VERSION_INFO
     m.attr("__version__") = MACRO_STRINGIFY(VERSION_INFO);
 #else
     m.attr("__version__") = "dev";
 #endif
-}
+
+
 }
