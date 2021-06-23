@@ -7,7 +7,7 @@ PYBIND11_MODULE(SpidrWrapper, m) {
 	m.doc() = "SpidrWrapper";
 
 	// ENUMS
-	py::enum_<distance_metric>(m, "KnnAlgorithm", "Distance metric, the choice of distance will set the feature type: scalar, hsitogram or point cloud")
+	py::enum_<distance_metric>(m, "DistMetric", "Distance metric, the choice of distance will set the feature type: scalar, hsitogram or point cloud")
 		.value("dist.QF_hist", distance_metric::METRIC_QF)
 		.value("dist.EMD_hist", distance_metric::METRIC_EMD)
 		.value("dist.Hel_hist", distance_metric::METRIC_HEL)
@@ -15,7 +15,7 @@ PYBIND11_MODULE(SpidrWrapper, m) {
 		.value("dist.Hausdorff_pc", distance_metric::METRIC_HAU)
 		.value("dist.Euclidean_scal", distance_metric::METRIC_EUC);
 
-	py::enum_<loc_Neigh_Weighting>(m, "KnnAlgorithm", "Distance metric, the choice of distance will set the feature type: scalar, hsitogram or point cloud")
+	py::enum_<loc_Neigh_Weighting>(m, "WeightLoc", "Distance metric, the choice of distance will set the feature type: scalar, hsitogram or point cloud")
 		.value("weight.uniform", loc_Neigh_Weighting::WEIGHT_UNIF)
 		.value("weight.bino", loc_Neigh_Weighting::WEIGHT_BINO)
 		.value("weight.gauss", loc_Neigh_Weighting::WEIGHT_GAUS);
@@ -55,4 +55,10 @@ PYBIND11_MODULE(SpidrWrapper, m) {
 		py::arg("imgHight"),
 		py::arg("backgroundIDsGlobal") = py::none());
 
+#ifdef VERSION_INFO
+    m.attr("__version__") = MACRO_STRINGIFY(VERSION_INFO);
+#else
+    m.attr("__version__") = "dev";
+#endif
+}
 }
