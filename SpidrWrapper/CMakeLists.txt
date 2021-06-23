@@ -1,7 +1,10 @@
 cmake_minimum_required(VERSION 3.17)
 
 set(SPIDRWRAPPER "SpidrWrapper")
-PROJECT(${SPIDRWRAPPER})
+project(${SPIDRWRAPPER})
+
+# hacky hack
+set(SPIDRLIB_DIR "D:/Documents/Project 2020a/Spidr/Code")
 
 # add python wrapper lib
 add_subdirectory(pybind11)
@@ -10,7 +13,7 @@ pybind11_add_module(${SPIDRWRAPPER}
 	src/SpidrWrapper.cpp)
 
 # add Spidr lib
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../ ${CMAKE_CURRENT_BINARY_DIR}/SpidrLib)
+add_subdirectory(${SPIDRLIB_DIR} ./SpidrLib)
 target_link_libraries(${SPIDRWRAPPER} PUBLIC SpidrLib)
 
 # On Windows and Linux these come from glad in the HDILib which is linked against in the SpidrLib
