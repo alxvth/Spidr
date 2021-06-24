@@ -5,6 +5,7 @@ PROJECT(${SPIDREXAMPLE})
 
 add_executable(${SPIDREXAMPLE} SpidrExample.cpp)
 
+# add Spidr lib
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../ ${CMAKE_CURRENT_BINARY_DIR}/SpidrLib)
 target_link_libraries(${SPIDREXAMPLE} PUBLIC SpidrLib)
 

@@ -9,6 +9,7 @@
 
 #include <vector>
 #include <string>
+#include <tuple>     // std::tuple
 
 /*!
  * 
@@ -32,55 +33,72 @@ public:
     void setupData(const std::vector<float>& attribute_data, const std::vector<unsigned int>& pointIDsGlobal, \
 		const size_t numDimensions, const ImgSize imgSize, const std::string embeddingName, std::vector<unsigned int>& backgroundIDsGlobal = std::vector<unsigned int>());
 
-	/*!
+	/*! Set the parameters of the entire Analysis
+	 * Use the input from e.g a GUI
 	 *
-	 *
+	 * \param featType
+	 * \param kernelInd
+	 * \param numLocNeighbors
+	 * \param numHistBins
+	 * \param aknnAlgInd
+	 * \param aknnMetInd
+	 * \param MVNweight
+	 * \param numIterations
+	 * \param perplexity
+	 * \param exaggeration
+	 * \param expDecay
+	 * \param forceCalcBackgroundFeatures
+	 */
+	void initializeAnalysisSettings(const feature_type featType, const loc_Neigh_Weighting kernelType, const size_t numLocNeighbors, const size_t numHistBins, \
+		const knn_library aknnAlgType, const distance_metric aknnMetric, const float MVNweight, \
+		const int numIterations, const int perplexity, const int exaggeration, const int expDecay, bool forceCalcBackgroundFeatures = false);
+
+
+	/*! Compute feature extraction and embedding
+	 * Calls computeFeatures, computekNN and computeEmbedding
 	 */
 	void compute();
 
+	/*! Compute Features from raw data
+	 * sets _dataFeats 
+	 */
+	void computeFeatures();
 
-    // release openGL context of the t-SNE computation
+	/*! Based on _dataFeats, compute kNN
+	 * sets _knn_indices and _knn_distances_squared
+	 */
+	void computekNN();
+
+	/*! Compute t-SNE embedding
+	 *
+	 */
+	void computeEmbedding();
+
     /*!
-     * 
-     * 
+     * release openGL context of the t-SNE computation
      */
     void stopComputation();
-
-    /*! Set the parameters of the entire Analysis
-     * Use the input from e.g a GUI
-     * 
-     * \param featType
-     * \param kernelInd
-     * \param numLocNeighbors
-     * \param numHistBins
-     * \param aknnAlgInd
-     * \param aknnMetInd
-     * \param MVNweight
-     * \param numIterations
-     * \param perplexity
-     * \param exaggeration
-     * \param expDecay
-     * \param forceCalcBackgroundFeatures
-     */
-    void initializeAnalysisSettings(const feature_type featType, const loc_Neigh_Weighting kernelType, const size_t numLocNeighbors, const size_t numHistBins, \
-                                    const knn_library aknnAlgType, const distance_metric aknnMetric, const float MVNweight, \
-                                    const int numIterations, const int perplexity, const int exaggeration, const int expDecay, bool forceCalcBackgroundFeatures=false);
 
     // Getter
     const size_t getNumEmbPoints();
     const size_t getNumImagePoints();
     bool embeddingIsRunning();
-    /*!
-     * 
-     * 
-     * \return 
+
+    /*! Return embdding
+	 *
      */
     const std::vector<float> &output();
 
-    const std::vector<float> &outputWithBackground();
+	/*! Return embdding with background
+	 * Checks if during setupData() any background points were specified and, if so, adds them into a corner in the embedding
+	 */
+	const std::vector<float> &outputWithBackground();
 
     const SpidrParameters getParameters();
 
+	const std::vector<float> getDataFeatures();
+
+	const std::tuple<std::vector<int>, std::vector<float>> getKNN();
 
 private:
     
@@ -144,16 +162,22 @@ private:
 
 private:
     // worker classes
-    FeatureExtraction _featExtraction;          /*!<> */
-    DistanceCalculation _distCalc;              /*!<> */
-    TsneComputation _tsne;                      /*!<> */
+    FeatureExtraction _featExtraction;					/*!<> */
+    DistanceCalculation _distCalc;						/*!<> */
+    TsneComputation _tsne;								/*!<> */
     
-    // data and setting
-    std::vector<float> _attribute_data;         /*!<> */
-    std::vector<unsigned int> _pointIDsGlobal;  /*!<> */
-    std::vector<unsigned int> _backgroundIDsGlobal;  /*!< ID of points which are not used during the t-SNE embedding - but will inform the feature extraction and distance calculation > */
-    SpidrParameters _params;                         /*!<> */
+    // data and settings
+    std::vector<float> _attribute_data;					/*!<> */
+    std::vector<unsigned int> _pointIDsGlobal;			/*!<> */
+    std::vector<unsigned int> _backgroundIDsGlobal;		/*!< ID of points which are not used during the t-SNE embedding - but will inform the feature extraction and distance calculation > */
+    SpidrParameters _params;							/*!<> */
     std::vector<float> _emd_with_backgound;
+
+	// features and knn
+	std::vector<float> _dataFeats;						/*!<> */
+	std::vector<int> _knn_indices ;						/*!<> */
+	std::vector<float> _knn_distances_squared;			/*!<> */
+
 };
 
 
