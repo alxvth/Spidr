@@ -46,7 +46,7 @@ PYBIND11_MODULE(SpidrWrapper, m) {
 		py::arg("X"),
 		py::arg("pointIDsGlobal"),
 		py::arg("imgWidth"),
-		py::arg("imgHight"),
+		py::arg("imgHeight"),
 		py::arg("backgroundIDsGlobal") = py::none());
 
 	spidrAnalysis.def("transform", &SpidrWrapper::transform, "Compute embedding, fit() must have been called previously");
@@ -55,7 +55,7 @@ PYBIND11_MODULE(SpidrWrapper, m) {
 		py::arg("X"),
 		py::arg("pointIDsGlobal"),
 		py::arg("imgWidth"),
-		py::arg("imgHight"),
+		py::arg("imgHeight"),
 		py::arg("backgroundIDsGlobal") = py::none());
 
 
