@@ -24,16 +24,13 @@ data_img = data.reshape((imgHeight, imgWidth, 2))
 # instantiate spidrlib
 spidr = spidr.SpidrAnalysis(distMetric=spidr.DistMetric.Chamfer_pc, kernelType=spidr.WeightLoc.uniform,
                             numLocNeighbors=1, aknnAlgType=spidr.KnnAlgorithm.hnsw)
+nn = spidr.nn
 
 # embed with t-SNE
 emb_tsne = spidr.fit_transform(X=data, pointIDsGlobal=data_glob_ids, imgWidth=imgWidth, imgHeight=imgHeight)
 
-plt.scatter(emb_tsne[:, 0], emb_tsne[:, 1])
-plt.show()
-
 # get knn dists to compute umap
-knn_ind, knn_dists = spidr.fit(X=data_img, pointIDsGlobal=data_glob_ids, imgWidth=imgWidth, imgHeight=imgHeight)
-nn = spidr.nn
+knn_ind, knn_dists = spidr.fit(X=data, pointIDsGlobal=data_glob_ids, imgWidth=imgWidth, imgHeight=imgHeight)
 
 # create sparse matrix with scipy
 knn_ind = np.array(knn_ind)  # .reshape((numPoints, nn))
@@ -45,9 +42,6 @@ knn_csr = csr_matrix((knn_dists, (knn_ind_row, knn_ind)), shape=(numPoints, numP
 # embed with umap
 umapper = umap.UMAP()
 emb_umap = umapper.fit_transform(knn_csr)
-
-plt.scatter(emb_umap[:, 0], emb_umap[:, 1])
-plt.show()
 
 # compare with standard embedding (t-SNE & UMAP)
 tsne = nptsne.TextureTsne()
