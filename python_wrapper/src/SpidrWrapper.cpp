@@ -1,7 +1,5 @@
 #include "SpidrWrapper.h"
 
-
-
 SpidrWrapper::SpidrWrapper(distance_metric distMetric,
 	loc_Neigh_Weighting kernelType,
 	size_t numLocNeighbors,
@@ -12,9 +10,14 @@ SpidrWrapper::SpidrWrapper(distance_metric distMetric,
 	int exaggeration,
 	int expDecay,
 	bool forceCalcBackgroundFeatures
-) : _kernelType(kernelType), _numLocNeighbors(numLocNeighbors), _numHistBins(numHistBins), _aknnAlgType(aknnAlgType), _distMetric(distMetric), _numIterations(numIterations),
+) : _kernelType(kernelType), _numHistBins(numHistBins), _aknnAlgType(aknnAlgType), _distMetric(distMetric), _numIterations(numIterations),
     _perplexity(perplexity), _exaggeration(exaggeration), _expDecay(expDecay), _forceCalcBackgroundFeatures(forceCalcBackgroundFeatures), _fitted(false) 
 {
+	if (numLocNeighbors <= 0)
+		throw std::runtime_error("SpidrWrapper: Spatial Neighbors must be larger 0");
+	else
+		_numLocNeighbors = numLocNeighbors;
+
 	// set _featType depending on aknnMetric
 	switch (distMetric) {
 	case distance_metric::METRIC_QF:
@@ -33,6 +36,8 @@ SpidrWrapper::SpidrWrapper(distance_metric distMetric,
 	_SpidrAnalysis = std::make_unique<SpidrAnalysis>();
 
 	_SpidrAnalysis->initializeAnalysisSettings(_featType, _kernelType, _numLocNeighbors, _numHistBins, _aknnAlgType, _distMetric, 0, _numIterations, _perplexity, _exaggeration, _expDecay, _forceCalcBackgroundFeatures);
+	_nn = _SpidrAnalysis->getParameters()._nn;
+
 }
 
 

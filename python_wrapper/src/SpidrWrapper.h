@@ -39,6 +39,10 @@ public:
 		int imgWidth, int imgHight,
 		std::optional<py::array_t<unsigned int, py::array::c_style | py::array::forcecast>> backgroundIDsGlobal);
 
+	int get_nn() { return static_cast<int>(_nn); }
+	int get_perplexity() { return _perplexity; }
+	int get_numIterations() { return _numIterations; }
+
 private:
 	// utility function to circumvent code duplication in fit() and fit_transform()
 	void compute_fit(
@@ -67,5 +71,6 @@ private:
 	ImgSize _imgSize;
 
 	bool _fitted;
+	size_t _nn;
 };
 
