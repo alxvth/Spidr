@@ -7,15 +7,20 @@ To clone the repo and its external submodules (hnswlib, glfw, spdlog):
 
 ```git clone --recurse-submodule https://github.com/alxvth/Spidr/```
 
-Uses the A-tSNE implementation from the [HDILib](https://github.com/biovault/HDILib) and [Hnswlib](https://github.com/nmslib/hnswlib) for approximated nearest neighbor search.
-<!-- Intergrated for easy usage in the [hdps](https://github.com/hdps/SpidrPlugin) framework.  -->
-
 Currently, only builds on Windows, tested with Visual Studio 2017. Use cmake for setting up the project:
 ```
 mkdir build
 cd build
 cmake .. -G "Visual Studio 15 2017 Win64"
 ```
+
+The standard cpp implementation uses the A-tSNE implementation from the [HDILib](https://github.com/biovault/HDILib) and [Hnswlib](https://github.com/nmslib/hnswlib) for approximated nearest neighbor search. Other DR techniques might also be used, as shown in the python example below.
+
+## Usage
+
+See `example/SpidrExample.cpp` for a example on how to use the library in cpp.
+
+See `python_wrapper` for install intructions and a usage example on how to use the library in python. The example showcases spatially informed t-SNE and UMAP embeddings.
 
 ## Other Dependencies
 Not all dependencies are included in this repo, some need to be downloaded/installed by yourself. 
