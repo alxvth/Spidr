@@ -112,13 +112,13 @@ void DistanceCalculation::computekNN() {
         std::tie(_knn_indices, _knn_distances_squared) = ComputeHNSWkNN(_dataFeatures, space, _numFeatureValsPerPoint, _numPoints, _nn);
 
     }
-    else if (_knn_lib == knn_library::EXACT) {
+    else if (_knn_lib == knn_library::KKN_EXACT) {
 		spdlog::info("Distance calculation: Exact kNN computation");
 
         std::tie(_knn_indices, _knn_distances_squared) = ComputeExactKNN(_dataFeatures, space, _numFeatureValsPerPoint, _numPoints, _nn);
 
     }
-    else if (_knn_lib == knn_library::EVAL_EXACT) {
+    else if (_knn_lib == knn_library::EVAL_KNN_EXACT) {
         // Save the entire distance matrix to disk. Then calc the exact kNN and perform the embedding
         // Note: You could also sort the distance matrix instead of recalculating it - but I'm lazy and will only use this for small data set where the performance is not an issue.
 
@@ -129,7 +129,7 @@ void DistanceCalculation::computekNN() {
 
 		spdlog::info("Distance calculation: Evaluation mode (exact) - Write full distance matrix to disk");
 
-        // Write (full) distance matricx amd IDs to disk
+        // Write (full) distance matrix and IDs to disk
         std::string savePath = _embeddingName;
         std::string infoStr = "_nD_" + std::to_string(_numDims) + "_nP_" + std::to_string(_numPoints) + "_nN_" + std::to_string(_numPoints);
         writeVecToBinary(all_dists_indices_to_Disk, savePath + "_allInds" + infoStr + ".bin");
@@ -149,7 +149,7 @@ void DistanceCalculation::computekNN() {
         writeVecToBinary(_knn_distances_squared, savePath + "_knnDists" + infoStr + ".bin");
 
     }
-    else if (_knn_lib == knn_library::EVAL_KNN) {
+    else if (_knn_lib == knn_library::EVAL_KNN_HNSW) {
         // Save the akNN distance matrix to disk. 
 
 		spdlog::info("Distance calculation: Evaluation mode (akNN) - HNSWLib for knn computation");
