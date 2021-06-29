@@ -23,7 +23,12 @@ SpidrWrapper::SpidrWrapper(distance_metric distMetric,
 	case distance_metric::METRIC_QF:
 	case distance_metric::METRIC_EMD:
 	case distance_metric::METRIC_HEL: 
-		_featType = feature_type::TEXTURE_HIST_1D; break;
+		_featType = feature_type::TEXTURE_HIST_1D; 
+		
+		if (_numHistBins <= 0)
+			throw std::runtime_error("SpidrWrapper: Number of histogram bins must be larger than 0");
+
+		break;
 	case distance_metric::METRIC_CHA:
 	case distance_metric::METRIC_HAU:
 		_featType = feature_type::PCLOUD; break;
