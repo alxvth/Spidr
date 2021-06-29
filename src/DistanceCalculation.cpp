@@ -163,6 +163,15 @@ void DistanceCalculation::computekNN() {
         writeVecToBinary(_knn_distances_squared, savePath + "_aknnDists" + infoStr + ".bin");
 
     }
+	else if (_knn_lib == knn_library::FULL_DIST_BRUTE_FORCE) {
+		// Use entire distance matrix 
+		spdlog::info("Distance calculation: Calc full distance matrix brute force");
+		std::tie(_knn_indices, _knn_distances_squared) = ComputeFullDistMat(_dataFeatures, space, _numFeatureValsPerPoint, _numPoints);
+
+
+	}
+	else
+		throw std::runtime_error("Distance calculation: Unknown knn_library");
 
     auto t_end_ComputeDist = std::chrono::steady_clock::now();
 	spdlog::info("Distance calculation: Computation duration (sec): {}", ((float)std::chrono::duration_cast<std::chrono::milliseconds> (t_end_ComputeDist - t_start_ComputeDist).count()) / 1000);

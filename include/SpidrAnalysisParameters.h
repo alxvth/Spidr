@@ -21,6 +21,7 @@ enum class knn_library : size_t
 	EVAL_KNN_HNSW,      /*!< HNSWLib in use, saves akNN distance matrix and IDs */
 	KKN_EXACT,          /*!< No knn library in use, no approximation i.e. exact kNN computation */
 	KNN_HNSW,			/*!< HNSWLib */
+	FULL_DIST_BRUTE_FORCE,	/*!< straight forward brute force computation of the entire distance matric - not intended to be used with t-SNE but rather if you are interested in the distance matrix and not the knn */
 };
 
 /*! Defines the distance metric

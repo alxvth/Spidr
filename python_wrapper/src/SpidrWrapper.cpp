@@ -19,7 +19,7 @@ SpidrWrapper::SpidrWrapper(distance_metric distMetric,
 		_numLocNeighbors = numLocNeighbors;
 
 	// set _featType depending on aknnMetric
-	switch (distMetric) {
+	switch (_distMetric) {
 	case distance_metric::METRIC_QF:
 	case distance_metric::METRIC_EMD:
 	case distance_metric::METRIC_HEL: 
@@ -37,6 +37,9 @@ SpidrWrapper::SpidrWrapper(distance_metric distMetric,
 	default:
 		throw std::runtime_error("SpidrWrapper: Specified distMetric not supported");
 	}
+
+	if (_aknnAlgType == knn_library::EVAL_KNN_EXACT || _aknnAlgType == knn_library::EVAL_KNN_HNSW)
+		throw std::runtime_error("SpidrWrapper: No eval knn mode (which would save the knn to disk) supported in this wrapper");
 
 	_SpidrAnalysis = std::make_unique<SpidrAnalysis>();
 
