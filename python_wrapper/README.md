@@ -3,10 +3,10 @@
 Creates python bindings for the SpidrLib, based on [this](https://github.com/pybind/cmake_example) pybind11 example.
 
 ## Installation
-Make sure, that the external pybind11 submodule is present. That should be the case if you cloned the entire repo with the `--recurse-submodule` option. To build and install the python wrapper go:
+Make sure, that the external pybind11 submodule is present. That should be the case if you cloned the entire repo with the `--recurse-submodule` option. To build and install the python wrapper use (after navigating into this folder in a python shell):
 
 ```bash
-pip install ./SpidrWrapper --use-feature=in-tree-build
+pip install . --use-feature=in-tree-build
 ```
 
 ## Usage
