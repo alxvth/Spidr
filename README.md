@@ -20,7 +20,7 @@ The standard cpp implementation uses the A-tSNE implementation from the [HDILib]
 
 See `example/SpidrExample.cpp` for a example on how to use the library in cpp.
 
-See `python_wrapper` for install intructions and a usage example on how to use the library in python. The example showcases spatially informed t-SNE and UMAP embeddings.
+See `python_wrapper` for install intructions and a usage example on how to use the library in python. The example showcases spatially informed t-SNE, UMAP and MDS embeddings.
 
 ## Other Dependencies
 Not all dependencies are included in this repo, some need to be downloaded/installed by yourself. 
