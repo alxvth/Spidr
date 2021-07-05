@@ -150,7 +150,7 @@ def pltColProj(col_n, title, emb, emb_cols):
 pltColProj(0, 't-SNE w/ chamfer', emb_tsne, emb_tsne_colors)
 pltColProj(1, 't-SNE std', emb_tsne_std, emb_tsne_std_colors)
 pltColProj(2, 'UMAP w/ chamfer', emb_umap, emb_umap_colors)
-pltColProj(3, 'UMAP std', emb_tsne, emb_umap_std_colors)
+pltColProj(3, 'UMAP std', emb_umap_std, emb_umap_std_colors)
 pltColProj(4, 'MDS w/ chamfer', emb_mds, emb_mds_colors)
 pltColProj(5, 'MDS std', emb_mds_std, emb_mds_std_colors)
 
