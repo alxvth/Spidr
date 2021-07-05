@@ -54,8 +54,8 @@ knn_ind_row = np.repeat(np.arange(0, numPoints), nn)  # .reshape((numPoints, nn)
 knn_csr = csr_matrix((knn_dists, (knn_ind_row, knn_ind)), shape=(numPoints, numPoints))
 
 # embed with umap
-alg_mapper = UMAP()
-emb_umap = alg_mapper.fit_transform(knn_csr)
+alg_umap = UMAP()
+emb_umap = alg_umap.fit_transform(knn_csr)
 
 #######
 # MDS #
@@ -85,8 +85,8 @@ alg_tsne = TextureTsne()
 emb_tsne_std = alg_tsne.fit_transform(data).reshape((numPoints, 2))
 
 # standard UMAP
-alg_mapper = UMAP()
-emb_umap_std = alg_mapper.fit_transform(data)
+alg_umap = UMAP()
+emb_umap_std = alg_umap.fit_transform(data)
 
 # standard MDS
 alg_mds = MDS(dissimilarity='euclidean', n_jobs=-1)
