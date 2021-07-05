@@ -2,13 +2,9 @@
 
 #include <omp.h>
 
-#include <cmath>     // std::sqrt, exp, floor
-#include <numeric>   // std::inner_product, std:accumulate 
-#include <algorithm> // std::find, fill, sort
 #include <utility>   // std::pair
 #include <vector>
 #include <tuple>     // std::tuple, std::get, std::tie, std::ignore
-#include <assert.h>
 
 #include "SpidrAnalysisParameters.h"
 
@@ -71,11 +67,11 @@ std::tuple<std::vector<int>, std::vector<float>> ComputeHNSWkNN(const std::vecto
  * \param featureSize Size of one data item features
  * \param numPoints Number of points in the data
  * \param nn Number of nearest neighbors
- * \param sort Whether to sort the nearest neighbor distances. Default is true. Set to false if nn == numPoints and you want to calculate the full distance matrix
+ * \param fullDistMat Whether to fullDistMat the nearest neighbor distances. Default is false. Set to true if nn == numPoints and you want to calculate the full distance matrix (which is what ComputeFullDistMat() does)
  * \return Tuple of indices and respective squared distances
 */
 template<typename T>
-std::tuple<std::vector<int>, std::vector<float>> ComputeExactKNN(const std::vector<T> dataFeatures, hnswlib::SpaceInterface<float> *space, size_t featureSize, size_t numPoints, unsigned int nn, bool sort = true);
+std::tuple<std::vector<int>, std::vector<float>> ComputeExactKNN(const std::vector<T> dataFeatures, hnswlib::SpaceInterface<float> *space, size_t featureSize, size_t numPoints, unsigned int nn, bool fullDistMat = false);
 
 /*! Compute the full distance matrix between all data points
  * Calls ComputeExactKNN with the correct parameters, basically syntactic sugar

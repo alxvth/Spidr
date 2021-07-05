@@ -4,6 +4,11 @@
 #include "spdlog/spdlog-inl.h"
 #include "hnswlib/hnswlib.h"
 
+#include <cmath>     // std::sqrt, exp, floor
+#include <numeric>   // std::inner_product, std:accumulate, std::iota
+#include <algorithm> // std::find, fill, sort
+#include <assert.h>
+
 
 metricPair MakeMetricPair(feature_type ft, distance_metric dm) {
     return std::make_tuple(ft, dm);
@@ -131,17 +136,17 @@ template std::tuple<std::vector<int>, std::vector<float>> ComputeHNSWkNN<unsigne
 
 
 template<typename T>
-std::tuple<std::vector<int>, std::vector<float>> ComputeExactKNN(const std::vector<T> dataFeatures, hnswlib::SpaceInterface<float> *space, size_t featureSize, size_t numPoints, unsigned int nn, bool sort) {
-	std::vector<std::pair<int, float>> indices_distances;
-	std::vector<int> knn_indices;
-	std::vector<float> knn_distances_squared;
-
-	indices_distances.resize(numPoints);
-	knn_indices.resize(numPoints*nn, -1);
-	knn_distances_squared.resize(numPoints*nn, -1.0f);
+std::tuple<std::vector<int>, std::vector<float>> ComputeExactKNN(const std::vector<T> dataFeatures, hnswlib::SpaceInterface<float> *space, size_t featureSize, size_t numPoints, unsigned int nn, bool fullDistMat) {
+	std::vector<std::pair<int, float>> indices_distances(numPoints);
+	std::vector<int> knn_indices(numPoints*nn, -1);
+	std::vector<float> knn_distances_squared(numPoints*nn, -1.0f);
 
 	hnswlib::DISTFUNC<float> distfunc = space->get_dist_func();
 	void* params = space->get_dist_func_param();
+
+	// only used if fullDistMat == true 
+	std::vector<int> idx_row(nn);
+	std::iota(idx_row.begin(), idx_row.end(), 0);
 
 	// For each point, calc distances to all other
 	// and take the nn smallest as kNN
@@ -154,14 +159,26 @@ std::tuple<std::vector<int>, std::vector<float>> ComputeExactKNN(const std::vect
 			indices_distances[j] = std::make_pair(j, distfunc(dataFeatures.data() + i * featureSize, dataFeatures.data() + j * featureSize, params));
 		}
 
-		if (sort)
+		if (!fullDistMat)
 		{
+			// compute knn, not full distance matrix
+			assert(nn < numPoints);
 			// sort all distances to point i
 			std::sort(indices_distances.begin(), indices_distances.end(), [](std::pair<int, float> a, std::pair<int, float> b) {return a.second < b.second; });
+	
+			// Take the first nn indices 
+			std::transform(indices_distances.begin(), indices_distances.begin() + nn, knn_indices.begin() + i * nn, [](const std::pair<int, float>& p) { return p.first; });
+		}
+		else
+		{
+			assert(nn == numPoints);
+			// for full distance matrix, sort the indices depending on the distances
+			std::sort(idx_row.begin(), idx_row.end(), [&indices_distances](int i1, int i2) {return indices_distances[i1].second < indices_distances[i2].second; });
+
+			// Take the first nn indices (just copy them from the sorted indices)
+			std::copy(idx_row.begin(), idx_row.begin() + nn, knn_indices.begin() + i * nn);
 		}
 
-		// Take the first nn indices 
-		std::transform(indices_distances.begin(), indices_distances.begin() + nn, knn_indices.begin() + i * nn, [](const std::pair<int, float>& p) { return p.first; });
 		// Take the first nn distances 
 		std::transform(indices_distances.begin(), indices_distances.begin() + nn, knn_distances_squared.begin() + i * nn, [](const std::pair<int, float>& p) { return p.second; });
 	}
@@ -175,7 +192,7 @@ template std::tuple<std::vector<int>, std::vector<float>> ComputeExactKNN<unsign
 template<typename T>
 std::tuple<std::vector<int>, std::vector<float>> ComputeFullDistMat(const std::vector<T> dataFeatures, hnswlib::SpaceInterface<float> *space, size_t featureSize, size_t numPoints) {
 	// set nn = numPoints and sort = false
-	return ComputeExactKNN(dataFeatures, space, featureSize, numPoints, numPoints, false);
+	return ComputeExactKNN(dataFeatures, space, featureSize, numPoints, numPoints, true);
 }
 // Resolve linker errors with explicit instantiation, https://isocpp.org/wiki/faq/templates#separate-template-fn-defn-from-decl
 template std::tuple<std::vector<int>, std::vector<float>> ComputeFullDistMat<float>(const std::vector<float> dataFeatures, hnswlib::SpaceInterface<float> *space, size_t featureSize, size_t numPoints);

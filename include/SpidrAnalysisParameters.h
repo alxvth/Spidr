@@ -17,10 +17,11 @@ typedef struct ImgSize {
  */
 enum class knn_library : size_t
 {
-	EVAL_EXACT,     /*!< No knn library in use, saves full dist matrix and IDs as well as features to disk */
-	EVAL_KNN,       /*!< HNSWLib in use, saves akNN distance matrix and IDs */
-	EXACT,          /*!< No knn library in use, no approximation i.e. exact kNN computation */
-	KNN_HNSW,       /*!< HNSWLib */
+	EVAL_KNN_EXACT,     /*!< No knn library in use, saves full dist matrix and IDs as well as features to disk */
+	EVAL_KNN_HNSW,      /*!< HNSWLib in use, saves akNN distance matrix and IDs */
+	KKN_EXACT,          /*!< No knn library in use, no approximation i.e. exact kNN computation */
+	KNN_HNSW,			/*!< HNSWLib */
+	FULL_DIST_BRUTE_FORCE,	/*!< straight forward brute force computation of the entire distance matric - not intended to be used with t-SNE but rather if you are interested in the distance matrix and not the knn */
 };
 
 /*! Defines the distance metric
