@@ -11,4 +11,4 @@ pip install . --use-feature=in-tree-build
 
 ## Usage
 
-See `example/example.py` for a t-SNE and UMAP example with a synthetic data set.
+See `example/example.py` for t-SNE, UMAP and MDS examples with a synthetic data set.

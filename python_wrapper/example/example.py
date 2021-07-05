@@ -97,27 +97,29 @@ emb_mds_std = alg_mds.fit_transform(data)
 #########
 
 # Plot the embeddings and data
-fig, axs = plt.subplots(2, 4, figsize=(7.5, 5))
+fig, axs = plt.subplots(2, 4, figsize=(8, 5))
+fig.suptitle('Data channels and embeddings')
 
 axs[0, 0].title.set_text('Data, ch1')
-axs[0, 0].imshow(data_img[:, :, 0])
+axs[0, 0].imshow(data_img[:, :, 0], aspect="auto")
 axs[1, 0].title.set_text('Data, ch2')
-axs[1, 0].imshow(data_img[:, :, 1])
+axs[1, 0].imshow(data_img[:, :, 1], aspect="auto")
 
-axs[0, 1].title.set_text('t-SNE w/ chamfer')
-axs[0, 1].scatter(emb_tsne[:, 0], emb_tsne[:, 1])
-axs[1, 1].title.set_text('t-SNE std')
-axs[1, 1].scatter(emb_tsne_std[:, 0], emb_tsne_std[:, 1])
 
-axs[0, 2].title.set_text('UMAP w/ chamfer')
-axs[0, 2].scatter(emb_umap[:, 0], emb_umap[:, 1])
-axs[1, 2].title.set_text('UMAP std')
-axs[1, 2].scatter(emb_umap_std[:, 0], emb_umap_std[:, 1])
+def pltColEmb(col_n, title, emb, emb_std):
+    axs[0, col_n].title.set_text(title + ' w/ chamfer')
+    axs[0, col_n].scatter(emb[:, 0], emb[:, 1], alpha=0.5, s=0.5)
+    axs[0, col_n].get_xaxis().set_visible(False)
+    axs[0, col_n].get_yaxis().set_visible(False)
+    axs[1, col_n].title.set_text(title + ' std')
+    axs[1, col_n].scatter(emb_std[:, 0], emb_std[:, 1], alpha=0.5, s=0.5)
+    axs[1, col_n].get_xaxis().set_visible(False)
+    axs[1, col_n].get_yaxis().set_visible(False)
 
-axs[0, 3].title.set_text('MDS w/ chamfer')
-axs[0, 3].scatter(emb_mds[:, 0], emb_mds[:, 1])
-axs[1, 3].title.set_text('MDS std')
-axs[1, 3].scatter(emb_mds_std[:, 0], emb_mds_std[:, 1])
+
+pltColEmb(1, 't-SNE', emb_tsne, emb_tsne_std)
+pltColEmb(2, 'UMAP', emb_umap, emb_umap_std)
+pltColEmb(3, 'MDS', emb_mds, emb_mds_std)
 
 plt.tight_layout()
 plt.show()
@@ -133,31 +135,25 @@ emb_mds_colors = assign_embedding_colors(emb_mds, clm_path, rot90=3)
 emb_mds_std_colors = assign_embedding_colors(emb_mds_std, clm_path, rot90=3)
 
 # Plot embedding
-fig, axs = plt.subplots(2, 6, figsize=(10, 5))
+fig, axs = plt.subplots(2, 6, figsize=(14, 5))
+fig.suptitle('Embeddings and data colored based on embeddings')
 
-axs[0, 0].title.set_text('t-SNE w/ chamfer')
-axs[0, 0].scatter(emb_tsne[:, 0], emb_tsne[:, 1], c=emb_tsne_colors, s=5, alpha=0.5)
-axs[1, 0].imshow(emb_tsne_colors.reshape((imgHeight, imgWidth, 3)))
 
-axs[0, 1].title.set_text('t-SNE std')
-axs[0, 1].scatter(emb_tsne_std[:, 0], emb_tsne_std[:, 1], c=emb_tsne_std_colors, s=5, alpha=0.5)
-axs[1, 1].imshow(emb_tsne_std_colors.reshape((imgHeight, imgWidth, 3)))
+def pltColProj(col_n, title, emb, emb_cols):
+    axs[0, col_n].title.set_text(title)
+    axs[0, col_n].scatter(emb[:, 0], emb[:, 1], c=emb_cols, s=5, alpha=0.5)
+    axs[0, col_n].get_xaxis().set_visible(False)
+    axs[0, col_n].get_yaxis().set_visible(False)
+    axs[1, col_n].imshow(emb_cols.reshape((imgHeight, imgWidth, 3)), aspect="auto")
 
-axs[0, 2].title.set_text('UMAP w/ chamfer')
-axs[0, 2].scatter(emb_umap[:, 0], emb_umap[:, 1], c=emb_umap_colors, s=5, alpha=0.5)
-axs[1, 2].imshow(emb_umap_colors.reshape((imgHeight, imgWidth, 3)))
 
-axs[0, 3].title.set_text('UMAP std')
-axs[0, 3].scatter(emb_umap_std[:, 0], emb_umap_std[:, 1], c=emb_umap_std_colors, s=5, alpha=0.5)
-axs[1, 3].imshow(emb_umap_std_colors.reshape((imgHeight, imgWidth, 3)))
-
-axs[0, 4].title.set_text('MDS w/ chamfer')
-axs[0, 4].scatter(emb_mds[:, 0], emb_mds[:, 1], c=emb_mds_colors, s=5, alpha=0.5)
-axs[1, 4].imshow(emb_mds_colors.reshape((imgHeight, imgWidth, 3)))
-
-axs[0, 5].title.set_text('MDS std')
-axs[0, 5].scatter(emb_mds_std[:, 0], emb_mds_std[:, 1], c=emb_mds_std_colors, s=5, alpha=0.5)
-axs[1, 5].imshow(emb_mds_std_colors.reshape((imgHeight, imgWidth, 3)))
+pltColProj(0, 't-SNE w/ chamfer', emb_tsne, emb_tsne_colors)
+pltColProj(1, 't-SNE std', emb_tsne_std, emb_tsne_std_colors)
+pltColProj(2, 'UMAP w/ chamfer', emb_umap, emb_umap_colors)
+pltColProj(3, 'UMAP std', emb_tsne, emb_umap_std_colors)
+pltColProj(4, 'MDS w/ chamfer', emb_mds, emb_mds_colors)
+pltColProj(5, 'MDS std', emb_mds_std, emb_mds_std_colors)
 
 plt.tight_layout()
 plt.show()
+
