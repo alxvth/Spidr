@@ -26,7 +26,8 @@ PYBIND11_MODULE(SpidrWrapper, m) {
 
 	py::enum_<knn_library>(m, "KnnAlgorithm", "Distance metric, the choice of distance will set the feature type: scalar, hsitogram or point cloud")
 		.value("hnsw", knn_library::KNN_HNSW)
-		.value("exact", knn_library::KKN_EXACT);
+		.value("exact_knn", knn_library::KKN_EXACT)
+		.value("full_dist_matrix", knn_library::FULL_DIST_BRUTE_FORCE);
 
 	py::class_<SpidrWrapper> spidrAnalysis(m, "SpidrAnalysis");
 
