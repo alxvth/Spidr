@@ -12,11 +12,15 @@ find_package(OpenMP REQUIRED)
 find_package(HDILib COMPONENTS hdiutils hdidata hdidimensionalityreduction PATHS $ENV{HDILIB_ROOT} CONFIG REQUIRED)
 
 if(Eigen3_FOUND)
-	message("Eigen3 found at ${Eigen3_DIR}")
+	message(STATUS "Eigen3 found at ${Eigen3_DIR}")
+endif()
+
+if(OpenMP_CXX_FOUND)
+	message(STATUS "OpenMP found, version ${OpenMP_CXX_VERSION}")
 endif()
 
 if(HDILib_FOUND)
-	message("HDLIib found at $ENV{HDILIB_ROOT}")	# make sure to manually set HDILIB_ROOT to the install dir of the HDILib
+	message(STATUS "HDLIib found at $ENV{HDILIB_ROOT}")	# make sure to manually set HDILIB_ROOT to the install dir of the HDILib
 endif()
 
 # set souce files of this project
@@ -58,23 +62,17 @@ target_compile_features(${SPIDRLIB} PRIVATE cxx_std_17)
 
 target_include_directories(${SPIDRLIB} PUBLIC "include")
 
-set(USE_AVX OFF CACHE BOOL "Don't use AVX by default" )
+# Hardware accelations: SSE and AVX
+set(USE_AVX OFF CACHE BOOL "Don't use AVX by default to support old hardware" )
 if(${USE_AVX})
 	add_definitions(-DUSE_AVX)
 	if( MSVC )
 		ADD_DEFINITIONS(/arch:AVX)
 	endif()
-	message ("USE AVX")
+	message(STATUS "Using AVX instruction set extensions")
 endif()
 
 add_definitions(-DUSE_SSE)
-
-if(OPENMP_FOUND)
-	message (STATUS "OpenMP found ${OpenMP_CXX_LIB_NAMES}")
-	target_link_libraries(${SPIDRLIB} PUBLIC OpenMP::OpenMP_CXX)
-else()
-    message(WARNING, "OpenMP not found!")    
-endif()
 
 # Use glfw (https://github.com/glfw/glfw) as OpenGL library for t-SNE computation with the HDILib
 set(GLFW_BUILD_DOCS OFF CACHE BOOL "GLFW lib only" )
@@ -101,6 +99,9 @@ target_include_directories(${SPIDRLIB} PUBLIC ${Boost_INCLUDE_DIRS})
 
 # Include Eigen, even though it's also header-only, see https://eigen.tuxfamily.org/dox/TopicCMakeGuide.html
 target_link_libraries(${SPIDRLIB} PUBLIC Eigen3::Eigen)
+
+# Link OpenMP for easy parallelization
+target_link_libraries(${SPIDRLIB} PUBLIC OpenMP::OpenMP_CXX)
 
 # Link against the HDILib, https://github.com/biovault/HDILib
 # make sure to have it built and HDILIB_ROOT set
