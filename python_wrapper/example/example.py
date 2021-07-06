@@ -145,6 +145,7 @@ def pltColProj(col_n, title, emb, emb_cols):
     axs[0, col_n].get_xaxis().set_visible(False)
     axs[0, col_n].get_yaxis().set_visible(False)
     axs[1, col_n].imshow(emb_cols.reshape((imgHeight, imgWidth, 3)), aspect="auto")
+    axs[1, col_n].xaxis.tick_top()
 
 
 pltColProj(0, 't-SNE w/ chamfer', emb_tsne, emb_tsne_colors)
