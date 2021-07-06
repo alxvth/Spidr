@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 from os import getcwd
 from os.path import dirname as up
 from scipy.sparse import csr_matrix
-from nptsne import TextureTsne
+from nptsne import TextureTsne as TSNE  # Texture refers to implementation details, not texture-aware DR
 from umap import UMAP
 from sklearn.manifold import MDS
 
@@ -85,7 +85,7 @@ emb_mds = alg_mds.fit_transform(knn_dists)
 
 # standard t-SNE
 print("Standard t-SNE with HDILib (nptsne)")
-alg_tsne = TextureTsne()
+alg_tsne = TSNE()
 emb_tsne_std = alg_tsne.fit_transform(data).reshape((numPoints, 2))
 
 # standard UMAP
