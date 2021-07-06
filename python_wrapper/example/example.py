@@ -23,10 +23,11 @@ imgHeight = imgWidth
 numPoints = data.shape[0]
 data_img = data.reshape((imgHeight, imgWidth, 2))
 
+
 #########
 # t-SNE #
 #########
-
+print("Texture-aware t-SNE with HDILib (nptsne)")
 # instantiate spidrlib
 alg_spidr = spidr.SpidrAnalysis(distMetric=spidr.DistMetric.Chamfer_pc, kernelType=spidr.WeightLoc.uniform,
                                 numLocNeighbors=1, aknnAlgType=spidr.KnnAlgorithm.hnsw)
@@ -34,10 +35,11 @@ alg_spidr = spidr.SpidrAnalysis(distMetric=spidr.DistMetric.Chamfer_pc, kernelTy
 # embed with t-SNE
 emb_tsne = alg_spidr.fit_transform(X=data, pointIDsGlobal=data_glob_ids, imgWidth=imgWidth, imgHeight=imgHeight)
 
+
 ########
 # UMAP #
 ########
-
+print("Texture-aware UMAP with umap-learn")
 # instantiate spidrlib
 alg_spidr = spidr.SpidrAnalysis(distMetric=spidr.DistMetric.Chamfer_pc, kernelType=spidr.WeightLoc.uniform,
                                 numLocNeighbors=1, aknnAlgType=spidr.KnnAlgorithm.hnsw)
@@ -57,10 +59,11 @@ knn_csr = csr_matrix((knn_dists, (knn_ind_row, knn_ind)), shape=(numPoints, numP
 alg_umap = UMAP()
 emb_umap = alg_umap.fit_transform(knn_csr)
 
+
 #######
 # MDS #
 #######
-
+print("Texture-aware MDS with scikit-learn")
 # instantiate spidrlib
 alg_spidr = spidr.SpidrAnalysis(distMetric=spidr.DistMetric.Chamfer_pc, kernelType=spidr.WeightLoc.uniform,
                                 numLocNeighbors=1, aknnAlgType=spidr.KnnAlgorithm.full_dist_matrix)
@@ -81,16 +84,20 @@ emb_mds = alg_mds.fit_transform(knn_dists)
 #######################
 
 # standard t-SNE
+print("Standard t-SNE with HDILib (nptsne)")
 alg_tsne = TextureTsne()
 emb_tsne_std = alg_tsne.fit_transform(data).reshape((numPoints, 2))
 
 # standard UMAP
+print("Standard MDS with scikit-learn")
 alg_umap = UMAP()
 emb_umap_std = alg_umap.fit_transform(data)
 
 # standard MDS
+print("Standard MDS with scikit-learn")
 alg_mds = MDS(dissimilarity='euclidean', n_jobs=-1)
 emb_mds_std = alg_mds.fit_transform(data)
+
 
 #########
 # Plots #
@@ -157,4 +164,3 @@ pltColProj(5, 'MDS std', emb_mds_std, emb_mds_std_colors)
 
 plt.tight_layout()
 plt.show()
-
