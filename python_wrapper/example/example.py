@@ -89,7 +89,7 @@ alg_tsne = TextureTsne()
 emb_tsne_std = alg_tsne.fit_transform(data).reshape((numPoints, 2))
 
 # standard UMAP
-print("Standard MDS with scikit-learn")
+print("Standard UMAP with umap-learn")
 alg_umap = UMAP()
 emb_umap_std = alg_umap.fit_transform(data)
 
