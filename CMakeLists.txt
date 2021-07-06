@@ -4,15 +4,22 @@ set(SPIDRLIB "SpidrLib")
 
 PROJECT(${SPIDRLIB})
 
+# find external packages
 find_package(Boost REQUIRED) # use header-only libs, thus no components specified
 find_package(Eigen3 3.3 REQUIRED)
 find_package(OpenGL REQUIRED)
 find_package(OpenMP REQUIRED)
+find_package(HDILib COMPONENTS hdiutils hdidata hdidimensionalityreduction PATHS $ENV{HDILIB_ROOT} CONFIG REQUIRED)
 
 if(Eigen3_FOUND)
-	message("Eigen3 found")
+	message("Eigen3 found at ${Eigen3_DIR}")
 endif()
 
+if(HDILib_FOUND)
+	message("HDLIib found at $ENV{HDILIB_ROOT}")	# make sure to manually set HDILIB_ROOT to the install dir of the HDILib
+endif()
+
+# set souce files of this project
 set(HEADERS 
 	include/FeatureExtraction.h
 	include/DistanceCalculation.h
@@ -50,7 +57,6 @@ add_library(${SPIDRLIB} STATIC ${SOURCES})
 target_compile_features(${SPIDRLIB} PRIVATE cxx_std_17)
 
 target_include_directories(${SPIDRLIB} PUBLIC "include")
-target_include_directories(${SPIDRLIB} PUBLIC "external/HDILib/HDI/include")
 
 set(USE_AVX OFF CACHE BOOL "Don't use AVX by default" )
 if(${USE_AVX})
@@ -70,6 +76,7 @@ else()
     message(WARNING, "OpenMP not found!")    
 endif()
 
+# Use glfw (https://github.com/glfw/glfw) as OpenGL library for t-SNE computation with the HDILib
 set(GLFW_BUILD_DOCS OFF CACHE BOOL "GLFW lib only" )
 set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "disable GLFX examples")
 set(GLFW_BUILD_TESTS OFF CACHE BOOL "disable GLFX tests") 
@@ -87,30 +94,15 @@ add_definitions(-DGLFW_INCLUDE_NONE)
 target_include_directories(${SPIDRLIB} PUBLIC "${CMAKE_SOURCE_DIR}/external/glfw/include")
 target_link_libraries(${SPIDRLIB} PUBLIC glfw)
 
+# Include external header-only libraries
 target_include_directories(${SPIDRLIB} PUBLIC "external/spdlog/include")
 target_include_directories(${SPIDRLIB} PUBLIC "external/hnswlib")
 target_include_directories(${SPIDRLIB} PUBLIC ${Boost_INCLUDE_DIRS})
 
+# Include Eigen, even though it's also header-only, see https://eigen.tuxfamily.org/dox/TopicCMakeGuide.html
 target_link_libraries(${SPIDRLIB} PUBLIC Eigen3::Eigen)
 
-if(MSVC)
-    MESSAGE( STATUS "Linking Windows libraries...")
-
-	# link to precompiled HDILib 
-    target_link_libraries(${SPIDRLIB} PUBLIC debug "${CMAKE_CURRENT_SOURCE_DIR}/external/HDILib/HDI/Win/Debug/hdidimensionalityreduction.lib")
-    target_link_libraries(${SPIDRLIB} PUBLIC debug "${CMAKE_CURRENT_SOURCE_DIR}/external/HDILib/HDI/Win/Debug/hdidata.lib")
-    target_link_libraries(${SPIDRLIB} PUBLIC debug "${CMAKE_CURRENT_SOURCE_DIR}/external/HDILib/HDI/Win/Debug/hdiutils.lib")
-    target_link_libraries(${SPIDRLIB} PUBLIC optimized "${CMAKE_CURRENT_SOURCE_DIR}/external/HDILib/HDI/Win/Release/hdidimensionalityreduction.lib")
-    target_link_libraries(${SPIDRLIB} PUBLIC optimized "${CMAKE_CURRENT_SOURCE_DIR}/external/HDILib/HDI/Win/Release/hdidata.lib")
-    target_link_libraries(${SPIDRLIB} PUBLIC optimized "${CMAKE_CURRENT_SOURCE_DIR}/external/HDILib/HDI/Win/Release/hdiutils.lib")
-
-    target_link_libraries(${SPIDRLIB} PUBLIC debug "${CMAKE_CURRENT_SOURCE_DIR}/external/HDILib/Flann/Win/Debug/flann_cpp_s.lib")
-    target_link_libraries(${SPIDRLIB} PUBLIC optimized "${CMAKE_CURRENT_SOURCE_DIR}/external/HDILib/Flann/Win/Release/flann_cpp_s.lib")
-
-	# link to precompiled FLANN 
-    target_include_directories(${SPIDRLIB} PUBLIC "external/HDILib/Flann/Win/include")
-
-else()
-	message(ERROR, "Only windows tested")    
-endif(MSVC)
-
+# Link against the HDILib, https://github.com/biovault/HDILib
+# make sure to have it built and HDILIB_ROOT set
+target_include_directories(${SPIDRLIB} PRIVATE ${HDILib_INCLUDE_DIR})
+target_link_libraries(${SPIDRLIB} PRIVATE HDI::hdidimensionalityreduction HDI::hdiutils HDI::hdidata OpenMP::OpenMP_CXX ${CMAKE_DL_LIBS}) # no need to link against flann::flann since it is not used in SPIDRLIB
