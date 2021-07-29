@@ -21,7 +21,7 @@ public:
     SpidrAnalysis();
 
     /*!
-     * 
+     * Call me before calling initializeAnalysisSettings
      * 
      * \param attribute_data
      * \param pointIDsGlobal
@@ -153,7 +153,7 @@ private:
     void setExpDecay(const unsigned expDacay);
 
     /*! Sets the size of a feature, derived from other parameters */
-    void setNumFeatureValsPerPoint();
+    void setNumFeatureValsPerPoint(feature_type featType, size_t numDims, size_t numHistBins, size_t neighborhoodSize);
 
     /*! Sets the spatial-attribut distance weight, 0 for only attributes and 1 for only spatial */
     void setMVNWeight(const float weight);

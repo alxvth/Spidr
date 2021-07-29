@@ -28,7 +28,7 @@ public:
 	std::tuple<std::vector<int>, std::vector<float>> fit(
 		py::array_t<float, py::array::c_style | py::array::forcecast> X,
 		py::array_t<unsigned int, py::array::c_style | py::array::forcecast> pointIDsGlobal,
-		int imgWidth, int imgHight,
+		int imgWidth, int imgHeight,
 		std::optional<py::array_t<unsigned int, py::array::c_style | py::array::forcecast>> backgroundIDsGlobal);
 
 	py::array_t<float, py::array::c_style> transform();
@@ -36,7 +36,7 @@ public:
 	py::array_t<float, py::array::c_style> fit_transform(
 		py::array_t<float, py::array::c_style | py::array::forcecast> X,
 		py::array_t<unsigned int, py::array::c_style | py::array::forcecast> pointIDsGlobal,
-		int imgWidth, int imgHight,
+		int imgWidth, int imgHeight,
 		std::optional<py::array_t<unsigned int, py::array::c_style | py::array::forcecast>> backgroundIDsGlobal);
 
 	int get_nn() { return static_cast<int>(_nn); }
@@ -48,7 +48,7 @@ private:
 	void compute_fit(
 		py::array_t<float, py::array::c_style | py::array::forcecast> X,
 		py::array_t<unsigned int, py::array::c_style | py::array::forcecast> pointIDsGlobal,
-		int imgWidth, int imgHight,
+		int imgWidth, int imgHeight,
 		std::optional<py::array_t<unsigned int, py::array::c_style | py::array::forcecast>> backgroundIDsGlobal);
 
 

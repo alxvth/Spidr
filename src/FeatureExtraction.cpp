@@ -125,7 +125,6 @@ void FeatureExtraction::setup(const std::vector<unsigned int>& pointIds, const s
 
 void FeatureExtraction::initExtraction() {
 	spdlog::info("Feature extraction: Init feature extraction");
-
     _outFeatures.resize(_numPoints * _numFeatureValsPerPoint);
 
     // fill such that _outFeatures are always initialized to FLT_MAX
@@ -134,13 +133,13 @@ void FeatureExtraction::initExtraction() {
     // calculate other help values specific to feature type
     if (_featType == feature_type::TEXTURE_HIST_1D) {
         // find min and max for each channel, resize the output larger due to vector features
-        _minMaxVals = CalcMinMaxPerChannel(_numPoints, _numDims, _attribute_data);
-    }
+		_minMaxVals = CalcMinMaxPerChannel(_numPoints, _numDims, _attribute_data);
+	}
     else if ((_featType == feature_type::LOCALMORANSI) | (_featType == feature_type::LOCALGEARYC)) {
         // find mean and varaince for each channel
         _meanVals = CalcMeanPerChannel(_numPoints, _numDims, _attribute_data);
-        _varVals = CalcVarEstimate(_numPoints, _numDims, _attribute_data, _meanVals);
-    }
+		_varVals = CalcVarEstimate(_numPoints, _numDims, _attribute_data, _meanVals);
+	}
 
 }
 

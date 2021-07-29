@@ -8,7 +8,9 @@
 SpidrAnalysis::SpidrAnalysis() {};
 
 void SpidrAnalysis::setupData(const std::vector<float>& attribute_data, const std::vector<unsigned int>& pointIDsGlobal, const size_t numDimensions, const ImgSize imgSize, const std::string embeddingName, std::vector<unsigned int>& backgroundIDsGlobal) {
-    // Set data
+    // TODO: there should be a function that calls setupData and initializeAnalysisSettings so that the user only sees a single setup function.
+
+	// Set data
     _attribute_data = attribute_data;
     _pointIDsGlobal = pointIDsGlobal;
     _backgroundIDsGlobal = backgroundIDsGlobal;
@@ -17,7 +19,7 @@ void SpidrAnalysis::setupData(const std::vector<float>& attribute_data, const st
     // Set parameters
     _params._numPoints = _pointIDsGlobal.size();
     _params._numDims = numDimensions;
-    _params._imgSize = imgSize;
+	_params._imgSize = imgSize;
     _params._embeddingName = embeddingName;
     _params._dataVecBegin = _attribute_data.data();          // used in point cloud distance
 
@@ -30,10 +32,14 @@ void SpidrAnalysis::setupData(const std::vector<float>& attribute_data, const st
 void SpidrAnalysis::initializeAnalysisSettings(const feature_type featType, const loc_Neigh_Weighting kernelWeightType, const size_t numLocNeighbors, const size_t numHistBins,\
                                                const knn_library aknnAlgType, const distance_metric aknnMetric, const float MVNweight, \
                                                const int numIterations, const int perplexity, const int exaggeration, const int expDecay, bool forceCalcBackgroundFeatures) {
-    // initialize Feature Extraction Settings
+	if (_params._numDims < 0 || _params._numHistBins < 0)
+		spdlog::error("SpidrWrapper: first call SpidrAnalysis::setupData() before initializing the settings with SpidrAnalysis::initializeAnalysisSettings since some might depend on the data dimensions.");
+
+	// the following set* functions set values in _params
+	// initialize Feature Extraction Settings
     setFeatureType(featType);
     setKernelWeight(kernelWeightType);
-    setNumLocNeighbors(numLocNeighbors);    // Sets _params._kernelWidth and _params._neighborhoodSize as well
+    setNumLocNeighbors(numLocNeighbors);    // Sets both _params._kernelWidth and _params._neighborhoodSize
     setNumHistBins(numHistBins);
 
     // initialize Distance Calculation Settings
@@ -49,9 +55,8 @@ void SpidrAnalysis::initializeAnalysisSettings(const feature_type featType, cons
     setExpDecay(expDecay);
 
     // Derived parameters
-    setNumFeatureValsPerPoint(); 
-
-    setForceCalcBackgroundFeatures(forceCalcBackgroundFeatures);
+	setNumFeatureValsPerPoint(featType, _params._numDims, _params._numHistBins, _params._neighborhoodSize);			// sets _params._numFeatureValsPerPoint
+    setForceCalcBackgroundFeatures(forceCalcBackgroundFeatures);													// sets _params._forceCalcBackgroundFeatures
 
 	spdlog::info("SpidrAnalysis: Initialized all settings");
 }
@@ -92,7 +97,7 @@ void SpidrAnalysis::compute() {
 
 
 void SpidrAnalysis::setFeatureType(const feature_type feature_type) {
-    _params._featureType = feature_type;
+	_params._featureType = feature_type;
 }
 
 void SpidrAnalysis::setKernelWeight(const loc_Neigh_Weighting loc_Neigh_Weighting) {
@@ -138,8 +143,8 @@ void SpidrAnalysis::setExpDecay(const unsigned expDecay) {
     _params._expDecay = expDecay;
 }
 
-void SpidrAnalysis::setNumFeatureValsPerPoint() {
-    _params._numFeatureValsPerPoint = NumFeatureValsPerPoint(_params._featureType, _params._numDims, _params._numHistBins, _params._neighborhoodSize);
+void SpidrAnalysis::setNumFeatureValsPerPoint(feature_type featType, size_t numDims, size_t numHistBins, size_t neighborhoodSize) {
+	_params._numFeatureValsPerPoint = NumFeatureValsPerPoint(featType, numDims, numHistBins, neighborhoodSize);
 }
 
 void SpidrAnalysis::setMVNWeight(const float weight) {

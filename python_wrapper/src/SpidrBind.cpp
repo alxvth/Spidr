@@ -11,7 +11,7 @@ PYBIND11_MODULE(SpidrWrapper, m) {
 	m.doc() = "SpidrWrapper";
 
 	// ENUMS
-	py::enum_<distance_metric>(m, "DistMetric", "Distance metric, the choice of distance will set the feature type: scalar, hsitogram or point cloud")
+	py::enum_<distance_metric>(m, "DistMetric", "Distance metric, the choice of distance will set the feature type: scalar, histogram or point cloud")
 		.value("QF_hist", distance_metric::METRIC_QF)
 		.value("EMD_hist", distance_metric::METRIC_EMD)
 		.value("Hel_hist", distance_metric::METRIC_HEL)
@@ -19,12 +19,12 @@ PYBIND11_MODULE(SpidrWrapper, m) {
 		.value("Hausdorff_pc", distance_metric::METRIC_HAU)
 		.value("Euclidean_scal", distance_metric::METRIC_EUC);
 
-	py::enum_<loc_Neigh_Weighting>(m, "WeightLoc", "Distance metric, the choice of distance will set the feature type: scalar, hsitogram or point cloud")
+	py::enum_<loc_Neigh_Weighting>(m, "WeightLoc", "Distance metric, the choice of distance will set the feature type: scalar, histogram or point cloud")
 		.value("uniform", loc_Neigh_Weighting::WEIGHT_UNIF)
 		.value("bino", loc_Neigh_Weighting::WEIGHT_BINO)
 		.value("gauss", loc_Neigh_Weighting::WEIGHT_GAUS);
 
-	py::enum_<knn_library>(m, "KnnAlgorithm", "Distance metric, the choice of distance will set the feature type: scalar, hsitogram or point cloud")
+	py::enum_<knn_library>(m, "KnnAlgorithm", "Distance metric, the choice of distance will set the feature type: scalar, histogram or point cloud")
 		.value("hnsw", knn_library::KNN_HNSW)
 		.value("exact_knn", knn_library::KKN_EXACT)
 		.value("full_dist_matrix", knn_library::FULL_DIST_BRUTE_FORCE);
