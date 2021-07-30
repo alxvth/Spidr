@@ -2,12 +2,13 @@
 
 #include <cmath>
 #include <algorithm>
+#include <chrono>       // std::chrono
 #include "spdlog/spdlog-inl.h"
 
 
 SpidrAnalysis::SpidrAnalysis() {};
 
-void SpidrAnalysis::setupData(const std::vector<float>& attribute_data, const std::vector<unsigned int>& pointIDsGlobal, const size_t numDimensions, const ImgSize imgSize, const std::string embeddingName, std::vector<unsigned int>& backgroundIDsGlobal) {
+void SpidrAnalysis::setupData(const std::vector<float>& attribute_data, const std::vector<unsigned int>& pointIDsGlobal, const size_t numDimensions, const ImgSize imgSize, const std::string embeddingName, const std::vector<unsigned int>& backgroundIDsGlobal) {
     // TODO: there should be a function that calls setupData and initializeAnalysisSettings so that the user only sees a single setup function.
 
 	// Set data
@@ -15,6 +16,10 @@ void SpidrAnalysis::setupData(const std::vector<float>& attribute_data, const st
     _pointIDsGlobal = pointIDsGlobal;
     _backgroundIDsGlobal = backgroundIDsGlobal;
     std::sort(_backgroundIDsGlobal.begin(), _backgroundIDsGlobal.end());
+    // IDs that are not background are in the foreground
+    std::set_difference(_pointIDsGlobal.begin(), _pointIDsGlobal.end(),
+                        _backgroundIDsGlobal.begin(), _backgroundIDsGlobal.end(), 
+                        std::inserter(_foregroundIDsGlobal, _foregroundIDsGlobal.begin()));
 
     // Set parameters
     _params._numPoints = _pointIDsGlobal.size();
@@ -174,7 +179,6 @@ const std::vector<float>& SpidrAnalysis::output() {
 
 const std::vector<float>& SpidrAnalysis::outputWithBackground() {
     const std::vector<float>& emb = _tsne.output();
-    _emd_with_backgound.resize(_pointIDsGlobal.size() * 2);
 
     if (_backgroundIDsGlobal.empty())
     {
@@ -183,43 +187,70 @@ const std::vector<float>& SpidrAnalysis::outputWithBackground() {
     else
     {
 		spdlog::info("SpidrAnalysis: Add background back to embedding");
+        auto start = std::chrono::steady_clock::now();
 
-		spdlog::info("SpidrAnalysis: Determine background position in embedding");
+        addBackgroundToEmbedding(_emd_with_backgound, emb);
 
-        // find min x and min y embedding positions
-        float minx = emb[0];
-        float miny = emb[1];
-
-        for (size_t i = 0; i < emb.size(); i += 2) {
-            if (emb[i] < minx)
-                minx = emb[i];
-
-            if (emb[i+1] < miny)
-                miny = emb[i+1];
-        }
-
-        minx -= std::abs(minx) * 0.05;
-        miny -= std::abs(miny) * 0.05;
-
-		spdlog::info("SpidrAnalysis: Inserting background in embedding");
-
-        // add (0,0) to embedding at background positions
-        size_t emdCounter = 0;
-        for (int globalIDCounter = 0; globalIDCounter < _pointIDsGlobal.size(); globalIDCounter++) {
-            // if background, insert (0,0)
-            if (std::find(_backgroundIDsGlobal.begin(), _backgroundIDsGlobal.end(), globalIDCounter) != _backgroundIDsGlobal.end()) {
-                _emd_with_backgound[2 * globalIDCounter] = minx;
-                _emd_with_backgound[2 * globalIDCounter + 1] = miny;
-            }
-            else {
-                _emd_with_backgound[2 * globalIDCounter] = emb[2 * emdCounter];
-                _emd_with_backgound[2 * globalIDCounter + 1] = emb[2 * emdCounter + 1];
-                emdCounter++;
-            }
-        }
+        auto end = std::chrono::steady_clock::now();
+        spdlog::info("SpidrAnalysis: Add backgorund (sec): {}", ((float)std::chrono::duration_cast<std::chrono::milliseconds> (end - start).count()) / 1000);
 
         return _emd_with_backgound;
     }
+}
+
+void SpidrAnalysis::addBackgroundToEmbedding(std::vector<float>& emb, const std::vector<float>& emb_wo_bg) {
+    emb.resize(_pointIDsGlobal.size() * 2);
+
+    // find min x and min y embedding positions
+    float minx = emb_wo_bg[0];
+    float miny = emb_wo_bg[1];
+
+    for (size_t i = 0; i < emb_wo_bg.size(); i += 2) {
+        if (emb_wo_bg[i] < minx)
+            minx = emb_wo_bg[i];
+
+        if (emb_wo_bg[i + 1] < miny)
+            miny = emb_wo_bg[i + 1];
+    }
+
+    minx -= std::abs(minx) * 0.05;
+    miny -= std::abs(miny) * 0.05;
+
+    spdlog::info("SpidrAnalysis: Inserting background in embedding ;ib;ier");
+
+    //#ifdef NDEBUG
+    //#pragma omp parallel for
+    //#endif
+    //        for (int i = 0; i < _backgroundIDsGlobal.size(); i++) {
+    //            emb[2 * _backgroundIDsGlobal[i]]     = minx;
+    //            emb[2 * _backgroundIDsGlobal[i] + 1] = miny;
+    //
+    //        }
+    //#ifdef NDEBUG
+    //#pragma omp parallel for
+    //#endif
+    //        for (int i = 0; i < _foregroundIDsGlobal.size(); i++) {
+    //            emb[2 * _foregroundIDsGlobal[i]]     = emb_wo_bg[2 * emdCounter];
+    //            emb[2 * _foregroundIDsGlobal[i] + 1] = emb_wo_bg[2 * emdCounter + 1];
+    //        }
+    //
+
+
+            // add (minx, miny) to embedding at background positions
+    size_t emdCounter = 0;
+    for (int globalIDCounter = 0; globalIDCounter < _pointIDsGlobal.size(); globalIDCounter++) {
+        // if background, insert (minx, miny)
+        if (std::find(_backgroundIDsGlobal.begin(), _backgroundIDsGlobal.end(), globalIDCounter) != _backgroundIDsGlobal.end()) {
+            emb[2 * globalIDCounter] = minx;
+            emb[2 * globalIDCounter + 1] = miny;
+        }
+        else {
+            emb[2 * globalIDCounter] = emb_wo_bg[2 * emdCounter];
+            emb[2 * globalIDCounter + 1] = emb_wo_bg[2 * emdCounter + 1];
+            emdCounter++;
+        }
+    }
+
 }
 
 void SpidrAnalysis::stopComputation() {

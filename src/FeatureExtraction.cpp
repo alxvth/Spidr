@@ -147,13 +147,14 @@ void FeatureExtraction::extractFeatures() {
 	spdlog::info("Feature extraction: Extract features");
 
     // skip if background is given, 
+    // TODO: if you compute the forground IDs anyways earlier, you won't need this distinctions here: simply iterate over all foreground IDs
     if (!_backgroundIDsGlobal->empty() && !_forceCalcBackgroundFeatures) {
         std::vector<unsigned int> all_IDs(_numPoints);
         std::vector<unsigned int> foreground_IDs;
         std::iota(all_IDs.begin(), all_IDs.end(), 0);
         std::set_difference(all_IDs.begin(), all_IDs.end(), _backgroundIDsGlobal->begin(), _backgroundIDsGlobal->end(), std::inserter(foreground_IDs, foreground_IDs.begin()));
 
-        // visual studio onlu supports open mp 2.0
+        // visual studio only supports open mp 2.0
 #ifdef NDEBUG
 #pragma omp parallel for
 #endif
