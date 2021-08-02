@@ -39,7 +39,7 @@ public:
      * \param attribute_data
      * \param params
      */
-    void setup(const std::vector<unsigned int>& pointIds, const std::vector<float>& attribute_data, const SpidrParameters& params, std::vector<unsigned int>* backgroundIDsGlobal);
+    void setup(const std::vector<unsigned int>& pointIDsGlobal, const std::vector<float>& attribute_data, const SpidrParameters& params, const std::vector<unsigned int>& backgroundIDsGlobal, const std::vector<unsigned int>& foregroundIDsGlobal);
 
     /*!
 	* Calculates features, basically calls initExtraction and extractFeatures
@@ -139,9 +139,10 @@ private:
 	ImgSize      _imgSize;                          /*!<> */
     size_t       _numDims;                          /*!<> */
     size_t       _numPoints;                        /*!<> */
-    std::vector<unsigned int> _pointIds;            /*!<> */
+    std::vector<unsigned int> _pointIDsGlobal;      /*!<> */
     std::vector<float> _attribute_data;             /*!<> */
-    std::vector<unsigned int>* _backgroundIDsGlobal;  /*!<> */
+    std::vector<unsigned int> _backgroundIDsGlobal;  /*!<> */
+    std::vector<unsigned int> _foregroundIDsGlobal;  /*!<> */
     std::vector<float> _minMaxVals;                 /*!< Extrema for each dimension/channel, i.e. [min_Ch0, max_Ch0, min_Ch1, max_Ch1, ...] */
     std::vector<float> _meanVals;                   /*!< Avg for each dimension/channel, i.e. [mean_Ch0, meam_Ch1, ...] */
     std::vector<float> _varVals;                    /*!< Variance estimate for each dimension/channel, i.e. [mean_Ch0, meam_Ch1, ...] */

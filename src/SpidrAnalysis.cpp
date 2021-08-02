@@ -68,7 +68,7 @@ void SpidrAnalysis::initializeAnalysisSettings(const feature_type featType, cons
 
 
 void SpidrAnalysis::computeFeatures() {
-	_featExtraction.setup(_pointIDsGlobal, _attribute_data, _params, &_backgroundIDsGlobal);
+	_featExtraction.setup(_pointIDsGlobal, _attribute_data, _params, _backgroundIDsGlobal, _foregroundIDsGlobal);
 	_featExtraction.compute();
 	spdlog::info("SpidrAnalysis: Get computed feature values");
 	_dataFeats = _featExtraction.output();
