@@ -212,39 +212,23 @@ void SpidrAnalysis::addBackgroundToEmbedding(std::vector<float>& emb, const std:
     minx -= std::abs(minx) * 0.05;
     miny -= std::abs(miny) * 0.05;
 
-    spdlog::info("SpidrAnalysis: Inserting background in embedding");
+    // Place all background pixel in the lower left corner of the embedding
+#ifdef NDEBUG
+#pragma omp parallel for
+#endif
+    for (int i = 0; i < _backgroundIDsGlobal.size(); i++) {
+        emb[2 * _backgroundIDsGlobal[i]] = minx;
+        emb[2 * _backgroundIDsGlobal[i] + 1] = miny;
 
-    //#ifdef NDEBUG
-    //#pragma omp parallel for
-    //#endif
-    //        for (int i = 0; i < _backgroundIDsGlobal.size(); i++) {
-    //            emb[2 * _backgroundIDsGlobal[i]]     = minx;
-    //            emb[2 * _backgroundIDsGlobal[i] + 1] = miny;
-    //
-    //        }
-    //#ifdef NDEBUG
-    //#pragma omp parallel for
-    //#endif
-    //        for (int i = 0; i < _foregroundIDsGlobal.size(); i++) {
-    //            emb[2 * _foregroundIDsGlobal[i]]     = emb_wo_bg[2 * emdCounter];
-    //            emb[2 * _foregroundIDsGlobal[i] + 1] = emb_wo_bg[2 * emdCounter + 1];
-    //        }
-    //
+    }
 
-
-    // add (minx, miny) to embedding at background positions
-    size_t emdCounter = 0;
-    for (int globalIDCounter = 0; globalIDCounter < _pointIDsGlobal.size(); globalIDCounter++) {
-        // if background, insert (minx, miny)
-        if (std::find(_backgroundIDsGlobal.begin(), _backgroundIDsGlobal.end(), globalIDCounter) != _backgroundIDsGlobal.end()) {
-            emb[2 * globalIDCounter] = minx;
-            emb[2 * globalIDCounter + 1] = miny;
-        }
-        else {
-            emb[2 * globalIDCounter] = emb_wo_bg[2 * emdCounter];
-            emb[2 * globalIDCounter + 1] = emb_wo_bg[2 * emdCounter + 1];
-            emdCounter++;
-        }
+    // Copy the foreground embedding positions
+#ifdef NDEBUG
+#pragma omp parallel for
+#endif
+    for (int i = 0; i < _foregroundIDsGlobal.size(); i++) {
+        emb[2 * _foregroundIDsGlobal[i]] = emb_wo_bg[2 * i];
+        emb[2 * _foregroundIDsGlobal[i] + 1] = emb_wo_bg[2 * i + 1];
     }
 
     auto end = std::chrono::steady_clock::now();
