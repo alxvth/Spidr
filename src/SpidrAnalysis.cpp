@@ -186,19 +186,15 @@ const std::vector<float>& SpidrAnalysis::outputWithBackground() {
     }
     else
     {
-		spdlog::info("SpidrAnalysis: Add background back to embedding");
-        auto start = std::chrono::steady_clock::now();
-
         addBackgroundToEmbedding(_emd_with_backgound, emb);
-
-        auto end = std::chrono::steady_clock::now();
-        spdlog::info("SpidrAnalysis: Add backgorund (sec): {}", ((float)std::chrono::duration_cast<std::chrono::milliseconds> (end - start).count()) / 1000);
-
         return _emd_with_backgound;
     }
 }
 
 void SpidrAnalysis::addBackgroundToEmbedding(std::vector<float>& emb, const std::vector<float>& emb_wo_bg) {
+    spdlog::info("SpidrAnalysis: Add background back to embedding");
+    auto start = std::chrono::steady_clock::now();
+
     emb.resize(_pointIDsGlobal.size() * 2);
 
     // find min x and min y embedding positions
@@ -216,7 +212,7 @@ void SpidrAnalysis::addBackgroundToEmbedding(std::vector<float>& emb, const std:
     minx -= std::abs(minx) * 0.05;
     miny -= std::abs(miny) * 0.05;
 
-    spdlog::info("SpidrAnalysis: Inserting background in embedding ;ib;ier");
+    spdlog::info("SpidrAnalysis: Inserting background in embedding");
 
     //#ifdef NDEBUG
     //#pragma omp parallel for
@@ -236,7 +232,7 @@ void SpidrAnalysis::addBackgroundToEmbedding(std::vector<float>& emb, const std:
     //
 
 
-            // add (minx, miny) to embedding at background positions
+    // add (minx, miny) to embedding at background positions
     size_t emdCounter = 0;
     for (int globalIDCounter = 0; globalIDCounter < _pointIDsGlobal.size(); globalIDCounter++) {
         // if background, insert (minx, miny)
@@ -250,6 +246,10 @@ void SpidrAnalysis::addBackgroundToEmbedding(std::vector<float>& emb, const std:
             emdCounter++;
         }
     }
+
+    auto end = std::chrono::steady_clock::now();
+    spdlog::info("SpidrAnalysis: Add backgorund (sec): {}", ((float)std::chrono::duration_cast<std::chrono::milliseconds> (end - start).count()) / 1000);
+
 
 }
 

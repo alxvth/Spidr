@@ -41,7 +41,7 @@ void DistanceCalculation::setup(const std::vector<float>& dataFeatures, const st
     _MVNweight = params._MVNweight;
     _imgWidth = params._imgSize.width;
 
-    // consider background if specified - remove those points as well as their attribute and features
+    // do not compute distances between background points - remove those points as well as their attribute and features
     if (backgroundIDsGlobal.empty()) {
         _dataFeatures = dataFeatures;
     }
@@ -77,9 +77,8 @@ void DistanceCalculation::setup(const std::vector<float>& dataFeatures, const st
 
 	spdlog::info("Distance calculation: Feature values per point: {0}, Number of NN to calculate {1}. Metric: {2}", _numFeatureValsPerPoint, _nn, static_cast<size_t> (_knn_metric));
 
-    // -1 would mark an unset feature
-    // except if there was background defined, then just go ahead
-    assert(!((backgroundIDsGlobal.empty() || params._forceCalcBackgroundFeatures) != std::none_of(_dataFeatures.begin(), _dataFeatures.end(), [](float i) {return i == FLT_MAX; })));
+    // No value in _dataFeatures should be FLT_MAX (it's init value)   
+    assert(std::none_of(_dataFeatures.begin(), _dataFeatures.end(), [](float i) {return i == FLT_MAX; }));
 }
 
 void DistanceCalculation::compute() {

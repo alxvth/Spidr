@@ -49,8 +49,9 @@ void FeatureExtraction::compute() {
 	auto end = std::chrono::steady_clock::now();
 	spdlog::info("Feature extraction: Extraction duration (sec): {}", ((float)std::chrono::duration_cast<std::chrono::milliseconds> (end - start).count()) / 1000);
 
-	// if there is a -1 in the _outFeatures, this value was not set at all
-    // except if there was background defined, then just go ahead
+    // No value in _outFeatures should be FLT_MAX (it's init value)
+    // Except when background IDs are given: then they were skipped during the feature computation and still have their initial FLT_MAX value
+    // The background entries will be ignored during the Distance calculation 
 	assert(!((_backgroundIDsGlobal->empty() || _forceCalcBackgroundFeatures) != std::none_of(_outFeatures.begin(), _outFeatures.end(), [](float i) {return i == FLT_MAX; })));
 
 	spdlog::info("Feature extraction: Finished");
