@@ -53,36 +53,36 @@ std::vector<float> BinSimilarities(size_t num_bins, bin_sim sim_type = bin_sim::
  * \param dataFeatures Features used for distance calculation, dataFeatures->size() == (numPoints * indMultiplier)
  * \param space HNSWLib metric space
  * \param featureSize Size of one data item features
- * \param numPoints Number of points in the data
+ * \param foregroundIDsGlobal IDs of valid points in dataFeatures (for fore- and background distinction)
  * \param nn Number of kNN to compute
  * \return Tuple of knn Indices and respective squared distances
 */
 template<typename T>
-std::tuple<std::vector<int>, std::vector<float>> ComputeHNSWkNN(const std::vector<T>& dataFeatures, hnswlib::SpaceInterface<float> *space, size_t featureSize, size_t numPoints, unsigned int nn);
+std::tuple<std::vector<int>, std::vector<float>> ComputeHNSWkNN(const std::vector<T>& dataFeatures, hnswlib::SpaceInterface<float> *space, size_t featureSize, const std::vector<unsigned int>& foregroundIDsGlobal, unsigned int nn);
 
 /*! Compute exact kNNs 
  * Calculate the distances between all point pairs and find closest neighbors
  * \param dataFeatures Features used for distance calculation, dataFeatures->size() == (numPoints * indMultiplier)
  * \param space HNSWLib metric space
  * \param featureSize Size of one data item features
- * \param numPoints Number of points in the data
+ * \param foregroundIDsGlobal IDs of valid points in dataFeatures (for fore- and background distinction)
  * \param nn Number of nearest neighbors
  * \param fullDistMat Whether to fullDistMat the nearest neighbor distances. Default is false. Set to true if nn == numPoints and you want to calculate the full distance matrix (which is what ComputeFullDistMat() does)
  * \return Tuple of indices and respective squared distances
 */
 template<typename T>
-std::tuple<std::vector<int>, std::vector<float>> ComputeExactKNN(const std::vector<T> dataFeatures, hnswlib::SpaceInterface<float> *space, size_t featureSize, size_t numPoints, unsigned int nn, bool fullDistMat = false);
+std::tuple<std::vector<int>, std::vector<float>> ComputeExactKNN(const std::vector<T> dataFeatures, hnswlib::SpaceInterface<float> *space, size_t featureSize, const std::vector<unsigned int>& foregroundIDsGlobal, unsigned int nn, bool fullDistMat = false);
 
 /*! Compute the full distance matrix between all data points
  * Calls ComputeExactKNN with the correct parameters, basically syntactic sugar
  * \param dataFeatures Features used for distance calculation, dataFeatures->size() == (numPoints * indMultiplier)
  * \param space HNSWLib metric space
  * \param featureSize Size of one data item features
- * \param numPoints Number of points in the data
+ * \param foregroundIDsGlobal IDs of valid points in dataFeatures (for fore- and background distinction)
  * \return Tuple of indices and respective squared distances
 */
 template<typename T>
-std::tuple<std::vector<int>, std::vector<float>> ComputeFullDistMat(const std::vector<T> dataFeatures, hnswlib::SpaceInterface<float> *space, size_t featureSize, size_t numPoints);
+std::tuple<std::vector<int>, std::vector<float>> ComputeFullDistMat(const std::vector<T> dataFeatures, hnswlib::SpaceInterface<float> *space, size_t featureSize, const std::vector<unsigned int>& foregroundIDsGlobal);
 
 /*! Creates a metric space used by HNSWLib to build a kNN index
  * 

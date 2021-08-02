@@ -76,7 +76,7 @@ void SpidrAnalysis::computeFeatures() {
 }
 
 void SpidrAnalysis::computekNN() {
-	_distCalc.setup(_dataFeats, _backgroundIDsGlobal, _params);
+	_distCalc.setup(_dataFeats, _foregroundIDsGlobal, _params);
 	_distCalc.compute();
 	_knn_indices = _distCalc.get_knn_indices();
 	_knn_distances_squared = _distCalc.get_knn_distances_squared();
