@@ -9,7 +9,7 @@ find_package(Boost REQUIRED) # use header-only libs, thus no components specifie
 find_package(Eigen3 3.3 REQUIRED)
 find_package(OpenGL REQUIRED)
 find_package(OpenMP REQUIRED)
-find_package(HDILib COMPONENTS hdiutils hdidata hdidimensionalityreduction PATHS $ENV{HDILIB_ROOT} CONFIG REQUIRED)
+find_package(HDILibSlim COMPONENTS hdiutils hdidata hdidimensionalityreduction PATHS $ENV{HDILIBSLIM_ROOT} CONFIG REQUIRED)
 
 if(Eigen3_FOUND)
 	message(STATUS "Eigen3 found at ${Eigen3_DIR}")
@@ -19,8 +19,8 @@ if(OpenMP_CXX_FOUND)
 	message(STATUS "OpenMP found, version ${OpenMP_CXX_VERSION}")
 endif()
 
-if(HDILib_FOUND)
-	message(STATUS "HDLIib found at $ENV{HDILIB_ROOT}")	# make sure to manually set HDILIB_ROOT to the install dir of the HDILib
+if(HDILibSlim_FOUND)
+	message(STATUS "HDILibSlim found at $ENV{HDILIBSLIM_ROOT} with inlcludes at ${HDILibSlim_INCLUDE_DIR}")	# make sure to manually set HDILIBSLIM_ROOT to the install dir of the HDILibSlim (fork of the HDILib with fewer dependencies)
 endif()
 
 # set souce files of this project
@@ -104,6 +104,6 @@ target_link_libraries(${SPIDRLIB} PUBLIC Eigen3::Eigen)
 target_link_libraries(${SPIDRLIB} PUBLIC OpenMP::OpenMP_CXX)
 
 # Link against the HDILib, https://github.com/biovault/HDILib
-# make sure to have it built and HDILIB_ROOT set
-target_include_directories(${SPIDRLIB} PRIVATE ${HDILib_INCLUDE_DIR})
-target_link_libraries(${SPIDRLIB} PRIVATE HDI::hdidimensionalityreduction HDI::hdiutils HDI::hdidata OpenMP::OpenMP_CXX ${CMAKE_DL_LIBS}) # no need to link against flann::flann since it is not used in SPIDRLIB
+# make sure to have it built and HDILIBSlim_ROOT set
+target_include_directories(${SPIDRLIB} PUBLIC ${HDILibSlim_INCLUDE_DIR})
+target_link_libraries(${SPIDRLIB} PUBLIC HDISlim::hdidimensionalityreduction HDISlim::hdiutils HDISlim::hdidata OpenMP::OpenMP_CXX ${CMAKE_DL_LIBS}) # no need to link against flann::flann since it is not used in SPIDRLIB
