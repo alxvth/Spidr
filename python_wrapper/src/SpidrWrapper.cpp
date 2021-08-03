@@ -43,7 +43,7 @@ SpidrWrapper::SpidrWrapper(distance_metric distMetric,
 		throw std::runtime_error("SpidrWrapper::Constructor: No eval knn mode (which would save the knn to disk) supported in this wrapper");
 
 	_SpidrAnalysis = std::make_unique<SpidrAnalysis>();
-	_nn = _perplexity * 30 + 1;  // _perplexity_multiplier = 30
+	_nn = _perplexity * 3 + 1;  // _perplexity_multiplier = 3
 
 }
 
