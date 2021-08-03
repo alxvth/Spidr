@@ -20,8 +20,7 @@
 FeatureExtraction::FeatureExtraction() :
     _neighborhoodSize(1),
     _numHistBins(5),
-    _stopFeatureComputation(false),
-    _backgroundIDsGlobal(nullptr)
+    _stopFeatureComputation(false)
 {
     // square neighborhood
     _locNeighbors = ((_neighborhoodSize * 2) + 1) * ((_neighborhoodSize * 2) + 1);
@@ -49,14 +48,16 @@ void FeatureExtraction::compute() {
 	auto end = std::chrono::steady_clock::now();
 	spdlog::info("Feature extraction: Extraction duration (sec): {}", ((float)std::chrono::duration_cast<std::chrono::milliseconds> (end - start).count()) / 1000);
 
-	// if there is a -1 in the _outFeatures, this value was not set at all
-    // except if there was background defined, then just go ahead
-	assert(!((_backgroundIDsGlobal->empty() || _forceCalcBackgroundFeatures) != std::none_of(_outFeatures.begin(), _outFeatures.end(), [](float i) {return i == FLT_MAX; })));
+    // No value in _outFeatures should be FLT_MAX (it's init value)
+    // Except when background IDs are given: then they were skipped during the feature computation and still have their initial FLT_MAX value
+    // The background entries will be ignored during the Distance calculation 
+	assert(!((_backgroundIDsGlobal.empty() || _forceCalcBackgroundFeatures) != std::none_of(_outFeatures.begin(), _outFeatures.end(), [](float i) {return i == FLT_MAX; })));
 
 	spdlog::info("Feature extraction: Finished");
 }
 
-void FeatureExtraction::setup(const std::vector<unsigned int>& pointIds, const std::vector<float>& attribute_data, const SpidrParameters& params, std::vector<unsigned int>* backgroundIDsGlobal) {
+void FeatureExtraction::setup(const std::vector<unsigned int>& pointIDsGlobal, const std::vector<float>& attribute_data, const SpidrParameters& params, 
+                              const std::vector<unsigned int>& backgroundIDsGlobal, const std::vector<unsigned int>& foregroundIDsGlobal) {
 	spdlog::info("Feature extraction: Setup"); 
 	_featType = params._featureType;
     _numFeatureValsPerPoint = params._numFeatureValsPerPoint; 
@@ -74,21 +75,22 @@ void FeatureExtraction::setup(const std::vector<unsigned int>& pointIds, const s
     // Data
     // Input
     _imgSize = params._imgSize;
-    _pointIds = pointIds;
-    _numPoints = _pointIds.size();
+    _pointIDsGlobal = pointIDsGlobal;
+    _numPoints = _pointIDsGlobal.size();
     _numDims = params._numDims;
     _attribute_data = attribute_data;
     _backgroundIDsGlobal = backgroundIDsGlobal;
+    _foregroundIDsGlobal = foregroundIDsGlobal;
     _forceCalcBackgroundFeatures = params._forceCalcBackgroundFeatures;
 
-    if (_backgroundIDsGlobal->empty() && _forceCalcBackgroundFeatures)
+    if (_backgroundIDsGlobal.empty() && _forceCalcBackgroundFeatures)
         spdlog::warn("Feature extraction: Cannot force to calc features to background if no background is given");
 
     assert(_attribute_data.size() == _numPoints * _numDims);
 
     if (_featType == feature_type::TEXTURE_HIST_1D)
     {
-        featFunct = &FeatureExtraction::calculateHistogram;  // will be called as calculateHistogram(_pointIds[pointID], neighborValues);
+        featFunct = &FeatureExtraction::calculateHistogram;  // will be called as calculateHistogram(_pointIDsGlobal[pointID], neighborValues);
 		spdlog::info("Feature extraction: Type 1d texture histogram, Num Bins: {}", _numHistBins);
     }
     else if(_featType == feature_type::LOCALMORANSI)
@@ -125,7 +127,6 @@ void FeatureExtraction::setup(const std::vector<unsigned int>& pointIds, const s
 
 void FeatureExtraction::initExtraction() {
 	spdlog::info("Feature extraction: Init feature extraction");
-
     _outFeatures.resize(_numPoints * _numFeatureValsPerPoint);
 
     // fill such that _outFeatures are always initialized to FLT_MAX
@@ -134,64 +135,44 @@ void FeatureExtraction::initExtraction() {
     // calculate other help values specific to feature type
     if (_featType == feature_type::TEXTURE_HIST_1D) {
         // find min and max for each channel, resize the output larger due to vector features
-        _minMaxVals = CalcMinMaxPerChannel(_numPoints, _numDims, _attribute_data);
-    }
+		_minMaxVals = CalcMinMaxPerChannel(_numPoints, _numDims, _attribute_data);
+	}
     else if ((_featType == feature_type::LOCALMORANSI) | (_featType == feature_type::LOCALGEARYC)) {
         // find mean and varaince for each channel
         _meanVals = CalcMeanPerChannel(_numPoints, _numDims, _attribute_data);
-        _varVals = CalcVarEstimate(_numPoints, _numDims, _attribute_data, _meanVals);
-    }
+		_varVals = CalcVarEstimate(_numPoints, _numDims, _attribute_data, _meanVals);
+	}
 
 }
 
 void FeatureExtraction::extractFeatures() {
 	spdlog::info("Feature extraction: Extract features");
 
-    // skip if background is given, 
-    if (!_backgroundIDsGlobal->empty() && !_forceCalcBackgroundFeatures) {
-        std::vector<unsigned int> all_IDs(_numPoints);
-        std::vector<unsigned int> foreground_IDs;
-        std::iota(all_IDs.begin(), all_IDs.end(), 0);
-        std::set_difference(all_IDs.begin(), all_IDs.end(), _backgroundIDsGlobal->begin(), _backgroundIDsGlobal->end(), std::inserter(foreground_IDs, foreground_IDs.begin()));
+    std::vector<unsigned int>* IDs;
 
-        // visual studio onlu supports open mp 2.0
-#ifdef NDEBUG
-#pragma omp parallel for
-#endif
-        for (int i = 0; i < foreground_IDs.size(); i++) {
-            //int pointID = foreground_IDs[i];
-
-            // get neighborhood ids of the current point
-            std::vector<int> neighborIDs = neighborhoodIndices(_pointIds[foreground_IDs[i]], _locNeighbors, _imgSize, _pointIds);
-            assert(neighborIDs.size() == _neighborhoodSize);
-
-            // get neighborhood values of the current point
-            std::vector<float> neighborValues = getNeighborhoodValues(neighborIDs, _attribute_data, _neighborhoodSize, _numDims);
-            assert(std::find(neighborValues.begin(), neighborValues.end(), -1) == neighborValues.end());
-
-            // calculate feature(s) for neighborhood
-            (this->*featFunct)(_pointIds[foreground_IDs[i]], neighborValues, neighborIDs);  // function pointer defined above
-
-        }
-    }
+    // Only calc features for foreground, execpt when _forceCalcBackgroundFeatures is set and a background is given
+    if ((_backgroundIDsGlobal.empty() != false) && _forceCalcBackgroundFeatures)
+        IDs = &_pointIDsGlobal;
     else
-    {
-        // convolve over all selected data points
+        IDs = &_foregroundIDsGlobal;
+
+    // Iterate over IDs and compute features
 #ifdef NDEBUG
 #pragma omp parallel for
 #endif
-        for (int pointID = 0; pointID < (int)_numPoints; pointID++) {
-            // get neighborhood ids of the current point
-            std::vector<int> neighborIDs = neighborhoodIndices(_pointIds[pointID], _locNeighbors, _imgSize, _pointIds);
-            assert(neighborIDs.size() == _neighborhoodSize);
+    for (int i = 0; i < IDs->size(); i++) {
 
-            // get neighborhood values of the current point
-            std::vector<float> neighborValues = getNeighborhoodValues(neighborIDs, _attribute_data, _neighborhoodSize, _numDims);
-            assert(std::find(neighborValues.begin(), neighborValues.end(), -1) == neighborValues.end());
+        // get neighborhood ids of the current point
+        std::vector<int> neighborIDs = neighborhoodIndices((*IDs)[i], _locNeighbors, _imgSize, _pointIDsGlobal);
+        assert(neighborIDs.size() == _neighborhoodSize);
 
-            // calculate feature(s) for neighborhood
-            (this->*featFunct)(_pointIds[pointID], neighborValues, neighborIDs);  // function pointer defined above
-        }
+        // get neighborhood values of the current point
+        std::vector<float> neighborValues = getNeighborhoodValues(neighborIDs, _attribute_data, _neighborhoodSize, _numDims);
+        assert(std::find(neighborValues.begin(), neighborValues.end(), -1) == neighborValues.end());
+
+        // calculate feature(s) for neighborhood
+        (this->*featFunct)((*IDs)[i], neighborValues, neighborIDs);  // function pointer defined above
+
     }
 }
 

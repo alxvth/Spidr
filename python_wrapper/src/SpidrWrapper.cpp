@@ -1,4 +1,5 @@
 #include "SpidrWrapper.h"
+#include "spdlog/spdlog-inl.h"
 
 SpidrWrapper::SpidrWrapper(distance_metric distMetric,
 	loc_Neigh_Weighting kernelType,
@@ -14,11 +15,11 @@ SpidrWrapper::SpidrWrapper(distance_metric distMetric,
     _perplexity(perplexity), _exaggeration(exaggeration), _expDecay(expDecay), _forceCalcBackgroundFeatures(forceCalcBackgroundFeatures), _fitted(false) 
 {
 	if (numLocNeighbors <= 0)
-		throw std::runtime_error("SpidrWrapper: Spatial Neighbors must be larger 0");
+		throw std::runtime_error("SpidrWrapper::Constructor: Spatial Neighbors must be larger 0");
 	else
 		_numLocNeighbors = numLocNeighbors;
 
-	// set _featType depending on aknnMetric
+	// set _featType depending on distMetric
 	switch (_distMetric) {
 	case distance_metric::METRIC_QF:
 	case distance_metric::METRIC_EMD:
@@ -26,7 +27,7 @@ SpidrWrapper::SpidrWrapper(distance_metric distMetric,
 		_featType = feature_type::TEXTURE_HIST_1D; 
 		
 		if (_numHistBins <= 0)
-			throw std::runtime_error("SpidrWrapper: Number of histogram bins must be larger than 0");
+			throw std::runtime_error("SpidrWrapper::Constructor: Number of histogram bins must be larger than 0");
 
 		break;
 	case distance_metric::METRIC_CHA:
@@ -35,16 +36,14 @@ SpidrWrapper::SpidrWrapper(distance_metric distMetric,
 	case distance_metric::METRIC_EUC:
 		_featType = feature_type::LOCALMORANSI; break;
 	default:
-		throw std::runtime_error("SpidrWrapper: Specified distMetric not supported");
+		throw std::runtime_error("SpidrWrapper::Constructor: Specified distMetric not supported");
 	}
 
 	if (_aknnAlgType == knn_library::EVAL_KNN_EXACT || _aknnAlgType == knn_library::EVAL_KNN_HNSW)
-		throw std::runtime_error("SpidrWrapper: No eval knn mode (which would save the knn to disk) supported in this wrapper");
+		throw std::runtime_error("SpidrWrapper::Constructor: No eval knn mode (which would save the knn to disk) supported in this wrapper");
 
 	_SpidrAnalysis = std::make_unique<SpidrAnalysis>();
-
-	_SpidrAnalysis->initializeAnalysisSettings(_featType, _kernelType, _numLocNeighbors, _numHistBins, _aknnAlgType, _distMetric, 0, _numIterations, _perplexity, _exaggeration, _expDecay, _forceCalcBackgroundFeatures);
-	_nn = _SpidrAnalysis->getParameters()._nn;
+	_nn = _perplexity * 3 + 1;  // _perplexity_multiplier = 3
 
 }
 
@@ -56,7 +55,7 @@ void SpidrWrapper::compute_fit(
 	std::optional<py::array_t<unsigned int, py::array::c_style | py::array::forcecast>> backgroundIDsGlobal) {
 	// check input dimensions
 	if (X.ndim() != 2)
-		throw std::runtime_error("SpidrWrapper: Input should be 2-D NumPy array");
+		throw std::runtime_error("SpidrWrapper::compute_fit: Input should be 2-D NumPy array");
 
 	// copy data from py::array to std::vector
 	std::vector<float> dat(X.size());
@@ -80,6 +79,9 @@ void SpidrWrapper::compute_fit(
 		_SpidrAnalysis->setupData(dat, IDs, _numDims, _imgSize, "SpidrWrapper", IDsBack);
 	}
 
+	// Init all settings (setupData must have been called before initing the settings.)
+	_SpidrAnalysis->initializeAnalysisSettings(_featType, _kernelType, _numLocNeighbors, _numHistBins, _aknnAlgType, _distMetric, 0, _numIterations, _perplexity, _exaggeration, _expDecay, _forceCalcBackgroundFeatures);
+
 	// Compute knn dists and inds
 	_SpidrAnalysis->computeFeatures();
 	_SpidrAnalysis->computekNN();
@@ -96,6 +98,7 @@ std::tuple<std::vector<int>, std::vector<float>> SpidrWrapper::fit(
 	int imgWidth, int imgHight,
 	std::optional<py::array_t<unsigned int, py::array::c_style | py::array::forcecast>> backgroundIDsGlobal) {
 
+	// Init settings, (Extract features), compute similarities, embed data
 	compute_fit(X, pointIDsGlobal, imgWidth, imgHight, backgroundIDsGlobal);
 
 	return _SpidrAnalysis->getKNN();
@@ -105,7 +108,7 @@ std::tuple<std::vector<int>, std::vector<float>> SpidrWrapper::fit(
 py::array_t<float, py::array::c_style> SpidrWrapper::transform() {
 
 	if (_fitted == false)
-		throw std::runtime_error("Call fit() before transform() or go with fit_transform()");
+		throw std::runtime_error("SpidrWrapper::transform:Call fit() before transform() or go with fit_transform()");
 
 	_SpidrAnalysis->computeEmbedding();
 	std::vector<float> emb = _SpidrAnalysis->outputWithBackground();
@@ -127,7 +130,7 @@ py::array_t<float, py::array::c_style> SpidrWrapper::fit_transform(
 	int imgWidth, int imgHight,
 	std::optional<py::array_t<unsigned int, py::array::c_style | py::array::forcecast>> backgroundIDsGlobal) {
 
-	// fit
+	// Init settings, (Extract features), compute similarities, embed data
 	compute_fit(X, pointIDsGlobal, imgWidth, imgHight, backgroundIDsGlobal);
 
 	// transform

@@ -22,9 +22,10 @@ See `example/SpidrExample.cpp` for a example on how to use the library in cpp.
 
 See `python_wrapper` for install intructions and a usage example on how to use the library in python. The example showcases spatially informed t-SNE, UMAP and MDS embeddings.
 
-## Other Dependencies
-Not all dependencies are included in this repo, some need to be downloaded/installed by yourself. 
+## Dependencies
+Not all dependencies are included in this repo (see submodules in `external/`), some need to be downloaded/installed by yourself. 
 Make sure to adjust your system variables respectively:
+- [HDILibSlim](https://github.com/alxvth/HDILib-slim) (build and install the library and define the system variable `HDILIBSLIM_ROOT` pointing to the install DIR for cmake to automatically find the library. On Windows, make sure to add it as a system and not as a user variable if you want to build the python wrapper)
 - [Boost](https://www.boost.org/) (headers-only [Boost.Histogram](https://www.boost.org/doc/libs/1_73_0/libs/histogram/doc/html/index.html), define the system variable `BOOST_INCLUDEDIR = D:\..\boost\boost_1_7X_0\` for cmake to find it automatically)
 - [Eigen](http://eigen.tuxfamily.org/index.php?title=Main_Page) (headers-only, install it anyways following these [eigen instructions](https://gitlab.com/libeigen/eigen/-/blob/master/INSTALL) so that cmake can find it automatically)
 - OpenMP

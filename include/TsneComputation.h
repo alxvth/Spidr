@@ -83,7 +83,7 @@ private:
     // Data
     std::vector<int> _knn_indices;               /*!<> */
     std::vector<float> _knn_distances;           /*!<> */
-    size_t _numPoints;                            /*!<> */
+    size_t _numForegroundPoints;                            /*!<> */
     std::vector<float> _outputData;                     /*!<> */
 
     // Options
@@ -92,7 +92,7 @@ private:
     int _numChecks;
     int _exaggerationIter;
     int _exponentialDecay;
-    int _perplexity;                                    /*!<> */
+    float _perplexity;                                    /*!<> */
     int _perplexity_multiplier;
     int _numDimensionsOutput;
     int _nn;                                            /*!<> */

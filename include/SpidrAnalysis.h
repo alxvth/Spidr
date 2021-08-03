@@ -21,7 +21,7 @@ public:
     SpidrAnalysis();
 
     /*!
-     * 
+     * Call me before calling initializeAnalysisSettings
      * 
      * \param attribute_data
      * \param pointIDsGlobal
@@ -31,7 +31,7 @@ public:
      * \param backgroundIDsGlobal ID of points which are not used during the t-SNE embedding - but will inform the feature extraction and distance calculation
      */
     void setupData(const std::vector<float>& attribute_data, const std::vector<unsigned int>& pointIDsGlobal, \
-		const size_t numDimensions, const ImgSize imgSize, const std::string embeddingName, std::vector<unsigned int>& backgroundIDsGlobal = std::vector<unsigned int>());
+		const size_t numDimensions, const ImgSize imgSize, const std::string embeddingName, const std::vector<unsigned int>& backgroundIDsGlobal = std::vector<unsigned int>());
 
 	/*! Set the parameters of the entire Analysis
 	 * Use the input from e.g a GUI
@@ -80,7 +80,7 @@ public:
     void stopComputation();
 
     // Getter
-    const size_t getNumEmbPoints();
+    const size_t getNumForegroundPoints();
     const size_t getNumImagePoints();
     bool embeddingIsRunning();
 
@@ -98,7 +98,11 @@ public:
 
 	const std::vector<float> getDataFeatures();
 
+    /* Returns _knn_indices, _knn_distances_squared, use with std::tie(_knnIds, _knnDists) = getKNN(); */
 	const std::tuple<std::vector<int>, std::vector<float>> getKNN();
+
+    /* Add bg points to emb, uses the ID info set for an instance of this class */
+    void addBackgroundToEmbedding(std::vector<float>& emb, const std::vector<float>& emb_wo_bg);
 
 private:
     
@@ -153,7 +157,7 @@ private:
     void setExpDecay(const unsigned expDacay);
 
     /*! Sets the size of a feature, derived from other parameters */
-    void setNumFeatureValsPerPoint();
+    void setNumFeatureValsPerPoint(feature_type featType, size_t numDims, size_t numHistBins, size_t neighborhoodSize);
 
     /*! Sets the spatial-attribut distance weight, 0 for only attributes and 1 for only spatial */
     void setMVNWeight(const float weight);
@@ -170,6 +174,7 @@ private:
     std::vector<float> _attribute_data;					/*!<> */
     std::vector<unsigned int> _pointIDsGlobal;			/*!<> */
     std::vector<unsigned int> _backgroundIDsGlobal;		/*!< ID of points which are not used during the t-SNE embedding - but will inform the feature extraction and distance calculation > */
+    std::vector<unsigned int> _foregroundIDsGlobal;		/*!< ID of points which are used during the t-SNE embedding > */
     SpidrParameters _params;							/*!<> */
     std::vector<float> _emd_with_backgound;
 
