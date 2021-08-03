@@ -130,12 +130,7 @@ void SpidrAnalysis::setDistanceMetric(const distance_metric distance_metric) {
 }
 
 void SpidrAnalysis::setPerplexity(const unsigned perplexity) {
-    _params._perplexity = perplexity;
-    _params._nn = (perplexity * _params._perplexity_multiplier) + 1;    // see Van Der Maaten, L. (2014). Accelerating t-SNE using tree-based algorithms. The Journal of Machine Learning Research, 15(1), 3221-3245.
-
-    // For small images, use less kNN
-    if (_params._nn > _params._numPoints)
-        _params._nn = _params._numPoints;
+    _params.set_perplexity(perplexity);
 }
 
 void SpidrAnalysis::setNumIterations(const unsigned numIt) {

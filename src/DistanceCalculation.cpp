@@ -27,7 +27,7 @@ void DistanceCalculation::setup(const std::vector<float>& dataFeatures, const st
     // SpidrParameters
     _knn_lib = params._aknn_algorithm;
     _knn_metric = params._aknn_metric;
-    _nn = params._nn;
+    _nn = params.get_nn();
     _neighborhoodSize = params._neighborhoodSize;    // square neighborhood with _numLocNeighbors to each side from the center
     _neighborhoodWeighting = params._neighWeighting;
 
@@ -49,7 +49,7 @@ void DistanceCalculation::setup(const std::vector<float>& dataFeatures, const st
     //_knn_indices.resize(_numForegroundPoints*_nn, -1);              // unnecessary, done in ComputeHNSWkNN
     //_knn_distances_squared.resize(_numForegroundPoints*_nn, -1);    // unnecessary, done in ComputeHNSWkNN
 
-    assert(params._nn == (size_t)(params._perplexity * params._perplexity_multiplier + 1));     // should be set in SpidrAnalysis::initializeAnalysisSettings
+    assert(params.get_nn() == (size_t)(params.get_perplexity() * params.get_perplexity_multiplier() + 1));     // should be set in SpidrAnalysis::initializeAnalysisSettings
     assert(_dataFeatures.size() == (_numPoints * _numFeatureValsPerPoint));     // if backgroundIDs are given, no all data features will be used. Only foregroundIDs are considered
     // No value in _dataFeatures at the positions in _foregroundIDsGlobal should be FLT_MAX (it's init value)   
     // Implemented as: For all foreground IDs no feature is FLT_MAX

@@ -92,7 +92,7 @@ private:
     int _numChecks;
     int _exaggerationIter;
     int _exponentialDecay;
-    int _perplexity;                                    /*!<> */
+    float _perplexity;                                    /*!<> */
     int _perplexity_multiplier;
     int _numDimensionsOutput;
     int _nn;                                            /*!<> */

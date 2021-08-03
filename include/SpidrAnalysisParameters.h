@@ -2,6 +2,8 @@
 
 #include <string>
 
+#include "spdlog/spdlog-inl.h"
+
 typedef struct ImgSize {
 	int width;
 	int height;
@@ -157,8 +159,8 @@ public:
 		_aknn_algorithm(aknn_algorithm), _aknn_metric(aknn_metric), _MVNweight(MVNweight), _forceCalcBackgroundFeatures(forceCalcBackgroundFeatures),
 		_perplexity(perplexity), _perplexity_multiplier(3), _numIterations(numIterations), _exaggeration(exaggeration)
 	{
-        _numForegroundPoints = numPoints; // No background default to all points in the foreground
-		_nn = _perplexity * _perplexity_multiplier + 1;
+		update_nn();	// sets nn based on perplexity
+		_numForegroundPoints = numPoints; // No background default to all points in the foreground
 		_kernelWidth = (2 * _numLocNeighbors) + 1;
 		_neighborhoodSize = _kernelWidth * _kernelWidth;
 		_numFeatureValsPerPoint = NumFeatureValsPerPoint(_featureType, _numDims, _numHistBins, _neighborhoodSize);
@@ -173,12 +175,35 @@ public:
         _aknn_algorithm(aknn_algorithm), _aknn_metric(aknn_metric), _MVNweight(MVNweight), _forceCalcBackgroundFeatures(forceCalcBackgroundFeatures),
         _perplexity(perplexity), _perplexity_multiplier(3), _numIterations(numIterations), _exaggeration(exaggeration)
     {
-        _nn = _perplexity * _perplexity_multiplier + 1;
-        _kernelWidth = (2 * _numLocNeighbors) + 1;
+		update_nn();	// sets nn based on perplexity
+		_kernelWidth = (2 * _numLocNeighbors) + 1;
         _neighborhoodSize = _kernelWidth * _kernelWidth;
         _numFeatureValsPerPoint = NumFeatureValsPerPoint(_featureType, _numDims, _numHistBins, _neighborhoodSize);
     }
 
+	// number of nn depends on perplexity, thus the user should not be able to set it
+	size_t get_nn() const { return _nn; };
+	float get_perplexity() const { return _perplexity; };
+	int get_perplexity_multiplier() const { return _perplexity_multiplier; };
+
+	// setting the perplexity also changes the number of knn
+	void set_perplexity(float perp) { 
+		_perplexity = perp;
+		update_nn();	// sets nn based on perplexity
+	}
+
+private:
+	void update_nn() {
+		// see Van Der Maaten, L. (2014). Accelerating t-SNE using tree-based algorithms. The Journal of Machine Learning Research, 15(1), 3221-3245.
+		_nn = _perplexity * _perplexity_multiplier + 1;
+
+		// For small data sets, use less kNN
+		if (_nn > _numPoints)
+		{
+			spdlog::warn("SpidrParameters: Few data points - reduce number nn to number of points");
+			_nn = _numPoints;
+		}
+	}
 
 public:
 	// data
@@ -198,14 +223,17 @@ public:
 	size_t              _numHistBins;           /*!<> */
     bool                _forceCalcBackgroundFeatures; /*!<> */
 	// distance
-	size_t              _nn;                    // number of nearest neighbors, determined by _perplexity*_perplexity_multiplier + 1
 	knn_library         _aknn_algorithm;        /*!<> */
 	distance_metric     _aknn_metric;           /*!<> */
 	float               _MVNweight;             /*!<> */
 	// embeddings
-	float               _perplexity;            //! Perplexity value in evert distribution.
-	int                 _perplexity_multiplier; //! Multiplied by the perplexity gives the number of nearest neighbors used
 	int                 _numIterations;         /*!< Number of gradient descent iterations> */
 	int                 _exaggeration;          /*!< Number of iterations for early exageration> */
 	int                 _expDecay;              /*!< exponential decay> */
+
+private:
+	size_t              _nn;                    // number of nearest neighbors, determined by _perplexity*_perplexity_multiplier + 1
+	const int           _perplexity_multiplier; //! Multiplied by the perplexity gives the number of nearest neighbors used
+	float               _perplexity;            //! Perplexity value in evert distribution.
+
 };
