@@ -150,7 +150,7 @@ private:
     // Output
     /*! Features for each item.
     * In case of 1D histograms for each data point there are _inputData.getNumDimensions() histograms 
-    * with _numHistBins values, i.e. size _numPoints * _numDims * _numHistBins.
+    * with _numHistBins values, i.e. size _numForegroundPoints * _numDims * _numHistBins.
     * Else, the features are the local Indicator of Spatial Association features for each item.
     */
     std::vector<float> _outFeatures;

@@ -9,7 +9,7 @@
 SpidrAnalysis::SpidrAnalysis() {};
 
 void SpidrAnalysis::setupData(const std::vector<float>& attribute_data, const std::vector<unsigned int>& pointIDsGlobal, const size_t numDimensions, const ImgSize imgSize, const std::string embeddingName, const std::vector<unsigned int>& backgroundIDsGlobal) {
-    // TODO: there should be a function that calls setupData and initializeAnalysisSettings so that the user only sees a single setup function.
+    // TODO: there should be a function that calls setupData and initializeAnalysisSettings so that the user only see a single setup function. (as e.g. done in the python wrapper)
 
 	// Set data
     _attribute_data = attribute_data;
@@ -27,11 +27,13 @@ void SpidrAnalysis::setupData(const std::vector<float>& attribute_data, const st
 	_params._imgSize = imgSize;
     _params._embeddingName = embeddingName;
     _params._dataVecBegin = _attribute_data.data();          // used in point cloud distance
+    _params._numForegroundPoints = _foregroundIDsGlobal.size();
 
 	spdlog::info("SpidrAnalysis: Setup data with number of points: {0}, num dims: {1}, image size (width, height): {2}", _params._numPoints, _params._numDims, _params._imgSize.width, _params._imgSize.height);
     if(!_backgroundIDsGlobal.empty())
         spdlog::info("SpidrAnalysis: Excluding {} background points and respective features", _backgroundIDsGlobal.size());
 
+    assert(_params._numForegroundPoints + _backgroundIDsGlobal.size() == _params._numPoints);
 }
 
 void SpidrAnalysis::initializeAnalysisSettings(const feature_type featType, const loc_Neigh_Weighting kernelWeightType, const size_t numLocNeighbors, const size_t numHistBins,\
@@ -160,13 +162,13 @@ void SpidrAnalysis::setForceCalcBackgroundFeatures(const bool CalcBackgroundFeat
     _params._forceCalcBackgroundFeatures = CalcBackgroundFeatures;
 }
 
-const size_t SpidrAnalysis::getNumEmbPoints() {
-    return _params._numPoints;
+const size_t SpidrAnalysis::getNumForegroundPoints() {
+    return _params._numForegroundPoints;
 }
 
 const size_t SpidrAnalysis::getNumImagePoints() {
-    assert(_pointIDsGlobal.size() == _params._numPoints + _backgroundIDsGlobal.size());
-    return _pointIDsGlobal.size();
+    assert(_pointIDsGlobal.size() == _params._numForegroundPoints + _backgroundIDsGlobal.size());
+    return _params._numPoints;
 }
 
 bool SpidrAnalysis::embeddingIsRunning() {
@@ -195,7 +197,7 @@ void SpidrAnalysis::addBackgroundToEmbedding(std::vector<float>& emb, const std:
     spdlog::info("SpidrAnalysis: Add background back to embedding");
     auto start = std::chrono::steady_clock::now();
 
-    emb.resize(_pointIDsGlobal.size() * 2);
+    emb.resize(_pointIDsGlobal.size() * 2); // _params._numPoints = _pointIDsGlobal.size()
 
     // find min x and min y embedding positions
     float minx = emb_wo_bg[0];

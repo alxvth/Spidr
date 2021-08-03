@@ -34,7 +34,7 @@ void DistanceCalculation::setup(const std::vector<float>& dataFeatures, const st
     // Data
     // Input
     _numPoints = params._numPoints;
-    _numForegroundPoints = foregroundIDsGlobal.size();
+    _numForegroundPoints = params._numForegroundPoints;
     _numDims = params._numDims;
     _numHistBins = params._numHistBins;
     _embeddingName = params._embeddingName;
@@ -46,14 +46,16 @@ void DistanceCalculation::setup(const std::vector<float>& dataFeatures, const st
     _foregroundIDsGlobal = foregroundIDsGlobal;
 
     // Output
-    //_knn_indices.resize(_numPoints*_nn, -1);              // unnecessary, done in ComputeHNSWkNN
-    //_knn_distances_squared.resize(_numPoints*_nn, -1);    // unnecessary, done in ComputeHNSWkNN
+    //_knn_indices.resize(_numForegroundPoints*_nn, -1);              // unnecessary, done in ComputeHNSWkNN
+    //_knn_distances_squared.resize(_numForegroundPoints*_nn, -1);    // unnecessary, done in ComputeHNSWkNN
 
     assert(params._nn == (size_t)(params._perplexity * params._perplexity_multiplier + 1));     // should be set in SpidrAnalysis::initializeAnalysisSettings
     assert(_dataFeatures.size() == (_numPoints * _numFeatureValsPerPoint));     // if backgroundIDs are given, no all data features will be used. Only foregroundIDs are considered
     // No value in _dataFeatures at the positions in _foregroundIDsGlobal should be FLT_MAX (it's init value)   
-    assert(std::none_of(_foregroundIDsGlobal.begin(), _foregroundIDsGlobal.end(), [&](unsigned int index) {return std::none_of(dataFeatures.begin() + index * params._numFeatureValsPerPoint, dataFeatures.begin() + (index+1) * params._numFeatureValsPerPoint, [&](float feat) {return feat == FLT_MAX; }); }));
-    
+    // Implemented as: For all foreground IDs no feature is FLT_MAX
+    assert(std::all_of(_foregroundIDsGlobal.begin(), _foregroundIDsGlobal.end(), [&](unsigned int index) {return std::none_of(dataFeatures.begin() + index * params._numFeatureValsPerPoint, dataFeatures.begin() + (index+1) * params._numFeatureValsPerPoint, [&](float feat) {return feat == FLT_MAX; }); }));
+
+
     spdlog::info("Distance calculation: Feature values per point: {0}, Number of NN to calculate {1}. Metric: {2}", _numFeatureValsPerPoint, _nn, static_cast<size_t> (_knn_metric));
 
     if (_numPoints != _numForegroundPoints)
