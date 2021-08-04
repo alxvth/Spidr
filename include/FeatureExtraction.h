@@ -3,6 +3,7 @@
 #include "FeatureUtils.h"	// struct ImgSize;
 
 #include <vector>
+#include <Eigen/Dense>
 
 class SpidrParameters;
 enum class loc_Neigh_Weighting : unsigned int;
@@ -146,6 +147,8 @@ private:
     std::vector<float> _minMaxVals;                 /*!< Extrema for each dimension/channel, i.e. [min_Ch0, max_Ch0, min_Ch1, max_Ch1, ...] */
     std::vector<float> _meanVals;                   /*!< Avg for each dimension/channel, i.e. [mean_Ch0, meam_Ch1, ...] */
     std::vector<float> _varVals;                    /*!< Variance estimate for each dimension/channel, i.e. [mean_Ch0, meam_Ch1, ...] */
+
+    Eigen::MatrixXui _indices_mat_padded;            /*!< Eigen matrix of _pointIDsGlobal for easier neighborhood extraction, padded with pad size _locNeighbors> */
 
     // Output
     /*! Features for each item.

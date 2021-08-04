@@ -86,6 +86,24 @@ void FeatureExtraction::setup(const std::vector<unsigned int>& pointIDsGlobal, c
     if (_backgroundIDsGlobal.empty() && _forceCalcBackgroundFeatures)
         spdlog::warn("Feature extraction: Cannot force to calc features to background if no background is given");
 
+    // Convert the background IDs into an Eigen matrix
+    // there is no standard Eigen typedef for unsigned typesa and Eigen::MatrixXi does not work
+    Eigen::MatrixXui _indices_mat = Eigen::Map<Eigen::MatrixXui>(&_pointIDsGlobal[0], _imgSize.width, _imgSize.height);
+    // pad the matrix in all directions with _locNeighbors values
+    _indices_mat_padded = padConst(_indices_mat, _locNeighbors);
+
+    //// TEST
+    //std::vector<int> A_vec(_indices_mat_padded.data(), _indices_mat_padded.data() + _indices_mat_padded.size());
+
+    //std::cout << _indices_mat_padded(511 / _indices_mat_padded.rows(), 511 - (511 / _indices_mat_padded.rows()) *  _indices_mat_padded.rows()) << std::endl;
+    //std::cout << _indices_mat_padded(511 - (511 / _indices_mat_padded.rows()) * _indices_mat_padded.rows(), 511 / _indices_mat_padded.rows()) << std::endl;
+    //std::cout << _indices_mat_padded(511 / _indices_mat_padded.cols(), 511 - (511 / _indices_mat_padded.cols()) *  _indices_mat_padded.cols()) << std::endl;
+    //std::cout << _indices_mat_padded(511 - (511 / _indices_mat_padded.cols()) * _indices_mat_padded.cols(), 511 / _indices_mat_padded.cols()) << std::endl;
+    //std::cout << A_vec[511] << std::endl;
+    //std::cout << _pointIDsGlobal[511] << std::endl;
+
+    //// TEST
+
     assert(_attribute_data.size() == _numPoints * _numDims);
 
     if (_featType == feature_type::TEXTURE_HIST_1D)
@@ -163,12 +181,13 @@ void FeatureExtraction::extractFeatures() {
     for (int i = 0; i < IDs->size(); i++) {
 
         // get neighborhood ids of the current point
-        std::vector<int> neighborIDs = neighborhoodIndices((*IDs)[i], _locNeighbors, _imgSize, _pointIDsGlobal);
+        std::vector<int> neighborIDs = getNeighborhoodInds((*IDs)[i] - ((*IDs)[i] / _imgSize.width) * _imgSize.width, (*IDs)[i] / _imgSize.width, _kernelWidth, &_indices_mat_padded);
         assert(neighborIDs.size() == _neighborhoodSize);
 
         // get neighborhood values of the current point
         std::vector<float> neighborValues = getNeighborhoodValues(neighborIDs, _attribute_data, _neighborhoodSize, _numDims);
         assert(std::find(neighborValues.begin(), neighborValues.end(), -1) == neighborValues.end());
+        assert(std::none_of(neighborValues.begin(), neighborValues.end(), [](float neighborVal) { return neighborVal == -1; })); // check no value is -1
 
         // calculate feature(s) for neighborhood
         (this->*featFunct)((*IDs)[i], neighborValues, neighborIDs);  // function pointer defined above

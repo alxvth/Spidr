@@ -4,7 +4,7 @@
 #include <vector>
 
 #include "SpidrAnalysisParameters.h"
-
+#include "Eigen/Dense"
 
 /*! Normalizes all values in vec wrt to normVal
  * Basically normedVec[i] = vec[i] / normVal
@@ -68,16 +68,6 @@ unsigned int SturgesBinSize(unsigned int numItems);
  */
 unsigned int RiceBinSize(unsigned int numItems);
 
-/*! Get neighborhood point ids for one data item
- * For now, expect a rectangle selection (lasso selection might cause edge cases that were not thought of)
- * Padding: assign -1 to points outside the selection. Later assign 0 vector to all of them.
- * \param pointInd
- * \param locNeighbors
- * \param imgSize
- * \param pointIds
- * \return 
- */
-std::vector<int> neighborhoodIndices(const unsigned int pointInd, const size_t locNeighbors, const ImgSize imgSize, const std::vector<unsigned int>& pointIds);
 
 /*! Get data for all neighborhood point ids
  * Padding: if neighbor is outside selection, assign 0 to all dimension values
@@ -174,3 +164,39 @@ std::vector<float> CalcVarEstimate(size_t numPoints, size_t numDims, const std::
 
     return varVals;
 }
+
+
+/*! Helper struct for constant padding, see padConst
+ *  Creates a sequence of indices: padAllDirections{3, 1} -> [0 0 1 2 2]
+ *  Thus padding const values like [0 1 2] -> [(0) 0 1 2 (2)]
+ *
+ * \param in_size 
+ * \param pad_size 
+ */
+struct padAllDirections;
+
+
+namespace Eigen {
+    // add short matrix version for unsigned int, works just as MatrixXi
+    typedef Matrix<unsigned int, -1, -1> MatrixXui;
+}
+
+
+/*! Pads a matrix (2d) in all directions with the border values
+ *
+ * \param mat
+ * \param pad_size
+ */
+Eigen::MatrixXui padConst(Eigen::MatrixXui mat, Eigen::Index pad_size);
+
+
+/*! Get rectangle neighborhood point ids for one data item
+ *  
+ * Padding: constant border value
+ * \param coord_row
+ * \param coord_col
+ * \param kernelWidth
+ * \param padded_ids
+ * \return
+ */
+std::vector<int> getNeighborhoodInds(const unsigned int coord_row, const unsigned int coord_col, const size_t kernelWidth, Eigen::MatrixXui* padded_ids);

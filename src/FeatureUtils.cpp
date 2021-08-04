@@ -3,6 +3,7 @@
 #include <execution>    // par_unseq
 #include <algorithm>    // for_each_n
 #include <numeric>      // iota
+#include <iostream>      // iota
 
 
 template<typename T>
@@ -120,51 +121,41 @@ unsigned int RiceBinSize(unsigned int numItems) {
     return int(std::ceil((2 * std::pow(numItems, 1.0/3))));
 }
 
-std::vector<int> neighborhoodIndices(const unsigned int pointInd, const size_t locNeighbors, const ImgSize imgSize, const std::vector<unsigned int>& pointIds) {
-    size_t kernelWidth = (2 * locNeighbors) + 1;
-    size_t neighborhoodSize = kernelWidth * kernelWidth;
-    std::vector<int> neighborsIDs(neighborhoodSize, -1);
-    int imWidth = imgSize.width;
-    int rowID = int(pointInd / imWidth);
-
-    // left and right neighbors
-    std::vector<int> lrNeighIDs(kernelWidth, 0);
-    std::iota(lrNeighIDs.begin(), lrNeighIDs.end(), pointInd - locNeighbors);
-
-    // are left and right out of the picture?
-    for (int& n : lrNeighIDs) {
-        if (n < rowID * imWidth)
-            n = -1;
-        else if (n >= (rowID + 1) * imWidth)
-            n = -1;
-    }
-
-    // above and below neighbors
-    unsigned int localNeighCount = 0;
-    for (int i = -1 * locNeighbors; i <= (int)locNeighbors; i++) {
-        for (int ID : lrNeighIDs) {
-            neighborsIDs[localNeighCount] = (ID != -1) ? ID + i * imgSize.width : -1;  // if left or right is already out of image, above and below will be as well
-            localNeighCount++;
-        }
-    }
-
-    // Check if neighborhood IDs are in selected points
-    for (int& ID : neighborsIDs) {
-        // if neighbor is not in neighborhood, assign -1
-        if (std::find(pointIds.begin(), pointIds.end(), ID) == pointIds.end()) {
-            ID = -1;
-        }
-    }
-
-    return neighborsIDs;
-}
-
 std::vector<float> getNeighborhoodValues(const std::vector<int>& neighborIDs, const std::vector<float>& attribute_data, const size_t neighborhoodSize, const size_t numDims) {
-    std::vector<float> neighborValues(neighborhoodSize * numDims, -1);      // init all neighbors to -1
+    std::vector<float> neighborValues(neighborhoodSize * numDims);
+#ifdef NDEBUG
+    // assert checks whether all values are different from -1
+    std::fill(neighborValues.begin(), neighborValues.end(), -1.0);
+#endif
+
     for (unsigned int neighbor = 0; neighbor < neighborhoodSize; neighbor++) {
         for (unsigned int dim = 0; dim < numDims; dim++) {
-            neighborValues[neighbor * numDims + dim] = (neighborIDs[neighbor] != -1) ? attribute_data[neighborIDs[neighbor] * numDims + dim] : 0;
+            neighborValues[neighbor * numDims + dim] = attribute_data[neighborIDs[neighbor] * numDims + dim];
         }
     }
     return neighborValues;
+}
+
+struct padAllDirections {
+    padAllDirections(Eigen::Index in_size, Eigen::Index pad_size) : in_size(in_size), pad_size(pad_size) {}
+    Eigen::Index size() const { return in_size + 2 * pad_size; }
+    Eigen::Index operator[] (Eigen::Index i) const { return std::min<Eigen::Index>(std::max<Eigen::Index>(0, i - pad_size), in_size - 1); }
+    Eigen::Index in_size, pad_size;
+};
+
+
+Eigen::MatrixXui padConst(Eigen::MatrixXui mat, Eigen::Index pad_size)
+{
+    // auto slice_sequence_rows = padAllDirections{ mat.rows(), pad_size };
+    // auto slice_sequence_cols = padAllDirections{ mat.cols(), pad_size };
+    // auto padded_mat = mat(slice_sequence_rows, slice_sequence_cols)
+
+    return mat(padAllDirections{ mat.rows(), pad_size }, padAllDirections{ mat.cols(), pad_size });
+}
+
+std::vector<int> getNeighborhoodInds(const unsigned int coord_row, const unsigned int coord_col, const size_t kernelWidth, Eigen::MatrixXui* padded_ids) {
+    Eigen::MatrixXui neighborhoodInds_mat = padded_ids->block(coord_row, coord_col, kernelWidth, kernelWidth);
+    //std::cout << neighborhoodInds_mat << "\n" << std::endl;
+    std::vector<int> neighborhoodInds_vec(neighborhoodInds_mat.data(), neighborhoodInds_mat.data() + neighborhoodInds_mat.size());
+    return neighborhoodInds_vec;
 }
