@@ -124,8 +124,8 @@ unsigned int RiceBinSize(unsigned int numItems) {
 std::vector<float> getNeighborhoodValues(const std::vector<int>& neighborIDs, const std::vector<float>& attribute_data, const size_t neighborhoodSize, const size_t numDims) {
     std::vector<float> neighborValues(neighborhoodSize * numDims);
 #ifdef NDEBUG
-    // assert checks whether all values are different from -1
-    std::fill(neighborValues.begin(), neighborValues.end(), -1.0);
+    // later an assert can check whether all values are different from FLT_MAX
+    std::fill(neighborValues.begin(), neighborValues.end(), FLT_MAX);
 #endif
 
     for (unsigned int neighbor = 0; neighbor < neighborhoodSize; neighbor++) {

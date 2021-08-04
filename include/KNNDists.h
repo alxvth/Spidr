@@ -357,20 +357,22 @@ namespace hnswlib {
         std::vector<float> rowDistMins(neighborhoodSize, FLT_MAX);
         float distN1N2 = 0;
 
-        int numNeighbors1 = 0;
-        int numNeighbors2 = 0;
+        //int numNeighbors1 = 0;
+        //int numNeighbors2 = 0;
 
         // Euclidean dist between all neighbor pairs
         // Take the min of all dists from a item in neigh1 to all items in Neigh2 (colDist) and vice versa (rowDist)
         // Weight the colDist and rowDist with the inverse of the number of items in the neighborhood
         for (size_t n1 = 0; n1 < neighborhoodSize; n1++) {
 
-            if (idsN1[n1] == -2.0f)    // -1 is used for unprocessed locations during feature extraction, thus -2 indicated values outside image
-                continue; // skip if neighbor is outside image
+            // Legacy check:
+            //if (idsN1[n1] == -2.0f)    // -1 is used for unprocessed locations during feature extraction, thus -2 indicated values outside image
+            //    continue; // skip if neighbor is outside image
 
             for (size_t n2 = 0; n2 < neighborhoodSize; n2++) {
-                if (idsN2[n2] == -2.0f)
-                    continue; // skip if neighbor is outside image
+                // Legacy check:
+                //if (idsN2[n2] == -2.0f)
+                //    continue; // skip if neighbor is outside image
 
                 distN1N2 = L2distfunc_(dataVectorBegin + (idsN1[n1] * ndim), dataVectorBegin + (idsN2[n2] * ndim), &ndim);
 
@@ -385,25 +387,31 @@ namespace hnswlib {
 
         // weight min of each col and row, and sum over them
         for (size_t n = 0; n < neighborhoodSize; n++) {
-            if (idsN1[n] != -2.0f)
-            {
-                colSum += colDistMins[n] * weights[n];
-                numNeighbors1++;
-            }
-            if (idsN2[n] != -2.0f)
-            {
-                rowSum += rowDistMins[n] * weights[n];
-                numNeighbors2++;
-            }
+            // Legacy check:
+            //if (idsN1[n] != -2.0f)
+            //{
+            //    colSum += colDistMins[n] * weights[n];
+            //    numNeighbors1++;
+            //}
+            //if (idsN2[n] != -2.0f)
+            //{
+            //    rowSum += rowDistMins[n] * weights[n];
+            //    numNeighbors2++;
+            //}
+
+            colSum += colDistMins[n] * weights[n];
+            rowSum += rowDistMins[n] * weights[n];
+
         }
 
-        assert(numNeighbors1 == neighborhoodSize - std::count(pVect1, pVect1 + neighborhoodSize, -2.0f));
-        assert(numNeighbors2 == neighborhoodSize - std::count(pVect2, pVect2 + neighborhoodSize, -2.0f));
+        //assert(numNeighbors1 == neighborhoodSize - std::count(pVect1, pVect1 + neighborhoodSize, -2.0f));
+        //assert(numNeighbors2 == neighborhoodSize - std::count(pVect2, pVect2 + neighborhoodSize, -2.0f));
 
         assert(colSum < FLT_MAX);
         assert(rowSum < FLT_MAX);
 
-        return colSum / numNeighbors1 + rowSum / numNeighbors2;
+        //return colSum / numNeighbors1 + rowSum / numNeighbors2;
+        return (colSum + rowSum) / neighborhoodSize;
     }
 
 
@@ -500,12 +508,14 @@ namespace hnswlib {
         // Weight the colDist and rowDist with the inverse of the number of items in the neighborhood
         for (size_t n1 = 0; n1 < neighborhoodSize; n1++) {
 
-            if (idsN1[n1] == -2.0f)    // -1 is used for unprocessed locations during feature extraction, thus -2 indicated values outside image
-                continue; // skip if neighbor is outside image
+            // Legacy check:
+            //if (idsN1[n1] == -2.0f)    // -1 is used for unprocessed locations during feature extraction, thus -2 indicated values outside image
+            //    continue; // skip if neighbor is outside image
 
             for (size_t n2 = 0; n2 < neighborhoodSize; n2++) {
-                if (idsN2[n2] == -2.0f)
-                    continue; // skip if neighbor is outside image
+                // Legacy check:
+                //if (idsN2[n2] == -2.0f)
+                //    continue; // skip if neighbor is outside image
 
                 tmpRes += (weights[n1] + weights[n2]) * L2distfunc_(dataVectorBegin + (idsN1[n1] * ndim), dataVectorBegin + (idsN2[n2] * ndim), &ndim);
 
@@ -611,12 +621,14 @@ namespace hnswlib {
         // Weight the colDist and rowDist with the inverse of the number of items in the neighborhood
         for (size_t n1 = 0; n1 < neighborhoodSize; n1++) {
 
-            if (idsN1[n1] == -2.0f)    // -1 is used for unprocessed locations during feature extraction, thus -2 indicated values outside image
-                continue; // skip if neighbor is outside image
+            // Legacy check:
+            //if (idsN1[n1] == -2.0f)    // -1 is used for unprocessed locations during feature extraction, thus -2 indicated values outside image
+            //    continue; // skip if neighbor is outside image
 
             for (size_t n2 = 0; n2 < neighborhoodSize; n2++) {
-                if (idsN2[n2] == -2.0f)
-                    continue; // skip if neighbor is outside image
+                // Legacy check:
+                //if (idsN2[n2] == -2.0f)
+                //    continue; // skip if neighbor is outside image
 
                 distN1N2 = L2distfunc_(dataVectorBegin + (idsN1[n1] * ndim), dataVectorBegin + (idsN2[n2] * ndim), &ndim);
 
@@ -630,10 +642,12 @@ namespace hnswlib {
 
         // find largest of mins
         for (size_t n = 0; n < neighborhoodSize; n++) {
-            if ((idsN1[n] != -2.0f) && (weights[n] * colDistMins[n] > maxN1))
+            //if ((idsN1[n] != -2.0f) && (weights[n] * colDistMins[n] > maxN1))
+            if (weights[n] * colDistMins[n] > maxN1)
                 maxN1 = weights[n] * colDistMins[n];
 
-            if ((idsN2[n] != -2.0f) && (weights[n] * rowDistMins[n] > maxN2))
+            //if ((idsN2[n] != -2.0f) && (weights[n] * rowDistMins[n] > maxN2))
+            if (weights[n] * rowDistMins[n] > maxN2)
                 maxN2 = weights[n] * rowDistMins[n];
         }
 
@@ -730,12 +744,14 @@ namespace hnswlib {
         // Weight the colDist and rowDist with the inverse of the number of items in the neighborhood
         for (size_t n1 = 0; n1 < neighborhoodSize; n1++) {
 
-            if (idsN1[n1] == -2.0f)    // -1 is used for unprocessed locations during feature extraction, thus -2 indicated values outside image
-                continue; // skip if neighbor is outside image
+            // Legacy check:
+            //if (idsN1[n1] == -2.0f)    // -1 is used for unprocessed locations during feature extraction, thus -2 indicated values outside image
+            //    continue; // skip if neighbor is outside image
 
             for (size_t n2 = 0; n2 < neighborhoodSize; n2++) {
-                if (idsN2[n2] == -2.0f)
-                    continue; // skip if neighbor is outside image
+                // Legacy check:
+                //if (idsN2[n2] == -2.0f)
+                //    continue; // skip if neighbor is outside image
 
                 distN1N2 = L2distfunc_(dataVectorBegin + (idsN1[n1] * ndim), dataVectorBegin + (idsN2[n2] * ndim), &ndim);
 
@@ -749,10 +765,12 @@ namespace hnswlib {
 
         // find smallest of mins
         for (size_t n = 0; n < neighborhoodSize; n++) {
-            if ((idsN1[n] != -2.0f) && (weights[n] * colDistMins[n] < minN1))
+            //if ((idsN1[n] != -2.0f) && (weights[n] * colDistMins[n] < minN1))
+            if (weights[n] * colDistMins[n] < minN1)
                 minN1 = weights[n] * colDistMins[n];
 
-            if ((idsN2[n] != -2.0f) && (weights[n] * rowDistMins[n] < minN2))
+            //if ((idsN2[n] != -2.0f) && (weights[n] * rowDistMins[n] < minN2))
+            if (weights[n] * rowDistMins[n] < minN2)
                 minN2 = weights[n] * rowDistMins[n];
         }
 
@@ -850,12 +868,14 @@ namespace hnswlib {
         // Weight the colDist and rowDist with the inverse of the number of items in the neighborhood
         for (size_t n1 = 0; n1 < neighborhoodSize; n1++) {
 
-            if (idsN1[n1] == -2.0f)    // -1 is used for unprocessed locations during feature extraction, thus -2 indicated values outside image
-                continue; // skip if neighbor is outside image
+            // Legacy check:
+            //if (idsN1[n1] == -2.0f)    // -1 is used for unprocessed locations during feature extraction, thus -2 indicated values outside image
+            //    continue; // skip if neighbor is outside image
 
             for (size_t n2 = 0; n2 < neighborhoodSize; n2++) {
-                if (idsN2[n2] == -2.0f)
-                    continue; // skip if neighbor is outside image
+                // Legacy check:
+                //if (idsN2[n2] == -2.0f)
+                //    continue; // skip if neighbor is outside image
 
                 distN1N2 = L2distfunc_(dataVectorBegin + (idsN1[n1] * ndim), dataVectorBegin + (idsN2[n2] * ndim), &ndim);
 
@@ -869,10 +889,12 @@ namespace hnswlib {
 
         // find smallest of mins
         for (size_t n = 0; n < neighborhoodSize; n++) {
-            if ((idsN1[n] != -2.0f) && (weights[n] * colDistMins[n] > minN1))
+            //if ((idsN1[n] != -2.0f) && (weights[n] * colDistMins[n] > minN1))
+            if (weights[n] * colDistMins[n] > minN1)
                 minN1 = weights[n] * colDistMins[n];
 
-            if ((idsN2[n] != -2.0f) && (weights[n] * rowDistMins[n] > minN2))
+            //if ((idsN2[n] != -2.0f) && (weights[n] * rowDistMins[n] > minN2))
+            if (weights[n] * rowDistMins[n] > minN2)
                 minN2 = weights[n] * rowDistMins[n];
         }
 
@@ -970,12 +992,14 @@ namespace hnswlib {
         // Weight the colDist and rowDist with the inverse of the number of items in the neighborhood
         for (size_t n1 = 0; n1 < neighborhoodSize; n1++) {
 
-            if (idsN1[n1] == -2.0f)    // -1 is used for unprocessed locations during feature extraction, thus -2 indicated values outside image
-                continue; // skip if neighbor is outside image
+            // Legacy check:
+            //if (idsN1[n1] == -2.0f)    // -1 is used for unprocessed locations during feature extraction, thus -2 indicated values outside image
+                //continue; // skip if neighbor is outside image
 
             for (size_t n2 = 0; n2 < neighborhoodSize; n2++) {
-                if (idsN2[n2] == -2.0f)
-                    continue; // skip if neighbor is outside image
+                // Legacy check:
+                //if (idsN2[n2] == -2.0f)
+                //    continue; // skip if neighbor is outside image
 
                 distN1N2 = L2distfunc_(dataVectorBegin + (idsN1[n1] * ndim), dataVectorBegin + (idsN2[n2] * ndim), &ndim);
 
@@ -1092,12 +1116,14 @@ namespace hnswlib {
         // Weight the colDist and rowDist with the inverse of the number of items in the neighborhood
         for (size_t n1 = 0; n1 < neighborhoodSize; n1++) {
 
-            if (idsN1[n1] == -2.0f)    // -1 is used for unprocessed locations during feature extraction, thus -2 indicated values outside image
-                continue; // skip if neighbor is outside image
+            // Legacy check:
+            //if (idsN1[n1] == -2.0f)    // -1 is used for unprocessed locations during feature extraction, thus -2 indicated values outside image
+            //    continue; // skip if neighbor is outside image
 
             for (size_t n2 = 0; n2 < neighborhoodSize; n2++) {
-                if (idsN2[n2] == -2.0f)
-                    continue; // skip if neighbor is outside image
+                // Legacy check:
+                //if (idsN2[n2] == -2.0f)
+                //    continue; // skip if neighbor is outside image
 
                 distMat(n1, n2) = L2distfunc_(dataVectorBegin + (idsN1[n1] * ndim), dataVectorBegin + (idsN2[n2] * ndim), &ndim);
 

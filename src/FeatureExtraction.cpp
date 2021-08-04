@@ -187,7 +187,8 @@ void FeatureExtraction::extractFeatures() {
         // get neighborhood values of the current point
         std::vector<float> neighborValues = getNeighborhoodValues(neighborIDs, _attribute_data, _neighborhoodSize, _numDims);
         assert(std::find(neighborValues.begin(), neighborValues.end(), -1) == neighborValues.end());
-        assert(std::none_of(neighborValues.begin(), neighborValues.end(), [](float neighborVal) { return neighborVal == -1; })); // check no value is -1
+        // check no value is FLT_MAX, which would indicate an unset value
+        assert(std::none_of(neighborValues.begin(), neighborValues.end(), [](float neighborVal) { return neighborVal == FLT_MAX; }));
 
         // calculate feature(s) for neighborhood
         (this->*featFunct)((*IDs)[i], neighborValues, neighborIDs);  // function pointer defined above
@@ -262,8 +263,9 @@ void FeatureExtraction::calculateLISA(size_t pointInd, std::vector<float> neighb
         neigh_diff_from_mean_sum = 0;
 		local_neighborhoodWeightsSum = 0;
 		for (size_t neighbor = 0; neighbor < _neighborhoodSize; neighbor++) {
-            if (neighborIDs[neighbor] == -1)
-                continue; // skip if neighbor is outside image
+            // Legacy check:
+            //if (neighborIDs[neighbor] == -1)
+            //    continue; // skip if neighbor is outside image
 
 			neigh_diff_from_mean_sum += _neighborhoodWeights[neighbor] * (neighborValues[neighbor * _numDims + dim] - _meanVals[dim]);
 			local_neighborhoodWeightsSum += _neighborhoodWeights[neighbor];
@@ -295,8 +297,9 @@ void FeatureExtraction::calculateGearysC(size_t pointInd, std::vector<float> nei
 		local_neighborhoodWeightsSum = 0;
 		//local_neighborhoodWeightsSum = _neighborhoodWeightsSum;
         for (size_t neighbor = 0; neighbor < _neighborhoodSize; neighbor++) {
-            if (neighborIDs[neighbor] == -1)
-                continue; // skip if neighbor is outside image
+            // Legacy check:
+            //if (neighborIDs[neighbor] == -1)
+            //    continue; // skip if neighbor is outside image
 
 			diff_from_neigh = _attribute_data[pointInd * _numDims + dim] - neighborValues[neighbor * _numDims + dim];
             diff_from_neigh_sum += _neighborhoodWeights[neighbor] * (diff_from_neigh * diff_from_neigh);
@@ -332,8 +335,10 @@ void FeatureExtraction::allNeighborhoodIDs(size_t pointInd, std::vector<float> n
     assert(_outFeatures.size() == _numPoints * _neighborhoodSize);  // _numFeatureValsPerPoint = _neighborhoodSize
 
     // copy neighborIDs into _outFeatures
-    std::replace(neighborIDs.begin(), neighborIDs.end(), -1, -2);       // use -2 mark outsiders, whereas -1 marks not processed
+    //std::replace(neighborIDs.begin(), neighborIDs.end(), -1, -2);       // use -2 mark outsiders, whereas -1 marks not processed
     std::copy(neighborIDs.begin(), neighborIDs.end(), _outFeatures.begin() + (pointInd * _neighborhoodSize));
+    //std::swap_ranges(neighborIDs.begin(), neighborIDs.end(), _outFeatures.begin() + (pointInd * _neighborhoodSize));
+    // TODO: what is faster? swap or copy?
 }
 
 void FeatureExtraction::weightNeighborhood(loc_Neigh_Weighting weighting) {
