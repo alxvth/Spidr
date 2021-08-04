@@ -92,18 +92,6 @@ void FeatureExtraction::setup(const std::vector<unsigned int>& pointIDsGlobal, c
     // pad the matrix in all directions with _locNeighbors values
     _indices_mat_padded = padConst(_indices_mat, _locNeighbors);
 
-    //// TEST
-    //std::vector<int> A_vec(_indices_mat_padded.data(), _indices_mat_padded.data() + _indices_mat_padded.size());
-
-    //std::cout << _indices_mat_padded(511 / _indices_mat_padded.rows(), 511 - (511 / _indices_mat_padded.rows()) *  _indices_mat_padded.rows()) << std::endl;
-    //std::cout << _indices_mat_padded(511 - (511 / _indices_mat_padded.rows()) * _indices_mat_padded.rows(), 511 / _indices_mat_padded.rows()) << std::endl;
-    //std::cout << _indices_mat_padded(511 / _indices_mat_padded.cols(), 511 - (511 / _indices_mat_padded.cols()) *  _indices_mat_padded.cols()) << std::endl;
-    //std::cout << _indices_mat_padded(511 - (511 / _indices_mat_padded.cols()) * _indices_mat_padded.cols(), 511 / _indices_mat_padded.cols()) << std::endl;
-    //std::cout << A_vec[511] << std::endl;
-    //std::cout << _pointIDsGlobal[511] << std::endl;
-
-    //// TEST
-
     assert(_attribute_data.size() == _numPoints * _numDims);
 
     if (_featType == feature_type::TEXTURE_HIST_1D)
