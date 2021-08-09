@@ -3,7 +3,6 @@
 #include "FeatureUtils.h"	// struct ImgSize;
 
 #include <vector>
-#include <Eigen/Dense>
 
 class SpidrParameters;
 enum class loc_Neigh_Weighting : unsigned int;

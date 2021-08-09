@@ -1,0 +1,7 @@
+target_include_directories(${SPIDRLIB} PUBLIC "external/boost/histogram/include/")
+target_include_directories(${SPIDRLIB} PUBLIC "external/boost/core/include/")
+target_include_directories(${SPIDRLIB} PUBLIC "external/boost/mp11/include/")
+target_include_directories(${SPIDRLIB} PUBLIC "external/boost/throw_exception/include/")
+target_include_directories(${SPIDRLIB} PUBLIC "external/boost/config/include/")
+target_include_directories(${SPIDRLIB} PUBLIC "external/boost/variant2/include/")
+target_include_directories(${SPIDRLIB} PUBLIC "external/boost/assert/include/")

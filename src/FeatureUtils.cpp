@@ -136,26 +136,19 @@ std::vector<float> getNeighborhoodValues(const std::vector<int>& neighborIDs, co
     return neighborValues;
 }
 
-struct padAllDirections {
-    padAllDirections(Eigen::Index in_size, Eigen::Index pad_size) : in_size(in_size), pad_size(pad_size) {}
-    Eigen::Index size() const { return in_size + 2 * pad_size; }
-    Eigen::Index operator[] (Eigen::Index i) const { return std::min<Eigen::Index>(std::max<Eigen::Index>(0, i - pad_size), in_size - 1); }
-    Eigen::Index in_size, pad_size;
-};
-
-
-Eigen::MatrixXui padConst(Eigen::MatrixXui mat, Eigen::Index pad_size)
-{
-    // auto slice_sequence_rows = padAllDirections{ mat.rows(), pad_size };
-    // auto slice_sequence_cols = padAllDirections{ mat.cols(), pad_size };
-    // auto padded_mat = mat(slice_sequence_rows, slice_sequence_cols)
-
-    return mat(padAllDirections{ mat.rows(), pad_size }, padAllDirections{ mat.cols(), pad_size });
-}
 
 std::vector<int> getNeighborhoodInds(const unsigned int coord_row, const unsigned int coord_col, const size_t kernelWidth, Eigen::MatrixXui* padded_ids) {
     Eigen::MatrixXui neighborhoodInds_mat = padded_ids->block(coord_row, coord_col, kernelWidth, kernelWidth);
     //std::cout << neighborhoodInds_mat << "\n" << std::endl;
     std::vector<int> neighborhoodInds_vec(neighborhoodInds_mat.data(), neighborhoodInds_mat.data() + neighborhoodInds_mat.size());
     return neighborhoodInds_vec;
+}
+
+
+Eigen::MatrixXui padConst(Eigen::MatrixXui mat, Eigen::Index pad_size)
+{
+	//auto slice_sequence_rows = padAllDirections{ mat.rows(), pad_size };
+	//auto slice_sequence_cols = padAllDirections{ mat.cols(), pad_size };
+	//auto padded_mat = mat(slice_sequence_rows, slice_sequence_cols)
+	return mat(padAllDirections{ mat.rows(), pad_size }, padAllDirections{ mat.cols(), pad_size });
 }

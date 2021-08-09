@@ -4,7 +4,7 @@
 #include <vector>
 
 #include "SpidrAnalysisParameters.h"
-#include "Eigen/Dense"
+#include <Eigen/Dense>
 
 /*! Normalizes all values in vec wrt to normVal
  * Basically normedVec[i] = vec[i] / normVal
@@ -166,20 +166,35 @@ std::vector<float> CalcVarEstimate(size_t numPoints, size_t numDims, const std::
 }
 
 
+namespace Eigen {
+    // add short matrix version for unsigned int, works just as MatrixXi
+	typedef Matrix<unsigned int, -1, -1> MatrixXui;
+	//typedef Vector<unsigned int, -1> VectorXui;
+}
+
+// What does this do? From https://eigen.tuxfamily.org/dox-devel/group__TutorialSlicingIndexing.html
+// pad{3, 5} creates a sequence of indices [0 0 0 1 2]
+// Now a slicing operation A(seqN(i,m), seqN(j,n) selects a block starting at i,j having m rows, and n columns (equivalent to A.block(i,j,m,n)).
+// Slicing like A(pad{3,N}, pad{3,N} will thus return a matrix that was padded left and top with 2 rows
+struct padUpperLeft {
+	Eigen::Index size() const { return out_size; }
+	Eigen::Index operator[] (Eigen::Index i) const { return std::max<Eigen::Index>(0, i - (out_size - in_size)); }
+	Eigen::Index in_size, out_size;
+};
+
 /*! Helper struct for constant padding, see padConst
  *  Creates a sequence of indices: padAllDirections{3, 1} -> [0 0 1 2 2]
  *  Thus padding const values like [0 1 2] -> [(0) 0 1 2 (2)]
  *
- * \param in_size 
- * \param pad_size 
+ * \param in_size
+ * \param pad_size
  */
-struct padAllDirections;
-
-
-namespace Eigen {
-    // add short matrix version for unsigned int, works just as MatrixXi
-    typedef Matrix<unsigned int, -1, -1> MatrixXui;
-}
+struct padAllDirections {
+	padAllDirections(Eigen::Index in_size, Eigen::Index pad_size) : in_size(in_size), pad_size(pad_size) {}
+	Eigen::Index size() const { return in_size + 2 * pad_size; }
+	Eigen::Index operator[] (Eigen::Index i) const { return std::min<Eigen::Index>(std::max<Eigen::Index>(0, i - pad_size), in_size - 1); }
+	Eigen::Index in_size, pad_size;
+};
 
 
 /*! Pads a matrix (2d) in all directions with the border values
@@ -188,7 +203,6 @@ namespace Eigen {
  * \param pad_size
  */
 Eigen::MatrixXui padConst(Eigen::MatrixXui mat, Eigen::Index pad_size);
-
 
 /*! Get rectangle neighborhood point ids for one data item
  *  

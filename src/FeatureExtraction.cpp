@@ -7,6 +7,7 @@
 #include "spdlog/spdlog-inl.h"
 #include "omp.h"
 #include <boost/histogram.hpp>
+#include <Eigen/Dense>
 
 #include <iterator>     // std::advance
 #include <algorithm>    // std::fill, std::find, std::swap_ranges, std::copy, std::set_difference
@@ -15,7 +16,6 @@
 #include <cmath>        // std::pow
 #include <utility>      // std::forward
 #include <chrono>       // std::chrono
-#include <iterator>		// for ostream_iterator
 
 FeatureExtraction::FeatureExtraction() :
     _neighborhoodSize(1),
