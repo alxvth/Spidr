@@ -250,10 +250,6 @@ void FeatureExtraction::calculateLISA(size_t pointInd, std::vector<float> neighb
         neigh_diff_from_mean_sum = 0;
 		local_neighborhoodWeightsSum = 0;
 		for (size_t neighbor = 0; neighbor < _neighborhoodSize; neighbor++) {
-            // Legacy check:
-            //if (neighborIDs[neighbor] == -1)
-            //    continue; // skip if neighbor is outside image
-
 			neigh_diff_from_mean_sum += _neighborhoodWeights[neighbor] * (neighborValues[neighbor * _numDims + dim] - _meanVals[dim]);
 			local_neighborhoodWeightsSum += _neighborhoodWeights[neighbor];
         }
@@ -284,10 +280,6 @@ void FeatureExtraction::calculateGearysC(size_t pointInd, std::vector<float> nei
 		local_neighborhoodWeightsSum = 0;
 		//local_neighborhoodWeightsSum = _neighborhoodWeightsSum;
         for (size_t neighbor = 0; neighbor < _neighborhoodSize; neighbor++) {
-            // Legacy check:
-            //if (neighborIDs[neighbor] == -1)
-            //    continue; // skip if neighbor is outside image
-
 			diff_from_neigh = _attribute_data[pointInd * _numDims + dim] - neighborValues[neighbor * _numDims + dim];
             diff_from_neigh_sum += _neighborhoodWeights[neighbor] * (diff_from_neigh * diff_from_neigh);
 			local_neighborhoodWeightsSum += _neighborhoodWeights[neighbor];
