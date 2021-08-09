@@ -3,7 +3,6 @@
 #include <execution>    // par_unseq
 #include <algorithm>    // for_each_n
 #include <numeric>      // iota
-#include <iostream>      // iota
 
 
 template<typename T>
@@ -139,7 +138,6 @@ std::vector<float> getNeighborhoodValues(const std::vector<int>& neighborIDs, co
 
 std::vector<int> getNeighborhoodInds(const unsigned int coord_row, const unsigned int coord_col, const size_t kernelWidth, Eigen::MatrixXui* padded_ids) {
     Eigen::MatrixXui neighborhoodInds_mat = padded_ids->block(coord_row, coord_col, kernelWidth, kernelWidth);
-    //std::cout << neighborhoodInds_mat << "\n" << std::endl;
     std::vector<int> neighborhoodInds_vec(neighborhoodInds_mat.data(), neighborhoodInds_mat.data() + neighborhoodInds_mat.size());
     return neighborhoodInds_vec;
 }
