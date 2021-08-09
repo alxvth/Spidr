@@ -89,8 +89,6 @@ target_link_libraries(${SPIDRLIB} PUBLIC OpenMP::OpenMP_CXX)
 target_include_directories(${SPIDRLIB} PUBLIC "external/spdlog/include")
 target_include_directories(${SPIDRLIB} PUBLIC "external/hnswlib")
 target_include_directories(${SPIDRLIB} PUBLIC "external/eigen/")
-target_include_directories(${SPIDRLIB} PUBLIC "external/boost/histogram/include/")
-include("cmake/BoostSetup.cmake") # Include boost histogram and boost dependencies headers (all external submodules)
 
 # Link against the HDILibSlim, https://github.com/alxvth/HDILibSlim/ (a slimmed-down version of https://github.com/biovault/HDILib)
 # make sure to have it built and HDILIBSlim_ROOT set

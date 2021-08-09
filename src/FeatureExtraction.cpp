@@ -6,7 +6,6 @@
 #include "hnswlib/hnswlib.h" 
 #include "spdlog/spdlog-inl.h"
 #include "omp.h"
-#include <boost/histogram.hpp>
 #include <Eigen/Dense>
 
 #include <iterator>     // std::advance
@@ -188,9 +187,9 @@ void FeatureExtraction::calculateHistogram(size_t pointInd, std::vector<float> n
     assert(_outFeatures.size() == _numPoints * _numDims * _numHistBins);
     assert(_minMaxVals.size() == 2*_numDims);
     assert(_neighborhoodWeights.size() == _neighborhoodSize);
-    assert(std::none_of(neighborIDs.begin(), neighborIDs.end(), , [](int i) {return i == -1; }));
+    assert(std::none_of(neighborIDs.begin(), neighborIDs.end(), [](int i) {return i == -1; }));
 
-    float histSum = 0;
+    Eigen::VectorXf normHist;
 
     // 1D histograms for each dimension
     for (size_t dim = 0; dim < _numDims; dim++) {
@@ -199,39 +198,25 @@ void FeatureExtraction::calculateHistogram(size_t pointInd, std::vector<float> n
         if (maxHist == minHist)     // ensure that the histogram can be made
             maxHist += 0.01;
 
-        auto h = boost::histogram::make_histogram(boost::histogram::axis::regular(_numHistBins, minHist, maxHist));
+        Histogram_Weighted hist = Histogram_Weighted(minHist, maxHist, static_cast<unsigned int>(_numHistBins)); 
         for (size_t neighbor = 0; neighbor < _neighborhoodSize; neighbor++) {
-            h(neighborValues[neighbor * _numDims + dim], boost::histogram::weight(_neighborhoodWeights[neighbor]));
+            hist.fill_weighted(neighborValues[neighbor * _numDims + dim], _neighborhoodWeights[neighbor]);
         }
 
-        assert(h.rank() == 1);                      // 1D hist
-        assert(h.axis().size() == _numHistBins);    // right number of bins
+        assert(hist.getCountUnderflow() == 0);
+        assert(hist.getCountOverflow() == 0);
+
         // check if weighting works: sum(hist) == sum(weights) for full spatial neighborhoods
-        assert(std::abs(std::accumulate(h.begin(), h.end(), 0.0f) - std::accumulate(_neighborhoodWeights.begin(), _neighborhoodWeights.end(), 0.0f)) < 0.01f);
+        assert(std::abs(std::accumulate(hist.cbegin(), hist.cend(), 0.0f) - std::accumulate(_neighborhoodWeights.begin(), _neighborhoodWeights.end(), 0.0f)) < 0.01f);
 
         // normalize the histogram: sum(hist) := 1
-        histSum = std::accumulate(h.begin(), h.end(), 0.0f);
-        for (auto& hVal : h)
-            hVal /= histSum;
-
-        assert(std::abs(std::accumulate(h.begin(), h.end(), 0.0f)-1) < 0.01);    // sum(hist) ~= 1
+        normHist = hist.normalizedCounts();
+        assert(std::abs(normHist.sum() - 1) < 0.01);  
 
         // save the histogram in _outFeatures 
         // data layout for points p, dimension d and bin b: [p0d0b0, p0d0b1, p0d0b2, ..., p0d1b0, p0d1b2, ..., p1d0b0, p0d0b1, ...]
-        for (size_t bin = 0; bin < _numHistBins; bin++) {
-            _outFeatures[pointInd * _numDims * _numHistBins + dim * _numHistBins + bin] = h[bin];
-        }
-
-        // values below min are stored in the underflow bin 
-        // (they might be below min because they were set to 0 due to being outside the image/selection, i.e. padding reasons)
-        if (h.at(-1) != 0) {
-            _outFeatures[pointInd * _numDims * _numHistBins + dim * _numHistBins + 0] += h.at(-1);
-        }
-
-        // the max value is stored in the overflow bin
-        if (h.at(_numHistBins) != 0) {
-            _outFeatures[pointInd * _numDims * _numHistBins + dim * _numHistBins + _numHistBins - 1] += h.at(_numHistBins);
-        }
+        for(size_t bin = 0; bin < _numHistBins; bin++)
+            _outFeatures[pointInd * _numDims * _numHistBins + dim * _numHistBins + bin] = normHist[bin];
 
     }
 

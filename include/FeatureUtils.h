@@ -214,3 +214,81 @@ Eigen::MatrixXui padConst(Eigen::MatrixXui mat, Eigen::Index pad_size);
  * \return
  */
 std::vector<int> getNeighborhoodInds(const unsigned int coord_row, const unsigned int coord_col, const size_t kernelWidth, Eigen::MatrixXui* padded_ids);
+
+
+template <class scalar_type>
+class Histogram_Base
+{
+public:
+    Histogram_Base() = delete;
+    Histogram_Base(float min, float max, unsigned int numberOfBins);
+    // The last bin might be smaller than the rest of (max-min)/binWidth does not yield an integer
+    Histogram_Base(float min, float max, float binWidth);
+
+    void fill(const float value);
+    void fill(const std::vector<float> values);
+
+    // Getter
+
+    unsigned int getNumBins() const { return _counts.size(); };
+    unsigned int getCount(unsigned int bin) const { return _counts[bin]; };
+
+    unsigned int getCount() const { return _totalValidBinCounts; };
+    unsigned int getCountAll() const { return _totalBinCounts; };
+    unsigned int getCountUnderflow() const { return _countUnderflow; };
+    unsigned int getCountOverflow() const { return _countOverflow; };
+
+    float getMin() const { return _minVal; };
+    float getMax() const { return _maxVal; };
+    float getBinLower(unsigned int bin) const { return _minVal + bin * _binWidth; };
+    float getBinUpper(unsigned int bin) const { return _minVal + (bin + 1) * _binWidth; };
+
+    auto cbegin() const { return _counts.cbegin(); };
+    auto cend() const { return _counts.cend(); };
+
+    scalar_type operator[](int index) const;
+
+    Eigen::Vector<scalar_type, -1> counts() const { return _counts; };
+    Eigen::VectorXf normalizedCounts() const { return _counts.cast<float>() / _counts.sum(); };
+
+protected:
+    Eigen::Vector<scalar_type, -1> _counts;
+    unsigned int _countOverflow;
+    unsigned int _countUnderflow;
+    float _binWidth;
+    float _binNormed;
+    float _minVal;
+    float _maxVal;
+    unsigned int _totalBinCounts;
+    unsigned int _totalValidBinCounts;
+    unsigned int _numBins;
+
+    void commonInit();
+};
+
+
+/*! Histogram class
+ *
+ * If newVal == binMax then it will not count as overflow but is counted in the largest bin
+ */
+class Histogram : public Histogram_Base<unsigned int>
+{
+public:
+    Histogram() = delete;
+    Histogram(float min, float max, unsigned int numberOfBins) : Histogram_Base(min, max, numberOfBins) { };
+    Histogram(float min, float max, float binWidth) : Histogram_Base(min, max, binWidth) { };
+
+};
+
+class Histogram_Weighted : public Histogram_Base<float>
+{
+public:
+    Histogram_Weighted() = delete;
+    Histogram_Weighted(float min, float max, unsigned int numberOfBins) : Histogram_Base(min, max, numberOfBins) { };
+    Histogram_Weighted(float min, float max, float binWidth) : Histogram_Base(min, max, binWidth) { };
+
+    void fill_weighted(const float value, const float weight);
+    void fill_weighted(const std::vector<float> values, const std::vector<float> weights);
+
+};
+

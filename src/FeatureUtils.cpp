@@ -3,6 +3,8 @@
 #include <execution>    // par_unseq
 #include <algorithm>    // for_each_n
 #include <numeric>      // iota
+#include <cmath> 
+#include <stdexcept>
 
 
 template<typename T>
@@ -150,3 +152,107 @@ Eigen::MatrixXui padConst(Eigen::MatrixXui mat, Eigen::Index pad_size)
 	//auto padded_mat = mat(slice_sequence_rows, slice_sequence_cols)
 	return mat(padAllDirections{ mat.rows(), pad_size }, padAllDirections{ mat.cols(), pad_size });
 }
+
+
+template< class scalar_type> Histogram_Base< scalar_type>::Histogram_Base(float min, float max, unsigned int numberOfBins) :
+    _minVal(min), _maxVal(max), _numBins(numberOfBins), _totalBinCounts(0), _totalValidBinCounts(0), _countUnderflow(0), _countOverflow(0)
+{
+    _binWidth = (_maxVal - _minVal) / (float)_numBins;
+    commonInit();
+}
+// Resolve linker errors with explicit instantiation, https://isocpp.org/wiki/faq/templates#separate-template-fn-defn-from-decl
+template Histogram_Base<unsigned int>::Histogram_Base(float min, float max, unsigned int numberOfBins);
+template Histogram_Base<float>::Histogram_Base(float min, float max, unsigned int numberOfBins);
+
+template< class scalar_type> Histogram_Base< scalar_type>::Histogram_Base(float min, float max, float binWidth) :
+    _minVal(min), _maxVal(max), _binWidth(binWidth), _totalBinCounts(0), _totalValidBinCounts(0), _countUnderflow(0), _countOverflow(0)
+{
+    _numBins = std::ceil((_maxVal - _minVal) / (float)_binWidth);
+    commonInit();
+}
+template Histogram_Base<unsigned int>::Histogram_Base(float min, float max, float binWidth);
+template Histogram_Base<float>::Histogram_Base(float min, float max, float binWidth);
+
+
+template< class scalar_type> void Histogram_Base< scalar_type>::commonInit()
+{
+    if (_minVal >= _maxVal)
+        throw std::runtime_error("Histogram_Base: Bin max must be larger than bin min.");
+
+    _counts = Eigen::Vector<scalar_type, -1>::Zero(_numBins);
+    _binNormed = (float)_numBins / (_maxVal - _minVal);
+}
+template void Histogram_Base<unsigned int>::commonInit();
+template void Histogram_Base<float>::commonInit();
+
+
+template< class scalar_type> void Histogram_Base< scalar_type>::fill(const float value) {
+    unsigned int binID;
+    if (value >= _minVal && value < _maxVal) {
+        binID = std::floor((value - _minVal) * _binNormed);
+        _counts[binID] += 1;
+        _totalValidBinCounts += 1;
+    }
+    else if (value == _maxVal)
+    {
+        _counts[_numBins - 1] += 1;
+        _totalValidBinCounts += 1;
+    }
+    else if (value > _maxVal) {
+        _countOverflow += 1;
+    }
+    else {
+        _countUnderflow += 1;
+    }
+
+    _totalBinCounts += 1;
+}
+template void Histogram_Base<unsigned int>::fill(const float value);
+template void Histogram_Base<float>::fill(const float value);
+
+template< class scalar_type> void Histogram_Base< scalar_type>::fill(const std::vector<float> values) {
+    for (const float &value : values)
+        fill(value);
+}
+template void Histogram_Base<unsigned int>::fill(const std::vector<float> values);
+template void Histogram_Base<float>::fill(const std::vector<float> values);
+
+
+template< class scalar_type> scalar_type Histogram_Base< scalar_type>::operator[](int index) const {
+    assert(index >= 0 && index < _numBins);
+    return _counts[index];
+}
+template unsigned int Histogram_Base<unsigned int>::operator[](int index) const;
+template float Histogram_Base<float>::operator[](int index) const;
+
+
+void Histogram_Weighted::fill_weighted(const float value, const float weight) {
+    unsigned int binID;
+    if (value >= _minVal && value < _maxVal) {
+        binID = std::floor((value - _minVal) * _binNormed);
+        _counts[binID] += weight;
+        _totalValidBinCounts += 1;
+    }
+    else if (value == _maxVal)
+    {
+        _counts[_numBins - 1] += 1;
+        _totalValidBinCounts += 1;
+    }
+    else if (value > _maxVal) {
+        _countOverflow += 1;
+    }
+    else {
+        _countUnderflow += 1;
+    }
+
+    _totalBinCounts += 1;
+}
+
+void Histogram_Weighted::fill_weighted(const std::vector<float> values, const std::vector<float> weights) {
+    assert(values.size() == weights.size());
+
+    for (unsigned int i = 0; i < values.size(); i++)
+        fill_weighted(values[i], weights[i]);
+}
+
+
