@@ -2,6 +2,7 @@
 
 #include <cmath>
 #include <vector>
+#include <utility>  // std::pair
 
 #include "SpidrAnalysisParameters.h"
 #include <Eigen/Dense>
@@ -76,7 +77,7 @@ unsigned int RiceBinSize(unsigned int numItems);
  * \param _attribute_data
  * \param _neighborhoodSize
  * \param _numDims
- * \return 
+ * \return vector with [d1_n1, d1_n1, ..., d2_n1, d2_n2, ...]
  */
 std::vector<float> getNeighborhoodValues(const std::vector<int>& neighborIDs, const std::vector<float>& attribute_data, const size_t neighborhoodSize, const size_t numDims);
 
@@ -292,3 +293,13 @@ public:
 
 };
 
+
+float variance(Eigen::VectorXf vec);
+float covariance(Eigen::VectorXf vec1, Eigen::VectorXf vec2);
+Eigen::MatrixXf covmat(Eigen::MatrixXf data);
+Eigen::MatrixXf covmat(Eigen::MatrixXf data, Eigen::VectorXf probs);
+
+typedef std::pair<Eigen::VectorXf, Eigen::MatrixXf> multivar_normal;
+
+multivar_normal compMultiVarFeatures(Eigen::MatrixXf data);
+multivar_normal compMultiVarFeatures(Eigen::MatrixXf data, Eigen::VectorXf probs);

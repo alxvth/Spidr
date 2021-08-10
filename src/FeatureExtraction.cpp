@@ -6,7 +6,6 @@
 #include "hnswlib/hnswlib.h" 
 #include "spdlog/spdlog-inl.h"
 #include "omp.h"
-#include <Eigen/Dense>
 
 #include <iterator>     // std::advance
 #include <algorithm>    // std::fill, std::find, std::swap_ranges, std::copy, std::set_difference
@@ -22,10 +21,10 @@ FeatureExtraction::FeatureExtraction() :
     _stopFeatureComputation(false)
 {
     // square neighborhood
-    _locNeighbors = ((_neighborhoodSize * 2) + 1) * ((_neighborhoodSize * 2) + 1);
+    _numLocNeighbors = ((_neighborhoodSize * 2) + 1) * ((_neighborhoodSize * 2) + 1);
     // uniform weighting
     _neighborhoodWeighting = loc_Neigh_Weighting::WEIGHT_UNIF;
-    _neighborhoodWeights.resize(_locNeighbors);
+    _neighborhoodWeights.resize(_numLocNeighbors);
     std::fill(_neighborhoodWeights.begin(), _neighborhoodWeights.end(), 1);
 }
 
@@ -34,14 +33,14 @@ FeatureExtraction::FeatureExtraction() :
 void FeatureExtraction::compute() {
 	spdlog::info("Feature extraction: Started");
 
-	// init, i.e. identify min and max per dimension for histogramming
+	// init, i.e. identify min and max per dimension
 	initExtraction();
 
 	// all _outFeatures have to be -1 to, so we can easily check later if the were all assigned
 	assert(std::all_of(_outFeatures.begin(), _outFeatures.end(), [](float i) {return i == FLT_MAX; }));
 	auto start = std::chrono::steady_clock::now();
 
-	// convolution over all points to create histograms
+	// for each points, compute the features for the respective neighborhood
 	extractFeatures();
 
 	auto end = std::chrono::steady_clock::now();
@@ -63,7 +62,7 @@ void FeatureExtraction::setup(const std::vector<unsigned int>& pointIDsGlobal, c
 
     // SpidrParameters
     _numHistBins = params._numHistBins;
-    _locNeighbors = params._numLocNeighbors;
+    _numLocNeighbors = params._numLocNeighbors;
     _neighborhoodWeighting = params._neighWeighting;
 
     // Set neighborhood
@@ -88,8 +87,8 @@ void FeatureExtraction::setup(const std::vector<unsigned int>& pointIDsGlobal, c
     // Convert the background IDs into an Eigen matrix
     // there is no standard Eigen typedef for unsigned typesa and Eigen::MatrixXi does not work
     Eigen::MatrixXui _indices_mat = Eigen::Map<Eigen::MatrixXui>(&_pointIDsGlobal[0], _imgSize.width, _imgSize.height);
-    // pad the matrix in all directions with _locNeighbors values
-    _indices_mat_padded = padConst(_indices_mat, _locNeighbors);
+    // pad the matrix in all directions with _numLocNeighbors values
+    _indices_mat_padded = padConst(_indices_mat, _numLocNeighbors);
 
     assert(_attribute_data.size() == _numPoints * _numDims);
 
@@ -113,12 +112,17 @@ void FeatureExtraction::setup(const std::vector<unsigned int>& pointIDsGlobal, c
         featFunct = &FeatureExtraction::allNeighborhoodIDs; // allNeighborhoodVals for using the data instead of the IDs
 		spdlog::info("Feature extraction: Point cloud (just the neighborhood, no transformations)");
     }
+    else if (_featType == feature_type::MULTIVAR_NORM)
+    {
+        featFunct = &FeatureExtraction::multivarNormDistDescriptor;
+        spdlog::info("Feature extraction: Multivariate normal distribution descriptors (covaraince matrix and channel-wise mean)");
+    }
     else if (_featType == feature_type::MVN)
     {
         featFunct = &FeatureExtraction::calculateSumAllDist;
-        _locNeighbors = 0;      // even better was to skip the neighborhood extraction during
+        _numLocNeighbors = 0;      // even better was to skip the neighborhood extraction during
         _neighborhoodSize = 1;  // feature calculation but this is the next best thing
-		spdlog::info("Feature extraction: Preparation for Frobenius norm of attribute dist matrices");
+        spdlog::info("Feature extraction: Preparation for Frobenius norm of attribute dist matrices");
     }
     else
     {
@@ -126,7 +130,7 @@ void FeatureExtraction::setup(const std::vector<unsigned int>& pointIDsGlobal, c
 		spdlog::error("Feature extraction: unknown feature type");
     }
 
-	spdlog::info("Feature extraction: Num neighbors (in each direction): {0} (total neighbors: {1}) Neighbor weighting: {2}", _locNeighbors , _neighborhoodSize, static_cast<unsigned int> (_neighborhoodWeighting));
+	spdlog::info("Feature extraction: Num neighbors (in each direction): {0} (total neighbors: {1}) Neighbor weighting: {2}", _numLocNeighbors , _neighborhoodSize, static_cast<unsigned int> (_neighborhoodWeighting));
 
 }
 
@@ -173,9 +177,7 @@ void FeatureExtraction::extractFeatures() {
 
         // get neighborhood values of the current point
         std::vector<float> neighborValues = getNeighborhoodValues(neighborIDs, _attribute_data, _neighborhoodSize, _numDims);
-        assert(std::find(neighborValues.begin(), neighborValues.end(), -1) == neighborValues.end());
-        // check no value is FLT_MAX, which would indicate an unset value
-        assert(std::none_of(neighborValues.begin(), neighborValues.end(), [](float neighborVal) { return neighborVal == FLT_MAX; }));
+        assert(std::none_of(neighborValues.begin(), neighborValues.end(), [](float neighborVal) { return neighborVal == FLT_MAX; })); // check no value is FLT_MAX, which would indicate an unset value
 
         // calculate feature(s) for neighborhood
         (this->*featFunct)((*IDs)[i], neighborValues, neighborIDs);  // function pointer defined above
@@ -288,6 +290,26 @@ void FeatureExtraction::calculateSumAllDist(size_t pointInd, std::vector<float> 
 }
 
 
+void FeatureExtraction::multivarNormDistDescriptor(size_t pointInd, std::vector<float> neighborValues, std::vector<int> neighborIDs) {
+    assert(_outFeatures.size() == _numPoints * (_numDims + _numDims * _numDims));
+    assert(_neighborhoodWeights.size() == _neighborhoodSize);
+
+    // transform std data to eigen
+    Eigen::MatrixXf neighborValues_mat(_numDims, _neighborhoodSize);
+    for (int ch = 0; ch < _numDims; ch++)
+        neighborValues_mat.row(ch) = Eigen::Map<Eigen::VectorXf>(neighborValues.data() + ch* _neighborhoodSize, _neighborhoodSize);
+
+    // compute features
+    multivar_normal mean_covmat = compMultiVarFeatures(neighborValues_mat, _neighborhoodWeights_eig);
+
+    // transform features back to std and save
+    std::swap_ranges(mean_covmat.first.begin(), mean_covmat.first.end(), _outFeatures.begin() + (pointInd * _numFeatureValsPerPoint));
+    for (int ch = 0; ch < _numDims; ch++) // swap row wise because straightforward begin to end range swap did not work...
+        std::swap_ranges(mean_covmat.second.row(ch).begin(), mean_covmat.second.row(ch).end(), _outFeatures.begin() + (pointInd * _numFeatureValsPerPoint + _numDims * (ch +1) ));
+
+}
+
+
 void FeatureExtraction::allNeighborhoodVals(size_t pointInd, std::vector<float> neighborValues, std::vector<int> neighborIDs) {
     assert(_outFeatures.size() == _numPoints * _numDims * _neighborhoodSize);     // _numFeatureValsPerPoint = _numDims * _neighborhoodSize
 
@@ -329,6 +351,9 @@ void FeatureExtraction::weightNeighborhood(loc_Neigh_Weighting weighting) {
     }
 
     _neighborhoodWeightsSum = std::accumulate(_neighborhoodWeights.begin(), _neighborhoodWeights.end(), 0.0f);
+
+    _neighborhoodWeights_eig = Eigen::Map<Eigen::VectorXf>(_neighborhoodWeights.data(), _neighborhoodSize);
+    assert(_neighborhoodWeights_eig.sum() == _neighborhoodWeightsSum);
 }
 
 void FeatureExtraction::setNeighborhoodWeighting(loc_Neigh_Weighting weighting) {
@@ -337,7 +362,7 @@ void FeatureExtraction::setNeighborhoodWeighting(loc_Neigh_Weighting weighting) 
 }
 
 void FeatureExtraction::setNumLocNeighbors(size_t size) {
-    _locNeighbors = size;
+    _numLocNeighbors = size;
     _kernelWidth = (2 * size) + 1;
     _neighborhoodSize = _kernelWidth * _kernelWidth;
 }

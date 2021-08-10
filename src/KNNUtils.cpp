@@ -274,8 +274,14 @@ hnswlib::SpaceInterface<float>* CreateHNSWSpace(const distance_metric knn_metric
     else if (knn_metric == distance_metric::METRIC_HAU_minmax)
     {
         assert(dataVecBegin != NULL);
-		spdlog::info("Distance calculation: EuclidenSpace (Hausdorff, minmax)");
+        spdlog::info("Distance calculation: EuclidenSpace (Hausdorff, minmax)");
         space = new hnswlib::HausdorffSpace_minmax(numDims, neighborhoodSize, neighborhoodWeighting, dataVecBegin, featureValsPerPoint);
+    }
+    else if (knn_metric == distance_metric::METRIC_BHATTACHARYYA)
+    {
+        assert(dataVecBegin != NULL);
+        spdlog::info("Distance calculation: BhattacharyyaSpace (Distance between means and covariance matrices)");
+        space = new hnswlib::Bhattacharyya_Space(numDims, featureValsPerPoint);
     }
     else
 		spdlog::error("Distance calculation: ERROR: Distance metric unknown.");

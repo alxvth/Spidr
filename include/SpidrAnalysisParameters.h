@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <stdexcept>
 
 #include "spdlog/spdlog-inl.h"
 
@@ -42,6 +43,7 @@ enum class distance_metric : size_t
 	METRIC_HAU_medmed,      /*!< Hausdorff distance (point collection) but with median instead of max*/                    //       or does this not make sense at all?
 	METRIC_HAU_minmax,      /*!< Hausdorff distance (point collection) but with median instead of max*/                    //       or does this not make sense at all?
 	METRIC_MVN,      /*!< MVN-Reduce, see 10.2312/euroviss, combines spatial and attribute distance with a weight*/
+	METRIC_BHATTACHARYYA,      /*!< Bhattacharyya distance between two multivariate normal distributions, https://en.wikipedia.org/wiki/Bhattacharyya_distance */
 };
 
 /*!
@@ -57,6 +59,7 @@ enum class bin_sim : size_t
 
 /*! Types of neighborhood features
  *
+ * Adding a new feature type? Make sure to adjust NumFeatureValsPerPoint()
  */
 enum class feature_type : unsigned int
 {
@@ -65,6 +68,7 @@ enum class feature_type : unsigned int
 	LOCALGEARYC = 2,        /*!< Local Geary's C (Local Indicator of Spatial Associations), scalar feature */
 	PCLOUD = 3,             /*!< Point cloud, i.e. just the neighborhood, no transformations*/
 	MVN = 4,                /*!< MVN-Reduce, see 10.2312/euroviss, computes Frobenius norms of spatial and attribute distance matrices*/
+	MULTIVAR_NORM = 5,      /*!< Mean and covariance matrix  */
 };
 
 // Heuristic for setting the histogram bin size
@@ -128,6 +132,8 @@ static const size_t NumFeatureValsPerPoint(const feature_type featureType, const
 	case feature_type::LOCALGEARYC:     featureSize = numDims; break;
 	case feature_type::PCLOUD:          featureSize = neighborhoodSize; break; // numDims * neighborhoodSize for copying data instead of IDs
 	case feature_type::MVN:             featureSize = numDims + 2; break; // for each point: attr vals and x&y pos
+	case feature_type::MULTIVAR_NORM:   featureSize = numDims + numDims* numDims; break; // channel-wise means + covaraince matrix
+    default: throw std::runtime_error("No feature size defined for this feature");
 	}
 
 	return featureSize;

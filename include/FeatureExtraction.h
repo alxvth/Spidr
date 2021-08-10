@@ -3,6 +3,7 @@
 #include "FeatureUtils.h"	// struct ImgSize;
 
 #include <vector>
+#include <Eigen/Dense>
 
 class SpidrParameters;
 enum class loc_Neigh_Weighting : unsigned int;
@@ -94,6 +95,13 @@ private:
     */
     void calculateSumAllDist(size_t pointInd, std::vector<float> neighborValues, std::vector<int> neighborIDs);
 
+    /*! multivariate normal distributions Descriptos: covaraince matrix and channel-wise mean
+     * 
+     * \param pointInd
+     * \param neighborValues
+    */
+    void FeatureExtraction::multivarNormDistDescriptor(size_t pointInd, std::vector<float> neighborValues, std::vector<int> neighborIDs);
+
     /*! Sets the Feature per element to all it's neighbors attributes
      * The neighborhood is a square and centered around each item respectively
      * Padding is done by setting out-of-boundary values to 0
@@ -125,11 +133,12 @@ private:
     // Options 
     feature_type _featType;                         /*!< Type of feature to extract */
     size_t       _numFeatureValsPerPoint;           /*!< depending on the feature type, the features vector has a different length (scalar features vs vector features per dimension)> */
-    size_t       _locNeighbors;                     /*!< Number of neighbors including center */
-    size_t       _kernelWidth;                      /*!< Width of the kernel (2* _locNeighbors +1) */
+    size_t       _numLocNeighbors;                  /*!< Number of neighbors in each direction */
+    size_t       _kernelWidth;                      /*!< Width of the kernel (2* _numLocNeighbors +1) */
     size_t       _neighborhoodSize;                 /*!< Square neighborhood centered around an item with _neighborhoodSize neighbors to the left, right, top and buttom */
     loc_Neigh_Weighting _neighborhoodWeighting;     /*!< Weighting type of neighborhood kernel */
     std::vector<float> _neighborhoodWeights;        /*!< Weightings of neighborhood kernel */
+    Eigen::VectorXf _neighborhoodWeights_eig;        /*!< Weightings of neighborhood kernel */
     float _neighborhoodWeightsSum;                  /*!< Sum of weightings in neighborhood kernel */
     size_t       _numHistBins;                      /*!< Number of bins in each histogram */
     bool _forceCalcBackgroundFeatures;              /*!< Force calculation of features for background data */
@@ -147,13 +156,11 @@ private:
     std::vector<float> _meanVals;                   /*!< Avg for each dimension/channel, i.e. [mean_Ch0, meam_Ch1, ...] */
     std::vector<float> _varVals;                    /*!< Variance estimate for each dimension/channel, i.e. [mean_Ch0, meam_Ch1, ...] */
 
-    Eigen::MatrixXui _indices_mat_padded;            /*!< Eigen matrix of _pointIDsGlobal for easier neighborhood extraction, padded with pad size _locNeighbors> */
+    Eigen::MatrixXui _indices_mat_padded;            /*!< Eigen matrix of _pointIDsGlobal for easier neighborhood extraction, padded with pad size _numLocNeighbors> */
 
     // Output
     /*! Features for each item.
-    * In case of 1D histograms for each data point there are _inputData.getNumDimensions() histograms 
-    * with _numHistBins values, i.e. size _numForegroundPoints * _numDims * _numHistBins.
-    * Else, the features are the local Indicator of Spatial Association features for each item.
+    * will be of _numPoints * _numFeatureValsPerPoint
     */
     std::vector<float> _outFeatures;
 };
