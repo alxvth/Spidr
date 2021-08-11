@@ -24,6 +24,7 @@ public:
      * \return 
      */
     std::vector<float> output();
+    Feature outputF();
 
     void setNumLocNeighbors(size_t size);
     void setNeighborhoodWeighting(loc_Neigh_Weighting weighting);
@@ -163,4 +164,5 @@ private:
     * will be of _numPoints * _numFeatureValsPerPoint
     */
     std::vector<float> _outFeatures;
+    Feature _outFeaturesF;
 };

@@ -1,6 +1,8 @@
 #pragma once
 #include "KNNUtils.h"
 #include "KNNDists.h"
+#include "FeatureUtils.h"
+
 #include "spdlog/spdlog-inl.h"
 #include "hnswlib/hnswlib.h"
 
@@ -73,7 +75,7 @@ std::vector<float> BinSimilarities(size_t num_bins, bin_sim sim_type, float sim_
 }
 
 template<typename T>
-std::tuple<std::vector<int>, std::vector<float>> ComputeHNSWkNN(const std::vector<T>& dataFeatures, hnswlib::SpaceInterface<float> *space, size_t indMultiplier, const std::vector<unsigned int>& foregroundIDsGlobal, unsigned int nn) {
+std::tuple<std::vector<int>, std::vector<float>> ComputeHNSWkNN(const std::vector<T>& dataFeatures, Feature& dataFeaturesF, hnswlib::SpaceInterface<float> *space, size_t indMultiplier, const std::vector<unsigned int>& foregroundIDsGlobal, unsigned int nn) {
     auto numForegroundPoints = foregroundIDsGlobal.size();
 
     std::vector<int> indices(numForegroundPoints * nn, -1);
@@ -85,20 +87,32 @@ std::tuple<std::vector<int>, std::vector<float>> ComputeHNSWkNN(const std::vecto
 
     // add data points: each data point holds indMultiplier values (number of feature values)
     // add the first data point outside the parallel loop
-    appr_alg.addPoint((void*)(dataFeatures.data() + foregroundIDsGlobal[0] * indMultiplier), (std::size_t) 0);
+    //appr_alg.addPoint((void*)(dataFeatures.data() + foregroundIDsGlobal[0] * indMultiplier), (std::size_t) 0);
+    appr_alg.addPoint((void*)(dataFeaturesF.at(foregroundIDsGlobal[0])), (std::size_t) 0);
 
+    for (int i = 0; i < 5; i++)
+    {
+        FeatureData<multivar_normal_plusDet>* pVect1 = static_cast<FeatureData<multivar_normal_plusDet>*>((dataFeaturesF.at(foregroundIDsGlobal[i])));
+
+        std::cout << "Data: " << i << "\n";
+        std::cout << std::get<0>(pVect1->data) << "\n";
+        std::cout << std::get<1>(pVect1->data) << "\n";
+        std::cout << std::get<2>(pVect1->data) << "\n";
+    }
 
 #ifdef NDEBUG
     // This loop is for release mode, it's parallel loop implementation from hnswlib
     int num_threads = std::thread::hardware_concurrency();
     hnswlib::ParallelFor(1, numForegroundPoints, num_threads, [&](size_t i, size_t threadId) {
-        appr_alg.addPoint((void*)(dataFeatures.data() + (foregroundIDsGlobal[i] *indMultiplier)), (hnswlib::labeltype) i);
+        //appr_alg.addPoint((void*)(dataFeatures.data() + (foregroundIDsGlobal[i] *indMultiplier)), (hnswlib::labeltype) i);
+        appr_alg.addPoint((void*)(dataFeaturesF.at(foregroundIDsGlobal[i])), (hnswlib::labeltype) i);
     });
 #else
 // This loop is for debugging, when you want to sequentially add points
     for (int i = 1; i < numForegroundPoints; ++i)
     {
-        appr_alg.addPoint((void*)(dataFeatures.data() + (foregroundIDsGlobal[i] *indMultiplier)), (hnswlib::labeltype) i);
+        //appr_alg.addPoint((void*)(dataFeatures.data() + (foregroundIDsGlobal[i] *indMultiplier)), (hnswlib::labeltype) i);
+        appr_alg.addPoint((void*)(dataFeaturesF.at(foregroundIDsGlobal[i])), (hnswlib::labeltype) i);
     }
 #endif
 	spdlog::info("Distance calculation: Search akNN Index");
@@ -110,7 +124,8 @@ std::tuple<std::vector<int>, std::vector<float>> ComputeHNSWkNN(const std::vecto
     for (int i = 0; i < numForegroundPoints; ++i)
     {
         // find nearest neighbors
-        auto top_candidates = appr_alg.searchKnn((void*)(dataFeatures.data() + (foregroundIDsGlobal[i] *indMultiplier)), (hnswlib::labeltype)nn);
+        //auto top_candidates = appr_alg.searchKnn((void*)(dataFeatures.data() + (foregroundIDsGlobal[i] *indMultiplier)), (hnswlib::labeltype)nn);
+        auto top_candidates = appr_alg.searchKnn((void*)(dataFeaturesF.at(foregroundIDsGlobal[i])), (hnswlib::labeltype)nn);
         while (top_candidates.size() > nn) {
             top_candidates.pop();
         }
@@ -133,8 +148,8 @@ std::tuple<std::vector<int>, std::vector<float>> ComputeHNSWkNN(const std::vecto
     return std::make_tuple(indices, distances_squared);
 }
 // Resolve linker errors with explicit instantiation, https://isocpp.org/wiki/faq/templates#separate-template-fn-defn-from-decl
-template std::tuple<std::vector<int>, std::vector<float>> ComputeHNSWkNN<float>(const std::vector<float>& dataFeatures, hnswlib::SpaceInterface<float> *space, size_t indMultiplier, const std::vector<unsigned int>& foregroundIDsGlobal, unsigned int nn);
-template std::tuple<std::vector<int>, std::vector<float>> ComputeHNSWkNN<unsigned int>(const std::vector<unsigned int>& dataFeatures, hnswlib::SpaceInterface<float> *space, size_t indMultiplier, const std::vector<unsigned int>& foregroundIDsGlobal, unsigned int nn);
+template std::tuple<std::vector<int>, std::vector<float>> ComputeHNSWkNN<float>(const std::vector<float>& dataFeatures, Feature& dataFeaturesF, hnswlib::SpaceInterface<float> *space, size_t indMultiplier, const std::vector<unsigned int>& foregroundIDsGlobal, unsigned int nn);
+template std::tuple<std::vector<int>, std::vector<float>> ComputeHNSWkNN<unsigned int>(const std::vector<unsigned int>& dataFeatures, Feature& dataFeaturesF, hnswlib::SpaceInterface<float> *space, size_t indMultiplier, const std::vector<unsigned int>& foregroundIDsGlobal, unsigned int nn);
 
 
 template<typename T>

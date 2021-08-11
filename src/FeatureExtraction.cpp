@@ -14,6 +14,7 @@
 #include <cmath>        // std::pow
 #include <utility>      // std::forward
 #include <chrono>       // std::chrono
+#include <iostream> 
 
 FeatureExtraction::FeatureExtraction() :
     _neighborhoodSize(1),
@@ -36,7 +37,7 @@ void FeatureExtraction::compute() {
 	// init, i.e. identify min and max per dimension
 	initExtraction();
 
-	// all _outFeatures have to be -1 to, so we can easily check later if the were all assigned
+	// all _outFeatures have to be FLT_MAX to, so we can easily check later if the were all assigned
 	assert(std::all_of(_outFeatures.begin(), _outFeatures.end(), [](float i) {return i == FLT_MAX; }));
 	auto start = std::chrono::steady_clock::now();
 
@@ -137,6 +138,7 @@ void FeatureExtraction::setup(const std::vector<unsigned int>& pointIDsGlobal, c
 void FeatureExtraction::initExtraction() {
 	spdlog::info("Feature extraction: Init feature extraction");
     _outFeatures.resize(_numPoints * _numFeatureValsPerPoint);
+    _outFeaturesF.resize(_numPoints);
 
     // fill such that _outFeatures are always initialized to FLT_MAX
     std::fill(_outFeatures.begin(), _outFeatures.end(), FLT_MAX);
@@ -302,6 +304,20 @@ void FeatureExtraction::multivarNormDistDescriptor(size_t pointInd, std::vector<
     // compute features
     multivar_normal mean_covmat = compMultiVarFeatures(neighborValues_mat, _neighborhoodWeights_eig);
 
+    multivar_normal_plusDet feat = multivar_normal_plusDet(mean_covmat.first, mean_covmat.second, mean_covmat.second.determinant());
+
+    std::vector<IFeatureData*>* ib_featdata = _outFeaturesF.get_data_ptr();
+    ib_featdata->at(pointInd) = new FeatureData<multivar_normal_plusDet> (feat);
+
+    auto test = static_cast<FeatureData<multivar_normal_plusDet>*>(ib_featdata->at(pointInd));
+
+    if (pointInd < 2)
+    {
+        std::cout << std::get<0>(test->data) << "\n";
+        std::cout << std::get<1>(test->data) << "\n";
+        std::cout << std::get<2>(test->data) << "\n";
+    }
+
     // transform features back to std and save
     std::swap_ranges(mean_covmat.first.begin(), mean_covmat.first.end(), _outFeatures.begin() + (pointInd * _numFeatureValsPerPoint));
     for (int ch = 0; ch < _numDims; ch++) // swap row wise because straightforward begin to end range swap did not work...
@@ -381,6 +397,12 @@ std::vector<float> FeatureExtraction::output()
 {
     return _outFeatures;
 }
+
+Feature FeatureExtraction::outputF()
+{
+    return _outFeaturesF;
+}
+
 
 void FeatureExtraction::stopFeatureCopmutation()
 {

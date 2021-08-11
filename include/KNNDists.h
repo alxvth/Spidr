@@ -1285,41 +1285,24 @@ namespace hnswlib {
     // ---------------
 
     struct space_params_Bhattacharyya {
-        size_t dim;
+
     };
 
-    inline float distBhattacharyya(const Eigen::VectorXf& mean1, const Eigen::MatrixXf& covmat1, const Eigen::VectorXf& mean2, const Eigen::MatrixXf& covmat2) {
+    inline float distBhattacharyya(const Eigen::VectorXf& mean1, const Eigen::MatrixXf& covmat1, const float det1, const Eigen::VectorXf& mean2, const Eigen::MatrixXf& covmat2, const float det2) {
     	Eigen::MatrixXf covmat_comb = (covmat1 + covmat2) / 2.0f;
     	Eigen::VectorXf mean_diff = mean1 - mean2;
-    	return 0.125f * mean_diff.transpose() * covmat_comb.inverse() * mean_diff + 0.5f * std::logf(covmat_comb.determinant() / (std::sqrt(covmat1.determinant() * covmat2.determinant())));
+    	return 0.125f * mean_diff.transpose() * covmat_comb.inverse() * mean_diff + 0.5f * std::logf(covmat_comb.determinant() / std::sqrt(det1 * det2));
     }
 
 
     static float
         Bhattacharyya(const void *pVect1v, const void *pVect2v, const void *qty_ptr) {
-        float* pVect1 = (float*)pVect1v;    // pointer to the data features, not the actual data
-        float* pVect2 = (float*)pVect2v;
-
-        const space_params_Bhattacharyya* sparam = (space_params_Bhattacharyya*)qty_ptr;
-        const size_t ndim = sparam->dim;
-
-        // transform std data to eigen data
-        // mean
-        Eigen::VectorXf mean1(ndim);
-        Eigen::VectorXf mean2(ndim);
-        mean1 = Eigen::Map<Eigen::VectorXf>(pVect1, ndim);
-        mean2 = Eigen::Map<Eigen::VectorXf>(pVect2, ndim);
-        // covmat
-        Eigen::MatrixXf covmat1(ndim, ndim);
-        Eigen::MatrixXf covmat2(ndim, ndim);
-
-        for (int ch = 0; ch < ndim; ch++) {
-            covmat1.row(ch) = Eigen::Map<Eigen::VectorXf>(pVect1 + (ch + 1) * ndim, ndim);
-            covmat2.row(ch) = Eigen::Map<Eigen::VectorXf>(pVect2 + (ch + 1) * ndim, ndim);
-        }
+        // pointer to the data features, not the actual data
+        FeatureData<multivar_normal_plusDet>* pVect1 = static_cast<FeatureData<multivar_normal_plusDet>*>((IFeatureData*)pVect1v);
+        FeatureData<multivar_normal_plusDet>* pVect2 = static_cast<FeatureData<multivar_normal_plusDet>*>((IFeatureData*)pVect2v);
         
-        // return Bhattacharyya distance
-        return distBhattacharyya(mean1, covmat1, mean2, covmat2);
+        // Bhattacharyya distance
+        return distBhattacharyya(std::get<0>(pVect1->data), std::get<1>(pVect1->data), std::get<2>(pVect1->data), std::get<0>(pVect2->data), std::get<1>(pVect2->data), std::get<2>(pVect2->data));
     }
 
     class Bhattacharyya_Space : public SpaceInterface<float> {
@@ -1333,9 +1316,9 @@ namespace hnswlib {
 
             fstdistfunc_ = Bhattacharyya;
 
-            data_size_ = featureValsPerPoint * sizeof(float);
+            data_size_ = sizeof(FeatureData<multivar_normal_plusDet>);
 
-            params_ = { dim };
+            params_ = { };
 
         }
 

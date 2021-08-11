@@ -180,6 +180,7 @@ private:
 
 	// features and knn
 	std::vector<float> _dataFeats;						/*!<> */
+	Feature _dataFeatsF;						/*!<> */
 	std::vector<int> _knn_indices ;						/*!<> */
 	std::vector<float> _knn_distances_squared;			/*!<> */
 

@@ -8,6 +8,8 @@
 
 #include "SpidrAnalysisParameters.h"
 
+class Feature;
+
 typedef std::tuple<feature_type, distance_metric> metricPair;
 namespace hnswlib {
 	template<typename MTYPE> class SpaceInterface;
@@ -58,7 +60,7 @@ std::vector<float> BinSimilarities(size_t num_bins, bin_sim sim_type = bin_sim::
  * \return Tuple of knn Indices and respective squared distances
 */
 template<typename T>
-std::tuple<std::vector<int>, std::vector<float>> ComputeHNSWkNN(const std::vector<T>& dataFeatures, hnswlib::SpaceInterface<float> *space, size_t featureSize, const std::vector<unsigned int>& foregroundIDsGlobal, unsigned int nn);
+std::tuple<std::vector<int>, std::vector<float>> ComputeHNSWkNN(const std::vector<T>& dataFeatures, Feature& dataFeaturesF, hnswlib::SpaceInterface<float> *space, size_t featureSize, const std::vector<unsigned int>& foregroundIDsGlobal, unsigned int nn);
 
 /*! Compute exact kNNs 
  * Calculate the distances between all point pairs and find closest neighbors

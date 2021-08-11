@@ -74,11 +74,12 @@ void SpidrAnalysis::computeFeatures() {
 	_featExtraction.compute();
 	spdlog::info("SpidrAnalysis: Get computed feature values");
 	_dataFeats = _featExtraction.output();
+	_dataFeatsF = _featExtraction.outputF();
 
 }
 
 void SpidrAnalysis::computekNN() {
-	_distCalc.setup(_dataFeats, _foregroundIDsGlobal, _params);
+	_distCalc.setup(_dataFeats, _dataFeatsF, _foregroundIDsGlobal, _params);
 	_distCalc.compute();
 	_knn_indices = _distCalc.get_knn_indices();
 	_knn_distances_squared = _distCalc.get_knn_distances_squared();

@@ -3,6 +3,8 @@
 #include <cmath>
 #include <vector>
 #include <utility>  // std::pair
+#include <tuple>  // std::tuple
+#include <memory>  // std::unique_ptr
 
 #include "SpidrAnalysisParameters.h"
 #include <Eigen/Dense>
@@ -300,6 +302,41 @@ Eigen::MatrixXf covmat(Eigen::MatrixXf data);
 Eigen::MatrixXf covmat(Eigen::MatrixXf data, Eigen::VectorXf probs);
 
 typedef std::pair<Eigen::VectorXf, Eigen::MatrixXf> multivar_normal;
+typedef std::tuple<Eigen::VectorXf, Eigen::MatrixXf, float> multivar_normal_plusDet;
 
 multivar_normal compMultiVarFeatures(Eigen::MatrixXf data);
 multivar_normal compMultiVarFeatures(Eigen::MatrixXf data, Eigen::VectorXf probs);
+
+
+class IFeatureData
+{
+};
+
+template<class T>
+class FeatureData : public IFeatureData
+{
+public:
+    FeatureData(T d) : data(d) {};
+    T data;
+};
+
+
+class Feature
+{
+public:
+    Feature() { };
+    ~Feature() { }
+
+    //std::vector<std::unique_ptr<IFeatureData>>* get_data_ptru() { return &featdata_u; };
+    std::vector<IFeatureData*>* get_data_ptr() { return &featdata; };
+    void resize(size_t newSize) { featdata.resize(newSize); };
+
+    IFeatureData* at(size_t ID) const { return featdata.at(ID); };
+
+    template<class T>
+    T cast_at(size_t ID) { return static_cast<T>(featdata.at(ID)); };
+
+protected:
+    //std::vector<std::unique_ptr<IFeatureData>> featdata_u;
+    std::vector<IFeatureData*> featdata;
+};

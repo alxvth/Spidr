@@ -19,7 +19,7 @@ DistanceCalculation::DistanceCalculation() :
 }
 
 
-void DistanceCalculation::setup(const std::vector<float>& dataFeatures, const std::vector<unsigned int>& foregroundIDsGlobal, SpidrParameters& params) {
+void DistanceCalculation::setup(const std::vector<float>& dataFeatures, const Feature dataFeaturesF, const std::vector<unsigned int>& foregroundIDsGlobal, SpidrParameters& params) {
     spdlog::info("Distance calculation: Setup");
     _featureType = params._featureType;
     _numFeatureValsPerPoint = params._numFeatureValsPerPoint;
@@ -43,6 +43,7 @@ void DistanceCalculation::setup(const std::vector<float>& dataFeatures, const st
     _imgWidth = params._imgSize.width;
 
     _dataFeatures = dataFeatures;
+    _dataFeaturesF = dataFeaturesF;
     _foregroundIDsGlobal = foregroundIDsGlobal;
 
     // Output
@@ -89,7 +90,7 @@ void DistanceCalculation::computekNN() {
     if (_knn_lib == knn_library::KNN_HNSW) {
 		spdlog::info("Distance calculation: HNSWLib for knn computation");
 
-        std::tie(_knn_indices, _knn_distances_squared) = ComputeHNSWkNN(_dataFeatures, space, _numFeatureValsPerPoint, _foregroundIDsGlobal, _nn);
+        std::tie(_knn_indices, _knn_distances_squared) = ComputeHNSWkNN(_dataFeatures, _dataFeaturesF, space, _numFeatureValsPerPoint, _foregroundIDsGlobal, _nn);
 
     }
     else if (_knn_lib == knn_library::KKN_EXACT) {
@@ -133,7 +134,7 @@ void DistanceCalculation::computekNN() {
         // Save the akNN distance matrix to disk. 
 
 		spdlog::info("Distance calculation: Evaluation mode (akNN) - HNSWLib for knn computation");
-        std::tie(_knn_indices, _knn_distances_squared) = ComputeHNSWkNN(_dataFeatures, space, _numFeatureValsPerPoint, _foregroundIDsGlobal, _nn);
+        std::tie(_knn_indices, _knn_distances_squared) = ComputeHNSWkNN(_dataFeatures, _dataFeaturesF, space, _numFeatureValsPerPoint, _foregroundIDsGlobal, _nn);
 
         // Write aknn distances to disk
 		spdlog::info("Distance calculation: Evaluation mode (akNN) - Write aknn distance matrix to disk");
