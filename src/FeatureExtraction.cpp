@@ -34,25 +34,16 @@ FeatureExtraction::FeatureExtraction() :
 
 void FeatureExtraction::compute() {
 	spdlog::info("Feature extraction: Started");
+    auto start = std::chrono::steady_clock::now();
 
 	// init, i.e. identify min and max per dimension
 	initExtraction();
-
-	// all _outFeatures have to be FLT_MAX to, so we can easily check later if the were all assigned
-	assert(std::all_of(_outFeatures.begin(), _outFeatures.end(), [](float i) {return i == FLT_MAX; }));
-	auto start = std::chrono::steady_clock::now();
 
 	// for each points, compute the features for the respective neighborhood
 	extractFeatures();
 
 	auto end = std::chrono::steady_clock::now();
 	spdlog::info("Feature extraction: Extraction duration (sec): {}", ((float)std::chrono::duration_cast<std::chrono::milliseconds> (end - start).count()) / 1000);
-
-    // No value in _outFeatures should be FLT_MAX (it's init value)
-    // Except when background IDs are given: then they were skipped during the feature computation and still have their initial FLT_MAX value
-    // The background entries will be ignored during the Distance calculation 
-	assert(!((_backgroundIDsGlobal.empty() || _forceCalcBackgroundFeatures) != std::none_of(_outFeatures.begin(), _outFeatures.end(), [](float i) {return i == FLT_MAX; })));
-
 	spdlog::info("Feature extraction: Finished");
 }
 
@@ -131,11 +122,7 @@ void FeatureExtraction::setup(const std::vector<unsigned int>& pointIDsGlobal, c
 
 void FeatureExtraction::initExtraction() {
 	spdlog::info("Feature extraction: Init feature extraction");
-    _outFeatures.resize(_numPoints * _numFeatureValsPerPoint);
-    _outFeaturesF.resize(_numPoints);
-
-    // fill such that _outFeatures are always initialized to FLT_MAX
-    std::fill(_outFeatures.begin(), _outFeatures.end(), FLT_MAX);
+    _outFeatures.resize(_numPoints);
 
     // calculate other help values specific to feature type
     if (_featType == feature_type::TEXTURE_HIST_1D) {
@@ -182,7 +169,6 @@ void FeatureExtraction::extractFeatures() {
 }
 
 void FeatureExtraction::calculateHistogram(size_t pointInd, std::vector<float> neighborValues, std::vector<int> neighborIDs) {
-    assert(_outFeatures.size() == _numPoints * _numDims * _numHistBins);
     assert(_minMaxVals.size() == 2*_numDims);
     assert(_neighborhoodWeights.size() == _neighborhoodSize);
     assert(std::none_of(neighborIDs.begin(), neighborIDs.end(), [](int i) {return i == -1; }));
@@ -213,19 +199,13 @@ void FeatureExtraction::calculateHistogram(size_t pointInd, std::vector<float> n
         assert(std::abs(normHist.sum() - 1) < 0.01);  
 
         // save the histogram in _outFeatures 
-        // data layout for points p, dimension d and bin b: [p0d0b0, p0d0b1, p0d0b2, ..., p0d1b0, p0d1b2, ..., p1d0b0, p0d0b1, ...]
-        for(size_t bin = 0; bin < _numHistBins; bin++)
-            _outFeatures[pointInd * _numDims * _numHistBins + dim * _numHistBins + bin] = normHist[bin];
-
         feat[dim] = normHist;
-
     }
-    _outFeaturesF.get_data_ptr()->at(pointInd) = new FeatureData<std::vector<Eigen::VectorXf>>(feat);
+    _outFeatures.get_data_ptr()->at(pointInd) = new FeatureData<std::vector<Eigen::VectorXf>>(feat);
 
 }
 
 void FeatureExtraction::calculateLISA(size_t pointInd, std::vector<float> neighborValues, std::vector<int> neighborIDs) {
-    assert(_outFeatures.size() == _numPoints * _numDims);
     assert(_varVals.size() == _numDims);
     assert(_neighborhoodWeights.size() == _neighborhoodSize);
 
@@ -246,19 +226,17 @@ void FeatureExtraction::calculateLISA(size_t pointInd, std::vector<float> neighb
         // (local_neighborhoodWeightsSum / _varVals[dim]) is the proportionality factor between the local LOCALMORANSI and the global Moran's I
         // such that sum LOCALMORANSI = (local_neighborhoodWeightsSum / _varVals[dim]) * I. Thus, the division by _varVals in the next line yields sum LOCALMORANSI = I. 
         // Cf. 10.1111/j.1538-4632.1995.tb00338.x 
-        _outFeatures[pointInd * _numDims + dim] = (diff_from_mean / (local_neighborhoodWeightsSum * _varVals[dim])) * neigh_diff_from_mean_sum;
         feat[dim] = (diff_from_mean / (local_neighborhoodWeightsSum * _varVals[dim])) * neigh_diff_from_mean_sum;
 
         // check if local_neighborhoodWeightsSum equals _neighborhoodWeightsSum for full spatial neighborhoods
         assert((std::find(neighborIDs.begin(), neighborIDs.end(), -1) == neighborIDs.end()) ? (local_neighborhoodWeightsSum == _neighborhoodWeightsSum) : true);
     }
 
-    _outFeaturesF.get_data_ptr()->at(pointInd) = new FeatureData<std::vector<float>>(feat);
+    _outFeatures.get_data_ptr()->at(pointInd) = new FeatureData<std::vector<float>>(feat);
 
 }
 
 void FeatureExtraction::calculateGearysC(size_t pointInd, std::vector<float> neighborValues, std::vector<int> neighborIDs) {
-    assert(_outFeatures.size() == _numPoints * _numDims);
     assert(_meanVals.size() == _numDims);
     assert(_varVals.size() == _numDims);
     assert(_neighborhoodWeights.size() == _neighborhoodSize);
@@ -281,32 +259,15 @@ void FeatureExtraction::calculateGearysC(size_t pointInd, std::vector<float> nei
         }
         // given that the _neighborhoodWeights sum up to 1, _varVals is the proportionality factor between the local Geary and the global Geary's C
         // such that sum lC = _varVals * gC. Thus, the division by _varVals in the next line yields sum lC = gC. Cf. 10.1111/j.1538-4632.1995.tb00338.x
-        _outFeatures[pointInd * _numDims + dim] = ( (2* local_neighborhoodWeightsSum / (_numPoints -1))  / _varVals[dim]) * diff_from_neigh_sum;
-        feat[dim] =                               ( (2 *local_neighborhoodWeightsSum / (_numPoints - 1)) / _varVals[dim]) * diff_from_neigh_sum;
+        feat[dim] = ( (2 *local_neighborhoodWeightsSum / (_numPoints - 1)) / _varVals[dim]) * diff_from_neigh_sum;
     }
 
-    _outFeaturesF.get_data_ptr()->at(pointInd) = new FeatureData<std::vector<float>>(feat);
+    _outFeatures.get_data_ptr()->at(pointInd) = new FeatureData<std::vector<float>>(feat);
 
-}
-
-void FeatureExtraction::calculateSumAllDist(size_t pointInd, std::vector<float> neighborValues, std::vector<int> neighborIDs) {
-    assert(_outFeatures.size() == _numPoints * (_numDims + 2));
-
-    std::copy_n(_attribute_data.begin() + (pointInd * _numDims), _numDims, _outFeatures.begin() + (pointInd * _numFeatureValsPerPoint));
-
-    int locHeight = std::floor(pointInd / _imgSize.width);         // height val, pixel pos in image
-    int locWidth = pointInd - (locHeight * _imgSize.width);        // width val, pixel pos in image
-
-    std::array<int, 2> feat{ locHeight, locWidth};
-    _outFeaturesF.get_data_ptr()->at(pointInd) = new FeatureData<std::array<int, 2>>(feat);
-
-    _outFeatures[pointInd * _numFeatureValsPerPoint + _numDims] = locHeight;
-    _outFeatures[pointInd * _numFeatureValsPerPoint + _numDims + 1] = locWidth;
 }
 
 
 void FeatureExtraction::multivarNormDistDescriptor(size_t pointInd, std::vector<float> neighborValues, std::vector<int> neighborIDs) {
-    assert(_outFeatures.size() == _numPoints * (_numDims + _numDims * _numDims));
     assert(_neighborhoodWeights.size() == _neighborhoodSize);
 
     // transform std data to eigen
@@ -319,36 +280,22 @@ void FeatureExtraction::multivarNormDistDescriptor(size_t pointInd, std::vector<
 
     // save features
     multivar_normal_plusDet feat = multivar_normal_plusDet(mean_covmat.first, mean_covmat.second, mean_covmat.second.determinant());
-    std::vector<IFeatureData*>* ib_featdata = _outFeaturesF.get_data_ptr();
+    std::vector<IFeatureData*>* ib_featdata = _outFeatures.get_data_ptr();
     ib_featdata->at(pointInd) = new FeatureData<multivar_normal_plusDet> (feat);
-
-    // transform features back to std and save
-    std::swap_ranges(mean_covmat.first.begin(), mean_covmat.first.end(), _outFeatures.begin() + (pointInd * _numFeatureValsPerPoint));
-    for (int ch = 0; ch < _numDims; ch++) // swap row wise because straightforward begin to end range swap did not work...
-        std::swap_ranges(mean_covmat.second.row(ch).begin(), mean_covmat.second.row(ch).end(), _outFeatures.begin() + (pointInd * _numFeatureValsPerPoint + _numDims * (ch +1) ));
 
 }
 
 
 void FeatureExtraction::allNeighborhoodVals(size_t pointInd, std::vector<float> neighborValues, std::vector<int> neighborIDs) {
-    assert(_outFeatures.size() == _numPoints * _numDims * _neighborhoodSize);     // _numFeatureValsPerPoint = _numDims * _neighborhoodSize
 
     // copy neighborValues into _outFeatures
-    std::swap_ranges(neighborValues.begin(), neighborValues.end(), _outFeatures.begin() + (pointInd * _numDims * _neighborhoodSize));
-
-    _outFeaturesF.get_data_ptr()->at(pointInd) = new FeatureData<std::vector<float>>(neighborValues);
+    _outFeatures.get_data_ptr()->at(pointInd) = new FeatureData<std::vector<float>>(neighborValues);
 
 }
 
 void FeatureExtraction::allNeighborhoodIDs(size_t pointInd, std::vector<float> neighborValues, std::vector<int> neighborIDs) {
-    assert(_outFeatures.size() == _numPoints * _neighborhoodSize);  // _numFeatureValsPerPoint = _neighborhoodSize
-
     // copy neighborIDs into _outFeatures
-    //std::replace(neighborIDs.begin(), neighborIDs.end(), -1, -2);       // use -2 mark outsiders, whereas -1 marks not processed
-    std::copy(neighborIDs.begin(), neighborIDs.end(), _outFeatures.begin() + (pointInd * _neighborhoodSize));
-    //std::swap_ranges(neighborIDs.begin(), neighborIDs.end(), _outFeatures.begin() + (pointInd * _neighborhoodSize));
-
-    _outFeaturesF.get_data_ptr()->at(pointInd) = new FeatureData<std::vector<int>>(neighborIDs);
+    _outFeatures.get_data_ptr()->at(pointInd) = new FeatureData<std::vector<int>>(neighborIDs);
 
 }
 
@@ -402,14 +349,10 @@ loc_Neigh_Weighting FeatureExtraction::getNeighborhoodWeighting()
     return _neighborhoodWeighting;
 }
 
-std::vector<float> FeatureExtraction::output()
+
+Feature FeatureExtraction::output()
 {
     return _outFeatures;
-}
-
-Feature FeatureExtraction::outputF()
-{
-    return _outFeaturesF;
 }
 
 

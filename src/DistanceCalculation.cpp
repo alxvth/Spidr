@@ -19,7 +19,7 @@ DistanceCalculation::DistanceCalculation() :
 }
 
 
-void DistanceCalculation::setup(const std::vector<float>& dataFeatures, const Feature dataFeaturesF, const std::vector<unsigned int>& foregroundIDsGlobal, SpidrParameters& params) {
+void DistanceCalculation::setup(const Feature dataFeatures, const std::vector<unsigned int>& foregroundIDsGlobal, SpidrParameters& params) {
     spdlog::info("Distance calculation: Setup");
     _featureType = params._featureType;
     _numFeatureValsPerPoint = params._numFeatureValsPerPoint;
@@ -42,7 +42,6 @@ void DistanceCalculation::setup(const std::vector<float>& dataFeatures, const Fe
     _imgWidth = params._imgSize.width;
 
     _dataFeatures = dataFeatures;
-    _dataFeaturesF = dataFeaturesF;
     _foregroundIDsGlobal = foregroundIDsGlobal;
 
     // Output
@@ -50,11 +49,6 @@ void DistanceCalculation::setup(const std::vector<float>& dataFeatures, const Fe
     //_knn_distances_squared.resize(_numForegroundPoints*_nn, -1);    // unnecessary, done in ComputeHNSWkNN
 
     assert(params.get_nn() == (size_t)(params.get_perplexity() * params.get_perplexity_multiplier() + 1));     // should be set in SpidrAnalysis::initializeAnalysisSettings
-    assert(_dataFeatures.size() == (_numPoints * _numFeatureValsPerPoint));     // if backgroundIDs are given, no all data features will be used. Only foregroundIDs are considered
-    // No value in _dataFeatures at the positions in _foregroundIDsGlobal should be FLT_MAX (it's init value)   
-    // Implemented as: For all foreground IDs no feature is FLT_MAX
-    assert(std::all_of(_foregroundIDsGlobal.begin(), _foregroundIDsGlobal.end(), [&](unsigned int index) {return std::none_of(dataFeatures.begin() + index * params._numFeatureValsPerPoint, dataFeatures.begin() + (index+1) * params._numFeatureValsPerPoint, [&](float feat) {return feat == FLT_MAX; }); }));
-
 
     spdlog::info("Distance calculation: Feature values per point: {0}, Number of NN to calculate {1}. Metric: {2}", _numFeatureValsPerPoint, _nn, static_cast<size_t> (_knn_metric));
 
@@ -89,7 +83,7 @@ void DistanceCalculation::computekNN() {
     if (_knn_lib == knn_library::KNN_HNSW) {
 		spdlog::info("Distance calculation: HNSWLib for knn computation");
 
-        std::tie(_knn_indices, _knn_distances_squared) = ComputeHNSWkNN(_dataFeatures, _dataFeaturesF, space, _numFeatureValsPerPoint, _foregroundIDsGlobal, _nn);
+        std::tie(_knn_indices, _knn_distances_squared) = ComputeHNSWkNN(_dataFeatures, space, _numFeatureValsPerPoint, _foregroundIDsGlobal, _nn);
 
     }
     else if (_knn_lib == knn_library::KKN_EXACT) {
@@ -116,8 +110,9 @@ void DistanceCalculation::computekNN() {
         writeVecToBinary(all_distances_squared_to_Disk, savePath + "_allDists" + infoStr + ".bin");
 
         // Write features to disk
-        infoStr = "_nFpP_" + std::to_string(_numFeatureValsPerPoint) + "_nP_" + std::to_string(_numForegroundPoints) + "_nD_" + std::to_string(_numDims);
-        writeVecToBinary(_dataFeatures, savePath + "_features" + infoStr + ".bin");
+        // TODO: This does not work anymore
+        //infoStr = "_nFpP_" + std::to_string(_numFeatureValsPerPoint) + "_nP_" + std::to_string(_numForegroundPoints) + "_nD_" + std::to_string(_numDims);
+        //writeVecToBinary(_dataFeatures.get_data_ptr(), savePath + "_features" + infoStr + ".bin");
 
 		spdlog::info("Distance calculation: Evaluation mode (exact) - Calc exact knn distance matrix for embedding");
         std::tie(_knn_indices, _knn_distances_squared) = ComputeExactKNN(_dataFeatures, space, _numFeatureValsPerPoint, _foregroundIDsGlobal, _nn);
@@ -133,7 +128,7 @@ void DistanceCalculation::computekNN() {
         // Save the akNN distance matrix to disk. 
 
 		spdlog::info("Distance calculation: Evaluation mode (akNN) - HNSWLib for knn computation");
-        std::tie(_knn_indices, _knn_distances_squared) = ComputeHNSWkNN(_dataFeatures, _dataFeaturesF, space, _numFeatureValsPerPoint, _foregroundIDsGlobal, _nn);
+        std::tie(_knn_indices, _knn_distances_squared) = ComputeHNSWkNN(_dataFeatures, space, _numFeatureValsPerPoint, _foregroundIDsGlobal, _nn);
 
         // Write aknn distances to disk
 		spdlog::info("Distance calculation: Evaluation mode (akNN) - Write aknn distance matrix to disk");

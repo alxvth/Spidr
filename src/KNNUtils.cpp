@@ -74,8 +74,7 @@ std::vector<float> BinSimilarities(size_t num_bins, bin_sim sim_type, float sim_
 	return A;
 }
 
-template<typename T>
-std::tuple<std::vector<int>, std::vector<float>> ComputeHNSWkNN(const std::vector<T>& dataFeatures, Feature& dataFeaturesF, hnswlib::SpaceInterface<float> *space, size_t indMultiplier, const std::vector<unsigned int>& foregroundIDsGlobal, unsigned int nn) {
+std::tuple<std::vector<int>, std::vector<float>> ComputeHNSWkNN(const Feature& dataFeatures, hnswlib::SpaceInterface<float> *space, size_t indMultiplier, const std::vector<unsigned int>& foregroundIDsGlobal, unsigned int nn) {
     auto numForegroundPoints = foregroundIDsGlobal.size();
 
     std::vector<int> indices(numForegroundPoints * nn, -1);
@@ -88,21 +87,21 @@ std::tuple<std::vector<int>, std::vector<float>> ComputeHNSWkNN(const std::vecto
     // add data points: each data point holds indMultiplier values (number of feature values)
     // add the first data point outside the parallel loop
     //appr_alg.addPoint((void*)(dataFeatures.data() + foregroundIDsGlobal[0] * indMultiplier), (std::size_t) 0);
-    appr_alg.addPoint((void*)(dataFeaturesF.at(foregroundIDsGlobal[0])), (std::size_t) 0);
+    appr_alg.addPoint((void*)(dataFeatures.at(foregroundIDsGlobal[0])), (std::size_t) 0);
 
 #ifdef NDEBUG
     // This loop is for release mode, it's parallel loop implementation from hnswlib
     int num_threads = std::thread::hardware_concurrency();
     hnswlib::ParallelFor(1, numForegroundPoints, num_threads, [&](size_t i, size_t threadId) {
         //appr_alg.addPoint((void*)(dataFeatures.data() + (foregroundIDsGlobal[i] *indMultiplier)), (hnswlib::labeltype) i);
-        appr_alg.addPoint((void*)(dataFeaturesF.at(foregroundIDsGlobal[i])), (hnswlib::labeltype) i);
+        appr_alg.addPoint((void*)(dataFeatures.at(foregroundIDsGlobal[i])), (hnswlib::labeltype) i);
     });
 #else
 // This loop is for debugging, when you want to sequentially add points
     for (int i = 1; i < numForegroundPoints; ++i)
     {
         //appr_alg.addPoint((void*)(dataFeatures.data() + (foregroundIDsGlobal[i] *indMultiplier)), (hnswlib::labeltype) i);
-        appr_alg.addPoint((void*)(dataFeaturesF.at(foregroundIDsGlobal[i])), (hnswlib::labeltype) i);
+        appr_alg.addPoint((void*)(dataFeatures.at(foregroundIDsGlobal[i])), (hnswlib::labeltype) i);
     }
 #endif
 	spdlog::info("Distance calculation: Search akNN Index");
@@ -115,7 +114,7 @@ std::tuple<std::vector<int>, std::vector<float>> ComputeHNSWkNN(const std::vecto
     {
         // find nearest neighbors
         //auto top_candidates = appr_alg.searchKnn((void*)(dataFeatures.data() + (foregroundIDsGlobal[i] *indMultiplier)), (hnswlib::labeltype)nn);
-        auto top_candidates = appr_alg.searchKnn((void*)(dataFeaturesF.at(foregroundIDsGlobal[i])), (hnswlib::labeltype)nn);
+        auto top_candidates = appr_alg.searchKnn((void*)(dataFeatures.at(foregroundIDsGlobal[i])), (hnswlib::labeltype)nn);
         while (top_candidates.size() > nn) {
             top_candidates.pop();
         }
@@ -137,13 +136,8 @@ std::tuple<std::vector<int>, std::vector<float>> ComputeHNSWkNN(const std::vecto
 
     return std::make_tuple(indices, distances_squared);
 }
-// Resolve linker errors with explicit instantiation, https://isocpp.org/wiki/faq/templates#separate-template-fn-defn-from-decl
-template std::tuple<std::vector<int>, std::vector<float>> ComputeHNSWkNN<float>(const std::vector<float>& dataFeatures, Feature& dataFeaturesF, hnswlib::SpaceInterface<float> *space, size_t indMultiplier, const std::vector<unsigned int>& foregroundIDsGlobal, unsigned int nn);
-template std::tuple<std::vector<int>, std::vector<float>> ComputeHNSWkNN<unsigned int>(const std::vector<unsigned int>& dataFeatures, Feature& dataFeaturesF, hnswlib::SpaceInterface<float> *space, size_t indMultiplier, const std::vector<unsigned int>& foregroundIDsGlobal, unsigned int nn);
 
-
-template<typename T>
-std::tuple<std::vector<int>, std::vector<float>> ComputeExactKNN(const std::vector<T> dataFeatures, hnswlib::SpaceInterface<float> *space, size_t featureSize, const std::vector<unsigned int>& foregroundIDsGlobal, unsigned int nn, bool fullDistMat) {
+std::tuple<std::vector<int>, std::vector<float>> ComputeExactKNN(const Feature& dataFeatures, hnswlib::SpaceInterface<float> *space, size_t featureSize, const std::vector<unsigned int>& foregroundIDsGlobal, unsigned int nn, bool fullDistMat) {
     auto numForegroundPoints = foregroundIDsGlobal.size();
     
     std::vector<std::pair<int, float>> indices_distances(numForegroundPoints);
@@ -165,7 +159,7 @@ std::tuple<std::vector<int>, std::vector<float>> ComputeExactKNN(const std::vect
 #pragma omp parallel for
 #endif
 		for (int j = 0; j < (int)numForegroundPoints; j++) {
-			indices_distances[j] = std::make_pair(j, distfunc(dataFeatures.data() + foregroundIDsGlobal[i] * featureSize, dataFeatures.data() + foregroundIDsGlobal[j] * featureSize, params));
+			indices_distances[j] = std::make_pair(j, distfunc(dataFeatures.at(foregroundIDsGlobal[i]), dataFeatures.at(foregroundIDsGlobal[j]), params));
 		}
 
 		if (!fullDistMat)
@@ -194,18 +188,11 @@ std::tuple<std::vector<int>, std::vector<float>> ComputeExactKNN(const std::vect
 
 	return std::make_tuple(knn_indices, knn_distances_squared);
 }
-// Resolve linker errors with explicit instantiation, https://isocpp.org/wiki/faq/templates#separate-template-fn-defn-from-decl
-template std::tuple<std::vector<int>, std::vector<float>> ComputeExactKNN<float>(const std::vector<float> dataFeatures, hnswlib::SpaceInterface<float> *space, size_t indMultiplier, const std::vector<unsigned int>& foregroundIDsGlobal, unsigned int nn, bool sort);
-template std::tuple<std::vector<int>, std::vector<float>> ComputeExactKNN<unsigned int>(const std::vector<unsigned int> dataFeatures, hnswlib::SpaceInterface<float> *space, size_t featureSize, const std::vector<unsigned int>& foregroundIDsGlobal, unsigned int nn, bool sort);
 
-template<typename T>
-std::tuple<std::vector<int>, std::vector<float>> ComputeFullDistMat(const std::vector<T> dataFeatures, hnswlib::SpaceInterface<float> *space, size_t featureSize, const std::vector<unsigned int>& foregroundIDsGlobal) {
+std::tuple<std::vector<int>, std::vector<float>> ComputeFullDistMat(const Feature& dataFeatures, hnswlib::SpaceInterface<float> *space, size_t featureSize, const std::vector<unsigned int>& foregroundIDsGlobal) {
 	// set nn = numForegroundPoints and don't sort the nn
 	return ComputeExactKNN(dataFeatures, space, featureSize, foregroundIDsGlobal, foregroundIDsGlobal.size(), true);
 }
-// Resolve linker errors with explicit instantiation, https://isocpp.org/wiki/faq/templates#separate-template-fn-defn-from-decl
-template std::tuple<std::vector<int>, std::vector<float>> ComputeFullDistMat<float>(const std::vector<float> dataFeatures, hnswlib::SpaceInterface<float> *space, size_t featureSize, const std::vector<unsigned int>& foregroundIDsGlobal);
-template std::tuple<std::vector<int>, std::vector<float>> ComputeFullDistMat<unsigned int>(const std::vector<unsigned int> dataFeatures, hnswlib::SpaceInterface<float> *space, size_t featureSize, const std::vector<unsigned int>& foregroundIDsGlobal);
 
 
 hnswlib::SpaceInterface<float>* CreateHNSWSpace(const distance_metric knn_metric, const size_t numDims, const size_t neighborhoodSize, const loc_Neigh_Weighting neighborhoodWeighting, const size_t featureValsPerPoint, const size_t numHistBins, const float* dataVecBegin, int imgWidth, int numPoints) {

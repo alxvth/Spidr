@@ -96,7 +96,7 @@ public:
 
     const SpidrParameters getParameters();
 
-	const std::vector<float> getDataFeatures();
+	const Feature getDataFeatures();
 
     /* Returns _knn_indices, _knn_distances_squared, use with std::tie(_knnIds, _knnDists) = getKNN(); */
 	const std::tuple<std::vector<int>, std::vector<float>> getKNN();
@@ -176,8 +176,7 @@ private:
     std::vector<float> _emd_with_backgound;
 
 	// features and knn
-	std::vector<float> _dataFeats;						/*!<> */
-	Feature _dataFeatsF;						/*!<> */
+	Feature _dataFeats;						/*!<> */
 	std::vector<int> _knn_indices ;						/*!<> */
 	std::vector<float> _knn_distances_squared;			/*!<> */
 

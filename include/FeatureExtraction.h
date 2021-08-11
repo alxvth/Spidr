@@ -18,13 +18,12 @@ class FeatureExtraction
 public:
     FeatureExtraction();
 
-    /*!
+    /*! Get feature data
      * 
      * 
      * \return 
      */
-    std::vector<float> output();
-    Feature outputF();
+    Feature output();
 
     void setNumLocNeighbors(size_t size);
     void setNeighborhoodWeighting(loc_Neigh_Weighting weighting);
@@ -89,12 +88,6 @@ private:
     */
     void calculateGearysC(size_t pointInd, std::vector<float> neighborValues, std::vector<int> neighborIDs);
 
-    /*! Compute the sum of dists^2 from one point to all others
-     * See MVN-Reduce doi:10.2312/eurovisshort.20171126.x
-     * \param pointInd
-     * \param neighborValues
-    */
-    void calculateSumAllDist(size_t pointInd, std::vector<float> neighborValues, std::vector<int> neighborIDs);
 
     /*! multivariate normal distributions Descriptos: covaraince matrix and channel-wise mean
      * 
@@ -161,8 +154,7 @@ private:
 
     // Output
     /*! Features for each item.
-    * will be of _numPoints * _numFeatureValsPerPoint
+    * _outFeatures->data is a vector with a feature for each point 
     */
-    std::vector<float> _outFeatures;
-    Feature _outFeaturesF;
+    Feature _outFeatures;
 };
