@@ -90,16 +90,6 @@ std::tuple<std::vector<int>, std::vector<float>> ComputeHNSWkNN(const std::vecto
     //appr_alg.addPoint((void*)(dataFeatures.data() + foregroundIDsGlobal[0] * indMultiplier), (std::size_t) 0);
     appr_alg.addPoint((void*)(dataFeaturesF.at(foregroundIDsGlobal[0])), (std::size_t) 0);
 
-    for (int i = 0; i < 5; i++)
-    {
-        FeatureData<multivar_normal_plusDet>* pVect1 = static_cast<FeatureData<multivar_normal_plusDet>*>((dataFeaturesF.at(foregroundIDsGlobal[i])));
-
-        std::cout << "Data: " << i << "\n";
-        std::cout << std::get<0>(pVect1->data) << "\n";
-        std::cout << std::get<1>(pVect1->data) << "\n";
-        std::cout << std::get<2>(pVect1->data) << "\n";
-    }
-
 #ifdef NDEBUG
     // This loop is for release mode, it's parallel loop implementation from hnswlib
     int num_threads = std::thread::hardware_concurrency();
@@ -218,7 +208,7 @@ template std::tuple<std::vector<int>, std::vector<float>> ComputeFullDistMat<flo
 template std::tuple<std::vector<int>, std::vector<float>> ComputeFullDistMat<unsigned int>(const std::vector<unsigned int> dataFeatures, hnswlib::SpaceInterface<float> *space, size_t featureSize, const std::vector<unsigned int>& foregroundIDsGlobal);
 
 
-hnswlib::SpaceInterface<float>* CreateHNSWSpace(const distance_metric knn_metric, const size_t numDims, const size_t neighborhoodSize, const loc_Neigh_Weighting neighborhoodWeighting, const size_t featureValsPerPoint, const size_t numHistBins, const float* dataVecBegin, float weight, int imgWidth, int numPoints) {
+hnswlib::SpaceInterface<float>* CreateHNSWSpace(const distance_metric knn_metric, const size_t numDims, const size_t neighborhoodSize, const loc_Neigh_Weighting neighborhoodWeighting, const size_t featureValsPerPoint, const size_t numHistBins, const float* dataVecBegin, int imgWidth, int numPoints) {
     // chose distance metric
     hnswlib::SpaceInterface<float> *space = NULL;
     if (knn_metric == distance_metric::METRIC_QF)
@@ -226,12 +216,6 @@ hnswlib::SpaceInterface<float>* CreateHNSWSpace(const distance_metric knn_metric
         assert(numHistBins > 0);
 		spdlog::info("Distance calculation: QFSpace as vector feature");
         space = new hnswlib::QFSpace(numDims, numHistBins, featureValsPerPoint);
-    }
-    else if (knn_metric == distance_metric::METRIC_EMD)
-    {
-        assert(numHistBins > 0);
-		spdlog::info("Distance calculation: EMDSpace as vector feature");
-        space = new hnswlib::EMDSpace(numDims, numHistBins, featureValsPerPoint);
     }
     else if (knn_metric == distance_metric::METRIC_HEL)
     {
@@ -242,7 +226,7 @@ hnswlib::SpaceInterface<float>* CreateHNSWSpace(const distance_metric knn_metric
     else if (knn_metric == distance_metric::METRIC_EUC)
     {
 		spdlog::info("Distance calculation: EuclidenSpace (L2Space) as scalar feature metric");
-        space = new hnswlib::L2Space(numDims);  // featureValsPerPoint = numDims
+        space = new hnswlib::L2FeatSpace(numDims);  // featureValsPerPoint = numDims
     }
     else if (knn_metric == distance_metric::METRIC_CHA)
     {
@@ -262,41 +246,17 @@ hnswlib::SpaceInterface<float>* CreateHNSWSpace(const distance_metric knn_metric
 		spdlog::info("Distance calculation: EuclidenSpace (Hausdorff)");
         space = new hnswlib::HausdorffSpace(numDims, neighborhoodSize, neighborhoodWeighting, dataVecBegin, featureValsPerPoint);
     }
-    else if (knn_metric == distance_metric::METRIC_MVN)
-    {
-        assert(dataVecBegin != NULL);
-		spdlog::info("Distance calculation: MVN-Reduce - Spatial and Attribute distancec combined with weight {}", weight);
-        space = new hnswlib::MVNSpace(numDims, weight, imgWidth, dataVecBegin, numPoints);
-    }
-    else if (knn_metric == distance_metric::METRIC_HAU_min)
-    {
-        assert(dataVecBegin != NULL);
-		spdlog::info("Distance calculation: EuclidenSpace (Hausdorff, min)");
-        space = new hnswlib::HausdorffSpace_min(numDims, neighborhoodSize, neighborhoodWeighting, dataVecBegin, featureValsPerPoint);
-    }
     else if (knn_metric == distance_metric::METRIC_HAU_med)
     {
         assert(dataVecBegin != NULL);
 		spdlog::info("Distance calculation: EuclidenSpace (Hausdorff, med)");
         space = new hnswlib::HausdorffSpace_median(numDims, neighborhoodSize, neighborhoodWeighting, dataVecBegin, featureValsPerPoint);
     }
-    else if (knn_metric == distance_metric::METRIC_HAU_medmed)
-    {
-        assert(dataVecBegin != NULL);
-		spdlog::info("Distance calculation: EuclidenSpace (Hausdorff, med)");
-        space = new hnswlib::HausdorffSpace_medianmedian(numDims, neighborhoodSize, neighborhoodWeighting, dataVecBegin, featureValsPerPoint);
-    }
-    else if (knn_metric == distance_metric::METRIC_HAU_minmax)
-    {
-        assert(dataVecBegin != NULL);
-        spdlog::info("Distance calculation: EuclidenSpace (Hausdorff, minmax)");
-        space = new hnswlib::HausdorffSpace_minmax(numDims, neighborhoodSize, neighborhoodWeighting, dataVecBegin, featureValsPerPoint);
-    }
     else if (knn_metric == distance_metric::METRIC_BHATTACHARYYA)
     {
         assert(dataVecBegin != NULL);
         spdlog::info("Distance calculation: BhattacharyyaSpace (Distance between means and covariance matrices)");
-        space = new hnswlib::Bhattacharyya_Space(numDims, featureValsPerPoint);
+        space = new hnswlib::Bhattacharyya_Space();
     }
     else
 		spdlog::error("Distance calculation: ERROR: Distance metric unknown.");

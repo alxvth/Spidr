@@ -73,7 +73,6 @@ private:
     std::string _embeddingName;                     /*!< Name of the embedding */
     const float* _dataVecBegin;                     /*!< Points to the first element in the data vector> */
     std::vector<unsigned int> _foregroundIDsGlobal;  /*!<> */
-    float _MVNweight;                               /*!<> */
     int _imgWidth;                                  /*!<> */
 
     // Output

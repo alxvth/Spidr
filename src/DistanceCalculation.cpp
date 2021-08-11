@@ -39,7 +39,6 @@ void DistanceCalculation::setup(const std::vector<float>& dataFeatures, const Fe
     _numHistBins = params._numHistBins;
     _embeddingName = params._embeddingName;
     _dataVecBegin = params._dataVecBegin;
-    _MVNweight = params._MVNweight;
     _imgWidth = params._imgSize.width;
 
     _dataFeatures = dataFeatures;
@@ -78,7 +77,7 @@ void DistanceCalculation::computekNN() {
     auto t_start_CreateHNSWSpace = std::chrono::steady_clock::now();
 
     // setup hsnw index
-    hnswlib::SpaceInterface<float> *space = CreateHNSWSpace(_knn_metric, _numDims, _neighborhoodSize, _neighborhoodWeighting, _numFeatureValsPerPoint, _numHistBins, _dataVecBegin, _MVNweight, _imgWidth, _numForegroundPoints);
+    hnswlib::SpaceInterface<float> *space = CreateHNSWSpace(_knn_metric, _numDims, _neighborhoodSize, _neighborhoodWeighting, _numFeatureValsPerPoint, _numHistBins, _dataVecBegin, _imgWidth, _numForegroundPoints);
     assert(space != NULL);
 
     auto t_end_CreateHNSWSpace = std::chrono::steady_clock::now();

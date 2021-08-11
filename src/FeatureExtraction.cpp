@@ -9,7 +9,8 @@
 
 #include <iterator>     // std::advance
 #include <algorithm>    // std::fill, std::find, std::swap_ranges, std::copy, std::set_difference
-#include <vector>       // std::vector, std::begin, std::end
+#include <vector>       
+#include <array>       
 #include <numeric>      // std::iota
 #include <cmath>        // std::pow
 #include <utility>      // std::forward
@@ -118,13 +119,6 @@ void FeatureExtraction::setup(const std::vector<unsigned int>& pointIDsGlobal, c
         featFunct = &FeatureExtraction::multivarNormDistDescriptor;
         spdlog::info("Feature extraction: Multivariate normal distribution descriptors (covaraince matrix and channel-wise mean)");
     }
-    else if (_featType == feature_type::MVN)
-    {
-        featFunct = &FeatureExtraction::calculateSumAllDist;
-        _numLocNeighbors = 0;      // even better was to skip the neighborhood extraction during
-        _neighborhoodSize = 1;  // feature calculation but this is the next best thing
-        spdlog::info("Feature extraction: Preparation for Frobenius norm of attribute dist matrices");
-    }
     else
     {
         featFunct = NULL;
@@ -194,6 +188,7 @@ void FeatureExtraction::calculateHistogram(size_t pointInd, std::vector<float> n
     assert(std::none_of(neighborIDs.begin(), neighborIDs.end(), [](int i) {return i == -1; }));
 
     Eigen::VectorXf normHist;
+    std::vector<Eigen::VectorXf> feat(_numDims);
 
     // 1D histograms for each dimension
     for (size_t dim = 0; dim < _numDims; dim++) {
@@ -222,7 +217,10 @@ void FeatureExtraction::calculateHistogram(size_t pointInd, std::vector<float> n
         for(size_t bin = 0; bin < _numHistBins; bin++)
             _outFeatures[pointInd * _numDims * _numHistBins + dim * _numHistBins + bin] = normHist[bin];
 
+        feat[dim] = normHist;
+
     }
+    _outFeaturesF.get_data_ptr()->at(pointInd) = new FeatureData<std::vector<Eigen::VectorXf>>(feat);
 
 }
 
@@ -234,6 +232,8 @@ void FeatureExtraction::calculateLISA(size_t pointInd, std::vector<float> neighb
     float neigh_diff_from_mean_sum = 0;
     float diff_from_mean = 0;
 	float local_neighborhoodWeightsSum = 0;
+
+    std::vector<float> feat(_numDims);
 
     for (size_t dim = 0; dim < _numDims; dim++) {
         neigh_diff_from_mean_sum = 0;
@@ -247,10 +247,14 @@ void FeatureExtraction::calculateLISA(size_t pointInd, std::vector<float> neighb
         // such that sum LOCALMORANSI = (local_neighborhoodWeightsSum / _varVals[dim]) * I. Thus, the division by _varVals in the next line yields sum LOCALMORANSI = I. 
         // Cf. 10.1111/j.1538-4632.1995.tb00338.x 
         _outFeatures[pointInd * _numDims + dim] = (diff_from_mean / (local_neighborhoodWeightsSum * _varVals[dim])) * neigh_diff_from_mean_sum;
+        feat[dim] = (diff_from_mean / (local_neighborhoodWeightsSum * _varVals[dim])) * neigh_diff_from_mean_sum;
 
         // check if local_neighborhoodWeightsSum equals _neighborhoodWeightsSum for full spatial neighborhoods
         assert((std::find(neighborIDs.begin(), neighborIDs.end(), -1) == neighborIDs.end()) ? (local_neighborhoodWeightsSum == _neighborhoodWeightsSum) : true);
     }
+
+    _outFeaturesF.get_data_ptr()->at(pointInd) = new FeatureData<std::vector<float>>(feat);
+
 }
 
 void FeatureExtraction::calculateGearysC(size_t pointInd, std::vector<float> neighborValues, std::vector<int> neighborIDs) {
@@ -262,6 +266,8 @@ void FeatureExtraction::calculateGearysC(size_t pointInd, std::vector<float> nei
     float diff_from_neigh_sum = 0;
     float diff_from_neigh = 0;
 	float local_neighborhoodWeightsSum = 0;
+
+    std::vector<float> feat(_numDims);
 
     for (size_t dim = 0; dim < _numDims; dim++) {
         diff_from_neigh_sum = 0;
@@ -276,7 +282,11 @@ void FeatureExtraction::calculateGearysC(size_t pointInd, std::vector<float> nei
         // given that the _neighborhoodWeights sum up to 1, _varVals is the proportionality factor between the local Geary and the global Geary's C
         // such that sum lC = _varVals * gC. Thus, the division by _varVals in the next line yields sum lC = gC. Cf. 10.1111/j.1538-4632.1995.tb00338.x
         _outFeatures[pointInd * _numDims + dim] = ( (2* local_neighborhoodWeightsSum / (_numPoints -1))  / _varVals[dim]) * diff_from_neigh_sum;
+        feat[dim] =                               ( (2 *local_neighborhoodWeightsSum / (_numPoints - 1)) / _varVals[dim]) * diff_from_neigh_sum;
     }
+
+    _outFeaturesF.get_data_ptr()->at(pointInd) = new FeatureData<std::vector<float>>(feat);
+
 }
 
 void FeatureExtraction::calculateSumAllDist(size_t pointInd, std::vector<float> neighborValues, std::vector<int> neighborIDs) {
@@ -286,6 +296,9 @@ void FeatureExtraction::calculateSumAllDist(size_t pointInd, std::vector<float> 
 
     int locHeight = std::floor(pointInd / _imgSize.width);         // height val, pixel pos in image
     int locWidth = pointInd - (locHeight * _imgSize.width);        // width val, pixel pos in image
+
+    std::array<int, 2> feat{ locHeight, locWidth};
+    _outFeaturesF.get_data_ptr()->at(pointInd) = new FeatureData<std::array<int, 2>>(feat);
 
     _outFeatures[pointInd * _numFeatureValsPerPoint + _numDims] = locHeight;
     _outFeatures[pointInd * _numFeatureValsPerPoint + _numDims + 1] = locWidth;
@@ -304,19 +317,10 @@ void FeatureExtraction::multivarNormDistDescriptor(size_t pointInd, std::vector<
     // compute features
     multivar_normal mean_covmat = compMultiVarFeatures(neighborValues_mat, _neighborhoodWeights_eig);
 
+    // save features
     multivar_normal_plusDet feat = multivar_normal_plusDet(mean_covmat.first, mean_covmat.second, mean_covmat.second.determinant());
-
     std::vector<IFeatureData*>* ib_featdata = _outFeaturesF.get_data_ptr();
     ib_featdata->at(pointInd) = new FeatureData<multivar_normal_plusDet> (feat);
-
-    auto test = static_cast<FeatureData<multivar_normal_plusDet>*>(ib_featdata->at(pointInd));
-
-    if (pointInd < 2)
-    {
-        std::cout << std::get<0>(test->data) << "\n";
-        std::cout << std::get<1>(test->data) << "\n";
-        std::cout << std::get<2>(test->data) << "\n";
-    }
 
     // transform features back to std and save
     std::swap_ranges(mean_covmat.first.begin(), mean_covmat.first.end(), _outFeatures.begin() + (pointInd * _numFeatureValsPerPoint));
@@ -331,6 +335,9 @@ void FeatureExtraction::allNeighborhoodVals(size_t pointInd, std::vector<float> 
 
     // copy neighborValues into _outFeatures
     std::swap_ranges(neighborValues.begin(), neighborValues.end(), _outFeatures.begin() + (pointInd * _numDims * _neighborhoodSize));
+
+    _outFeaturesF.get_data_ptr()->at(pointInd) = new FeatureData<std::vector<float>>(neighborValues);
+
 }
 
 void FeatureExtraction::allNeighborhoodIDs(size_t pointInd, std::vector<float> neighborValues, std::vector<int> neighborIDs) {
@@ -340,7 +347,9 @@ void FeatureExtraction::allNeighborhoodIDs(size_t pointInd, std::vector<float> n
     //std::replace(neighborIDs.begin(), neighborIDs.end(), -1, -2);       // use -2 mark outsiders, whereas -1 marks not processed
     std::copy(neighborIDs.begin(), neighborIDs.end(), _outFeatures.begin() + (pointInd * _neighborhoodSize));
     //std::swap_ranges(neighborIDs.begin(), neighborIDs.end(), _outFeatures.begin() + (pointInd * _neighborhoodSize));
-    // TODO: what is faster? swap or copy?
+
+    _outFeaturesF.get_data_ptr()->at(pointInd) = new FeatureData<std::vector<int>>(neighborIDs);
+
 }
 
 void FeatureExtraction::weightNeighborhood(loc_Neigh_Weighting weighting) {

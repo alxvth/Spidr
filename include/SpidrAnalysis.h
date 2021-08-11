@@ -50,7 +50,7 @@ public:
 	 * \param forceCalcBackgroundFeatures
 	 */
 	void initializeAnalysisSettings(const feature_type featType, const loc_Neigh_Weighting kernelType, const size_t numLocNeighbors, const size_t numHistBins, \
-		const knn_library aknnAlgType, const distance_metric aknnMetric, const float MVNweight, \
+		const knn_library aknnAlgType, const distance_metric aknnMetric, \
 		const int numIterations, const int perplexity, const int exaggeration, const int expDecay, bool forceCalcBackgroundFeatures = false);
 
 
@@ -158,9 +158,6 @@ private:
 
     /*! Sets the size of a feature, derived from other parameters */
     void setNumFeatureValsPerPoint(feature_type featType, size_t numDims, size_t numHistBins, size_t neighborhoodSize);
-
-    /*! Sets the spatial-attribut distance weight, 0 for only attributes and 1 for only spatial */
-    void setMVNWeight(const float weight);
 
     void setForceCalcBackgroundFeatures(const bool forceCalcBackgroundFeatures);
 

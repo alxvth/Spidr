@@ -32,17 +32,12 @@ enum class knn_library : size_t
 enum class distance_metric : size_t
 {
 	METRIC_QF,       /*!< Quadratic form distance */
-	METRIC_EMD,      /*!< Earth mover distance*/
 	METRIC_HEL,      /*!< Hellinger distance */
 	METRIC_EUC,      /*!< Euclidean distance - not suitable for histogram features */
 	METRIC_CHA,      /*!< Chamfer distance (point collection)*/
 	METRIC_SSD,      /*!< Sum of squared distances (point collection)*/
 	METRIC_HAU,      /*!< Hausdorff distance (point collection)*/
-	METRIC_HAU_min,      /*!< Hausdorff distance (point collection) but with min instead of max*/                       // TODO: Is there a name for this in the literature 
-	METRIC_HAU_med,      /*!< Hausdorff distance (point collection) but with median instead of max*/                    //       or does this not make sense at all?
-	METRIC_HAU_medmed,      /*!< Hausdorff distance (point collection) but with median instead of max*/                    //       or does this not make sense at all?
-	METRIC_HAU_minmax,      /*!< Hausdorff distance (point collection) but with median instead of max*/                    //       or does this not make sense at all?
-	METRIC_MVN,      /*!< MVN-Reduce, see 10.2312/euroviss, combines spatial and attribute distance with a weight*/
+	METRIC_HAU_med,      /*!< Hausdorff distance (point collection) but with median instead of max*/
 	METRIC_BHATTACHARYYA,      /*!< Bhattacharyya distance between two multivariate normal distributions, https://en.wikipedia.org/wiki/Bhattacharyya_distance */
 };
 
@@ -67,8 +62,7 @@ enum class feature_type : unsigned int
 	LOCALMORANSI = 1,       /*!< Local Moran's I (Local Indicator of Spatial Associations), scalar feaure */
 	LOCALGEARYC = 2,        /*!< Local Geary's C (Local Indicator of Spatial Associations), scalar feature */
 	PCLOUD = 3,             /*!< Point cloud, i.e. just the neighborhood, no transformations*/
-	MVN = 4,                /*!< MVN-Reduce, see 10.2312/euroviss, computes Frobenius norms of spatial and attribute distance matrices*/
-	MULTIVAR_NORM = 5,      /*!< Mean and covariance matrix  */
+	MULTIVAR_NORM = 4,      /*!< Mean and covariance matrix  */
 };
 
 // Heuristic for setting the histogram bin size
@@ -131,7 +125,6 @@ static const size_t NumFeatureValsPerPoint(const feature_type featureType, const
 	case feature_type::LOCALMORANSI:    // same as Geary's C
 	case feature_type::LOCALGEARYC:     featureSize = numDims; break;
 	case feature_type::PCLOUD:          featureSize = neighborhoodSize; break; // numDims * neighborhoodSize for copying data instead of IDs
-	case feature_type::MVN:             featureSize = numDims + 2; break; // for each point: attr vals and x&y pos
 	case feature_type::MULTIVAR_NORM:   featureSize = numDims + numDims* numDims; break; // channel-wise means + covaraince matrix
     default: throw std::runtime_error("No feature size defined for this feature");
 	}
@@ -152,7 +145,7 @@ public:
         _nn(-1), _numPoints(-1), _numDims(-1), _imgSize(-1, -1), _embeddingName(""), _dataVecBegin(NULL),
         _featureType(feature_type::TEXTURE_HIST_1D), _neighWeighting(loc_Neigh_Weighting::WEIGHT_UNIF), _numLocNeighbors(-1), _numHistBins(-1),
         _kernelWidth(0), _neighborhoodSize(0), _numFeatureValsPerPoint(0), _forceCalcBackgroundFeatures(false),
-		_aknn_algorithm(knn_library::KNN_HNSW), _aknn_metric(distance_metric::METRIC_QF), _MVNweight(0),
+		_aknn_algorithm(knn_library::KNN_HNSW), _aknn_metric(distance_metric::METRIC_QF),
 		_perplexity(30), _perplexity_multiplier(3), _numIterations(1000), _exaggeration(250)
 	{}
 
@@ -162,7 +155,7 @@ public:
 		float perplexity, int numIterations, int exaggeration, bool forceCalcBackgroundFeatures = false) :
 		_numPoints(numPoints), _numDims(numDims), _imgSize(imgSize), _embeddingName(embeddingName), _dataVecBegin(dataVecBegin),
 		_featureType(featureType), _neighWeighting(neighWeighting), _numLocNeighbors(numLocNeighbors), _numHistBins(numHistBins),
-		_aknn_algorithm(aknn_algorithm), _aknn_metric(aknn_metric), _MVNweight(MVNweight), _forceCalcBackgroundFeatures(forceCalcBackgroundFeatures),
+		_aknn_algorithm(aknn_algorithm), _aknn_metric(aknn_metric), _forceCalcBackgroundFeatures(forceCalcBackgroundFeatures),
 		_perplexity(perplexity), _perplexity_multiplier(3), _numIterations(numIterations), _exaggeration(exaggeration)
 	{
 		update_nn();	// sets nn based on perplexity
@@ -174,11 +167,11 @@ public:
 
     SpidrParameters(size_t numPoints, size_t numDims, ImgSize imgSize, std::string embeddingName, const float* dataVecBegin, size_t numForegroundPoints,
         feature_type featureType, loc_Neigh_Weighting neighWeighting, size_t numLocNeighbors, size_t numHistBins,
-        knn_library aknn_algorithm, distance_metric aknn_metric, float MVNweight,
+        knn_library aknn_algorithm, distance_metric aknn_metric,
         float perplexity, int numIterations, int exaggeration, bool forceCalcBackgroundFeatures = false) :
         _numPoints(numPoints), _numDims(numDims), _imgSize(imgSize), _embeddingName(embeddingName), _dataVecBegin(dataVecBegin), _numForegroundPoints(numForegroundPoints),
         _featureType(featureType), _neighWeighting(neighWeighting), _numLocNeighbors(numLocNeighbors), _numHistBins(numHistBins),
-        _aknn_algorithm(aknn_algorithm), _aknn_metric(aknn_metric), _MVNweight(MVNweight), _forceCalcBackgroundFeatures(forceCalcBackgroundFeatures),
+        _aknn_algorithm(aknn_algorithm), _aknn_metric(aknn_metric), _forceCalcBackgroundFeatures(forceCalcBackgroundFeatures),
         _perplexity(perplexity), _perplexity_multiplier(3), _numIterations(numIterations), _exaggeration(exaggeration)
     {
 		update_nn();	// sets nn based on perplexity
@@ -231,7 +224,6 @@ public:
 	// distance
 	knn_library         _aknn_algorithm;        /*!<> */
 	distance_metric     _aknn_metric;           /*!<> */
-	float               _MVNweight;             /*!<> */
 	// embeddings
 	int                 _numIterations;         /*!< Number of gradient descent iterations> */
 	int                 _exaggeration;          /*!< Number of iterations for early exageration> */

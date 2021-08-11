@@ -95,10 +95,9 @@ std::tuple<std::vector<int>, std::vector<float>> ComputeFullDistMat(const std::v
  * \param featureValsPerPoint used for data_size_
  * \param numHistBins Number of histogram bins of feature type is a vector i.e. histogram
  * \param dataVecBegin Used for PC distance where features are just IDs of the actual data
- * \param weight 
  * \param imgWidth 
  * \param numPoints 
  * \return A HNSWLib compatible SpaceInterface, which is used as the basis to compare two points
  */
-hnswlib::SpaceInterface<float>* CreateHNSWSpace(const distance_metric knn_metric, const size_t numDims, const size_t neighborhoodSize, const loc_Neigh_Weighting neighborhoodWeighting, const size_t featureValsPerPoint, const size_t numHistBins=0, const float* dataVecBegin = NULL, float weight = 0, int imgWidth = 0, int numPoints = 0);
+hnswlib::SpaceInterface<float>* CreateHNSWSpace(const distance_metric knn_metric, const size_t numDims, const size_t neighborhoodSize, const loc_Neigh_Weighting neighborhoodWeighting, const size_t featureValsPerPoint, const size_t numHistBins=0, const float* dataVecBegin = NULL, int imgWidth = 0, int numPoints = 0);
 

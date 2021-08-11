@@ -37,7 +37,7 @@ void SpidrAnalysis::setupData(const std::vector<float>& attribute_data, const st
 }
 
 void SpidrAnalysis::initializeAnalysisSettings(const feature_type featType, const loc_Neigh_Weighting kernelWeightType, const size_t numLocNeighbors, const size_t numHistBins,\
-                                               const knn_library aknnAlgType, const distance_metric aknnMetric, const float MVNweight, \
+                                               const knn_library aknnAlgType, const distance_metric aknnMetric,\
                                                const int numIterations, const int perplexity, const int exaggeration, const int expDecay, bool forceCalcBackgroundFeatures) {
 	if (_params._numDims < 0 || _params._numHistBins < 0)
 		spdlog::error("SpidrWrapper: first call SpidrAnalysis::setupData() before initializing the settings with SpidrAnalysis::initializeAnalysisSettings since some might depend on the data dimensions.");
@@ -53,7 +53,6 @@ void SpidrAnalysis::initializeAnalysisSettings(const feature_type featType, cons
     // number of nn is dertermined by perplexity, set in setPerplexity
     setKnnAlgorithm(aknnAlgType);
     setDistanceMetric(aknnMetric);
-    setMVNWeight(MVNweight);
 
     // Initialize the tSNE computation
     setNumIterations(numIterations);
@@ -148,10 +147,6 @@ void SpidrAnalysis::setExpDecay(const unsigned expDecay) {
 
 void SpidrAnalysis::setNumFeatureValsPerPoint(feature_type featType, size_t numDims, size_t numHistBins, size_t neighborhoodSize) {
 	_params._numFeatureValsPerPoint = NumFeatureValsPerPoint(featType, numDims, numHistBins, neighborhoodSize);
-}
-
-void SpidrAnalysis::setMVNWeight(const float weight) {
-    _params._MVNweight = weight;
 }
 
 void SpidrAnalysis::setForceCalcBackgroundFeatures(const bool CalcBackgroundFeatures) {
