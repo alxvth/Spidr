@@ -11,6 +11,7 @@ message(${SPIDRLIB_DIR})
 add_subdirectory(pybind11)
 pybind11_add_module(${SPIDRWRAPPER} 
 	src/SpidrBind.cpp
+	src/SpidrWrapper.h
 	src/SpidrWrapper.cpp)
 
 # add Spidr lib

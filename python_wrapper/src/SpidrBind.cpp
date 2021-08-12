@@ -13,11 +13,11 @@ PYBIND11_MODULE(SpidrWrapper, m) {
 	// ENUMS
 	py::enum_<distance_metric>(m, "DistMetric", "Distance metric, the choice of distance will set the feature type: scalar, histogram or point cloud")
 		.value("QF_hist", distance_metric::METRIC_QF)
-		.value("EMD_hist", distance_metric::METRIC_EMD)
 		.value("Hel_hist", distance_metric::METRIC_HEL)
 		.value("Chamfer_pc", distance_metric::METRIC_CHA)
 		.value("Hausdorff_pc", distance_metric::METRIC_HAU)
-		.value("Euclidean_scal", distance_metric::METRIC_EUC);
+		.value("Morans_I", distance_metric::METRIC_EUC)
+		.value("Bhattacharyya", distance_metric::METRIC_BHATTACHARYYA);
 
 	py::enum_<loc_Neigh_Weighting>(m, "WeightLoc", "Distance metric, the choice of distance will set the feature type: scalar, histogram or point cloud")
 		.value("uniform", loc_Neigh_Weighting::WEIGHT_UNIF)
