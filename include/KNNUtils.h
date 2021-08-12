@@ -8,6 +8,8 @@
 
 #include "SpidrAnalysisParameters.h"
 
+class Feature;
+
 typedef std::tuple<feature_type, distance_metric> metricPair;
 namespace hnswlib {
 	template<typename MTYPE> class SpaceInterface;
@@ -33,9 +35,11 @@ feature_type GetFeatureTypeFromMetricPair(const metricPair metricPair);
  * \return median
  */
 template<typename T>
-T CalcMedian(std::vector<T> vec, size_t vecSize);
+T CalcMedian(std::vector<T>& vec, size_t vecSize);
 template<typename T>
-T CalcMedian(std::vector<T> vec) { CalcMedian(vec, vec.size()); }
+T CalcMedian(std::vector<T>& vec) { CalcMedian(vec, vec.size()); }
+template<typename T>
+T CalcMedian(T* first, T* last, size_t vecSize);
 
 /*!
  * Computes the similarities of bins of a 1D histogram.
@@ -57,8 +61,7 @@ std::vector<float> BinSimilarities(size_t num_bins, bin_sim sim_type = bin_sim::
  * \param nn Number of kNN to compute
  * \return Tuple of knn Indices and respective squared distances
 */
-template<typename T>
-std::tuple<std::vector<int>, std::vector<float>> ComputeHNSWkNN(const std::vector<T>& dataFeatures, hnswlib::SpaceInterface<float> *space, size_t featureSize, const std::vector<unsigned int>& foregroundIDsGlobal, unsigned int nn);
+std::tuple<std::vector<int>, std::vector<float>> ComputeHNSWkNN(const Feature& dataFeatures, hnswlib::SpaceInterface<float> *space, size_t featureSize, const std::vector<unsigned int>& foregroundIDsGlobal, unsigned int nn);
 
 /*! Compute exact kNNs 
  * Calculate the distances between all point pairs and find closest neighbors
@@ -70,8 +73,7 @@ std::tuple<std::vector<int>, std::vector<float>> ComputeHNSWkNN(const std::vecto
  * \param fullDistMat Whether to fullDistMat the nearest neighbor distances. Default is false. Set to true if nn == numPoints and you want to calculate the full distance matrix (which is what ComputeFullDistMat() does)
  * \return Tuple of indices and respective squared distances
 */
-template<typename T>
-std::tuple<std::vector<int>, std::vector<float>> ComputeExactKNN(const std::vector<T> dataFeatures, hnswlib::SpaceInterface<float> *space, size_t featureSize, const std::vector<unsigned int>& foregroundIDsGlobal, unsigned int nn, bool fullDistMat = false);
+std::tuple<std::vector<int>, std::vector<float>> ComputeExactKNN(const Feature& dataFeatures, hnswlib::SpaceInterface<float> *space, size_t featureSize, const std::vector<unsigned int>& foregroundIDsGlobal, unsigned int nn, bool fullDistMat = false);
 
 /*! Compute the full distance matrix between all data points
  * Calls ComputeExactKNN with the correct parameters, basically syntactic sugar
@@ -81,8 +83,7 @@ std::tuple<std::vector<int>, std::vector<float>> ComputeExactKNN(const std::vect
  * \param foregroundIDsGlobal IDs of valid points in dataFeatures (for fore- and background distinction)
  * \return Tuple of indices and respective squared distances
 */
-template<typename T>
-std::tuple<std::vector<int>, std::vector<float>> ComputeFullDistMat(const std::vector<T> dataFeatures, hnswlib::SpaceInterface<float> *space, size_t featureSize, const std::vector<unsigned int>& foregroundIDsGlobal);
+std::tuple<std::vector<int>, std::vector<float>> ComputeFullDistMat(const Feature& dataFeatures, hnswlib::SpaceInterface<float> *space, size_t featureSize, const std::vector<unsigned int>& foregroundIDsGlobal);
 
 /*! Creates a metric space used by HNSWLib to build a kNN index
  * 
@@ -92,11 +93,9 @@ std::tuple<std::vector<int>, std::vector<float>> ComputeFullDistMat(const std::v
  * \param neighborhoodWeighting Featureless distances use the weighting
  * \param featureValsPerPoint used for data_size_
  * \param numHistBins Number of histogram bins of feature type is a vector i.e. histogram
- * \param dataVecBegin Used for PC distance where features are just IDs of the actual data
- * \param weight 
  * \param imgWidth 
  * \param numPoints 
  * \return A HNSWLib compatible SpaceInterface, which is used as the basis to compare two points
  */
-hnswlib::SpaceInterface<float>* CreateHNSWSpace(const distance_metric knn_metric, const size_t numDims, const size_t neighborhoodSize, const loc_Neigh_Weighting neighborhoodWeighting, const size_t featureValsPerPoint, const size_t numHistBins=0, const float* dataVecBegin = NULL, float weight = 0, int imgWidth = 0, int numPoints = 0);
+hnswlib::SpaceInterface<float>* CreateHNSWSpace(const distance_metric knn_metric, const size_t numDims, const size_t neighborhoodSize, const loc_Neigh_Weighting neighborhoodWeighting, const size_t featureValsPerPoint, const size_t numHistBins=0, int imgWidth = 0, int numPoints = 0);
 

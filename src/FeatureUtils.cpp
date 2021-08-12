@@ -3,6 +3,8 @@
 #include <execution>    // par_unseq
 #include <algorithm>    // for_each_n
 #include <numeric>      // iota
+#include <cmath> 
+#include <stdexcept>
 
 
 template<typename T>
@@ -120,51 +122,192 @@ unsigned int RiceBinSize(unsigned int numItems) {
     return int(std::ceil((2 * std::pow(numItems, 1.0/3))));
 }
 
-std::vector<int> neighborhoodIndices(const unsigned int pointInd, const size_t locNeighbors, const ImgSize imgSize, const std::vector<unsigned int>& pointIds) {
-    size_t kernelWidth = (2 * locNeighbors) + 1;
-    size_t neighborhoodSize = kernelWidth * kernelWidth;
-    std::vector<int> neighborsIDs(neighborhoodSize, -1);
-    int imWidth = imgSize.width;
-    int rowID = int(pointInd / imWidth);
-
-    // left and right neighbors
-    std::vector<int> lrNeighIDs(kernelWidth, 0);
-    std::iota(lrNeighIDs.begin(), lrNeighIDs.end(), pointInd - locNeighbors);
-
-    // are left and right out of the picture?
-    for (int& n : lrNeighIDs) {
-        if (n < rowID * imWidth)
-            n = -1;
-        else if (n >= (rowID + 1) * imWidth)
-            n = -1;
-    }
-
-    // above and below neighbors
-    unsigned int localNeighCount = 0;
-    for (int i = -1 * locNeighbors; i <= (int)locNeighbors; i++) {
-        for (int ID : lrNeighIDs) {
-            neighborsIDs[localNeighCount] = (ID != -1) ? ID + i * imgSize.width : -1;  // if left or right is already out of image, above and below will be as well
-            localNeighCount++;
-        }
-    }
-
-    // Check if neighborhood IDs are in selected points
-    for (int& ID : neighborsIDs) {
-        // if neighbor is not in neighborhood, assign -1
-        if (std::find(pointIds.begin(), pointIds.end(), ID) == pointIds.end()) {
-            ID = -1;
-        }
-    }
-
-    return neighborsIDs;
-}
-
 std::vector<float> getNeighborhoodValues(const std::vector<int>& neighborIDs, const std::vector<float>& attribute_data, const size_t neighborhoodSize, const size_t numDims) {
-    std::vector<float> neighborValues(neighborhoodSize * numDims, -1);      // init all neighbors to -1
+    std::vector<float> neighborValues(neighborhoodSize * numDims);
+#ifdef NDEBUG
+    // later an assert can check whether all values are different from FLT_MAX
+    std::fill(neighborValues.begin(), neighborValues.end(), FLT_MAX);
+#endif
+
+    // data layout with dimension d and neighbor n: [n0d0, p0d1, n0d2, ..., n1d0, n1d1, ..., n2d0, n2d1, ...]
     for (unsigned int neighbor = 0; neighbor < neighborhoodSize; neighbor++) {
         for (unsigned int dim = 0; dim < numDims; dim++) {
-            neighborValues[neighbor * numDims + dim] = (neighborIDs[neighbor] != -1) ? attribute_data[neighborIDs[neighbor] * numDims + dim] : 0;
+            neighborValues[neighbor * numDims + dim] = attribute_data[neighborIDs[neighbor] * numDims + dim];
         }
     }
     return neighborValues;
+}
+
+
+std::vector<int> getNeighborhoodInds(const unsigned int coord_row, const unsigned int coord_col, const size_t kernelWidth, Eigen::MatrixXui* padded_ids) {
+    Eigen::MatrixXui neighborhoodInds_mat = padded_ids->block(coord_row, coord_col, kernelWidth, kernelWidth);
+    std::vector<int> neighborhoodInds_vec(neighborhoodInds_mat.data(), neighborhoodInds_mat.data() + neighborhoodInds_mat.size());
+    return neighborhoodInds_vec;
+}
+
+
+Eigen::MatrixXui padConst(Eigen::MatrixXui mat, Eigen::Index pad_size)
+{
+	//auto slice_sequence_rows = padAllDirections{ mat.rows(), pad_size };
+	//auto slice_sequence_cols = padAllDirections{ mat.cols(), pad_size };
+	//auto padded_mat = mat(slice_sequence_rows, slice_sequence_cols)
+	return mat(padAllDirections{ mat.rows(), pad_size }, padAllDirections{ mat.cols(), pad_size });
+}
+
+
+template< class scalar_type> Histogram_Base< scalar_type>::Histogram_Base(float min, float max, unsigned int numberOfBins) :
+    _minVal(min), _maxVal(max), _numBins(numberOfBins), _totalBinCounts(0), _totalValidBinCounts(0), _countUnderflow(0), _countOverflow(0)
+{
+    _binWidth = (_maxVal - _minVal) / (float)_numBins;
+    commonInit();
+}
+// Resolve linker errors with explicit instantiation, https://isocpp.org/wiki/faq/templates#separate-template-fn-defn-from-decl
+template Histogram_Base<unsigned int>::Histogram_Base(float min, float max, unsigned int numberOfBins);
+template Histogram_Base<float>::Histogram_Base(float min, float max, unsigned int numberOfBins);
+
+template< class scalar_type> Histogram_Base< scalar_type>::Histogram_Base(float min, float max, float binWidth) :
+    _minVal(min), _maxVal(max), _binWidth(binWidth), _totalBinCounts(0), _totalValidBinCounts(0), _countUnderflow(0), _countOverflow(0)
+{
+    _numBins = std::ceil((_maxVal - _minVal) / (float)_binWidth);
+    commonInit();
+}
+template Histogram_Base<unsigned int>::Histogram_Base(float min, float max, float binWidth);
+template Histogram_Base<float>::Histogram_Base(float min, float max, float binWidth);
+
+
+template< class scalar_type> void Histogram_Base< scalar_type>::commonInit()
+{
+    if (_minVal >= _maxVal)
+        throw std::runtime_error("Histogram_Base: Bin max must be larger than bin min.");
+
+    _counts = Eigen::Vector<scalar_type, -1>::Zero(_numBins);
+    _binNormed = (float)_numBins / (_maxVal - _minVal);
+}
+template void Histogram_Base<unsigned int>::commonInit();
+template void Histogram_Base<float>::commonInit();
+
+
+template< class scalar_type> void Histogram_Base< scalar_type>::fill(const float value) {
+    unsigned int binID;
+    if (value >= _minVal && value < _maxVal) {
+        binID = std::floor((value - _minVal) * _binNormed);
+        _counts[binID] += 1;
+        _totalValidBinCounts += 1;
+    }
+    else if (value == _maxVal)
+    {
+        _counts[_numBins - 1] += 1;
+        _totalValidBinCounts += 1;
+    }
+    else if (value > _maxVal) {
+        _countOverflow += 1;
+    }
+    else {
+        _countUnderflow += 1;
+    }
+
+    _totalBinCounts += 1;
+}
+template void Histogram_Base<unsigned int>::fill(const float value);
+template void Histogram_Base<float>::fill(const float value);
+
+template< class scalar_type> void Histogram_Base< scalar_type>::fill(const std::vector<float> values) {
+    for (const float &value : values)
+        fill(value);
+}
+template void Histogram_Base<unsigned int>::fill(const std::vector<float> values);
+template void Histogram_Base<float>::fill(const std::vector<float> values);
+
+
+template< class scalar_type> scalar_type Histogram_Base< scalar_type>::operator[](int index) const {
+    assert(index >= 0 && index < _numBins);
+    return _counts[index];
+}
+template unsigned int Histogram_Base<unsigned int>::operator[](int index) const;
+template float Histogram_Base<float>::operator[](int index) const;
+
+
+void Histogram_Weighted::fill_weighted(const float value, const float weight) {
+    unsigned int binID;
+    if (value >= _minVal && value < _maxVal) {
+        binID = std::floor((value - _minVal) * _binNormed);
+        _counts[binID] += weight;
+        _totalValidBinCounts += 1;
+    }
+    else if (value == _maxVal)
+    {
+        _counts[_numBins - 1] += 1;
+        _totalValidBinCounts += 1;
+    }
+    else if (value > _maxVal) {
+        _countOverflow += 1;
+    }
+    else {
+        _countUnderflow += 1;
+    }
+
+    _totalBinCounts += 1;
+}
+
+void Histogram_Weighted::fill_weighted(const std::vector<float> values, const std::vector<float> weights) {
+    assert(values.size() == weights.size());
+
+    for (unsigned int i = 0; i < values.size(); i++)
+        fill_weighted(values[i], weights[i]);
+}
+
+
+
+float variance(Eigen::VectorXf vec)
+{
+    Eigen::VectorXf centered = vec.array() - vec.mean();
+    return (1.0f / vec.size()) * centered.dot(centered);
+}
+
+float covariance(Eigen::VectorXf vec1, Eigen::VectorXf vec2)
+{
+    assert(vec1.size() == vec2.size());
+    Eigen::VectorXf centered1 = vec1.array() - vec1.mean();
+    Eigen::VectorXf centered2 = vec2.array() - vec2.mean();
+    return (1.0f / vec1.size()) * centered1.dot(centered2);
+}
+
+Eigen::MatrixXf covmat(Eigen::MatrixXf data)
+{
+    // see https://stackoverflow.com/a/15142446 and https://en.wikipedia.org/wiki/Sample_mean_and_covariance#Definition_of_sample_covariance
+    // also https://en.wikipedia.org/wiki/Sample_mean_and_covariance#Unbiasedness for discussion over (1 / (neighborhood.cols() - 1)) and (1 / neighborhood.cols())
+    // Since we know all the neighrborhood, we go for (1 / neighborhood.cols())
+    Eigen::MatrixXf centered = data.colwise() - data.rowwise().mean();
+    return (1.0f / data.cols()) * (centered * centered.transpose());
+}
+
+Eigen::MatrixXf covmat(Eigen::MatrixXf data, Eigen::VectorXf probs)
+{
+    assert(probs.size() == data.cols());			// one prob value for each observation
+    assert(std::abs(probs.sum() - 1.0f) < 0.001);  // cumulative prob must be 1
+
+    // see https://stackoverflow.com/a/15142446 and https://en.wikipedia.org/wiki/Sample_mean_and_covariance#Definition_of_sample_covariance
+    // also https://en.wikipedia.org/wiki/Sample_mean_and_covariance#Unbiasedness for why it's (1 / (neighborhood.cols() - 1)) and not (1 / neighborhood.cols())
+    // see https://stackoverflow.com/a/42945996 for centered * probs.asDiagonal() 
+    Eigen::MatrixXf centered = data.colwise() - data.rowwise().mean();
+    return ((centered * probs.asDiagonal()) * centered.transpose());
+
+    // just for me to check that they are actually identical
+    // std::cout << "test 1: \n" << neighborhood.array().rowwise() * probs.transpose().array() << "\n";
+    // std::cout << "test 2: \n" << neighborhood * probs.asDiagonal() << "\n";
+
+}
+
+multivar_normal compMultiVarFeatures(Eigen::MatrixXf data) {
+    Eigen::VectorXf mean = data.rowwise().mean();
+    Eigen::MatrixXf centered = data.colwise() - mean;
+    Eigen::MatrixXf cov_mat = (centered * centered.transpose()) / data.cols();
+    return std::make_pair(mean, cov_mat);
+}
+
+multivar_normal compMultiVarFeatures(Eigen::MatrixXf data, Eigen::VectorXf probs) {
+    Eigen::VectorXf mean = data.rowwise().mean();
+    Eigen::MatrixXf centered = data.colwise() - mean;
+    Eigen::MatrixXf cov_mat = ((centered * probs.asDiagonal()) * centered.transpose());
+    return std::make_pair(mean, cov_mat);
 }

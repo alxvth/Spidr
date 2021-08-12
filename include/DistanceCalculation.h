@@ -3,6 +3,7 @@
 #include <tuple>
 #include <vector>
 #include <string>   
+#include "FeatureUtils.h"
 
 class SpidrParameters;
 enum class knn_library : size_t;
@@ -39,7 +40,7 @@ public:
      * \param foregroundIDsGlobal
      * \param params
      */
-    void setup(const std::vector<float>& dataFeatures, const std::vector<unsigned int>& foregroundIDsGlobal, SpidrParameters& params);
+    void setup(const Feature dataFeatures, const std::vector<unsigned int>& foregroundIDsGlobal, SpidrParameters& params);
 
     /*!
      * 
@@ -66,12 +67,11 @@ private:
     size_t _numPoints;                              /*!<> */
     size_t _numForegroundPoints;                              /*!<> */
     size_t _numHistBins;                            /*!<> */ // don't set this from the widget input. Instead you the value set in the feature extraction
-    std::vector<float>  _dataFeatures;              /*!<> */
+    Feature _dataFeatures;
     size_t _numFeatureValsPerPoint;                 /*!< Feature Values per Point> */
     std::string _embeddingName;                     /*!< Name of the embedding */
     const float* _dataVecBegin;                     /*!< Points to the first element in the data vector> */
     std::vector<unsigned int> _foregroundIDsGlobal;  /*!<> */
-    float _MVNweight;                               /*!<> */
     int _imgWidth;                                  /*!<> */
 
     // Output

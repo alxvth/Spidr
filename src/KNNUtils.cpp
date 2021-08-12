@@ -1,6 +1,8 @@
 #pragma once
 #include "KNNUtils.h"
 #include "KNNDists.h"
+#include "FeatureUtils.h"
+
 #include "spdlog/spdlog-inl.h"
 #include "hnswlib/hnswlib.h"
 
@@ -23,7 +25,7 @@ feature_type GetFeatureTypeFromMetricPair(const metricPair metricPair) {
 }
 
 template<typename T>
-T CalcMedian(std::vector<T> vec, size_t vecSize) {
+T CalcMedian(std::vector<T>& vec, size_t vecSize) {
 	T median;
 
 	size_t n = vecSize / 2;
@@ -41,7 +43,28 @@ T CalcMedian(std::vector<T> vec, size_t vecSize) {
 
 	return median;
 }
-template float CalcMedian<float>(std::vector<float> vec, size_t vecSize);
+template float CalcMedian<float>(std::vector<float>& vec, size_t vecSize);
+
+template<typename T>
+T CalcMedian(T* first, T* last, size_t vecSize) {
+    T median;
+
+    size_t n = vecSize / 2;
+    std::nth_element(first, first + n, last);
+    T vn = *(first + n);
+    if (vecSize % 2 == 1)	// uneven length
+    {
+        median = vn;
+    }
+    else					// even length, median is average of the central two items
+    {
+        std::nth_element(first, first + n - 1, last);
+        median = 0.5*(vn + *(first + n - 1));
+    }
+
+    return median;
+}
+template float CalcMedian<float>(float* first, float* last, size_t vecSize);
 
 
 std::vector<float> BinSimilarities(size_t num_bins, bin_sim sim_type, float sim_weight) {
@@ -72,8 +95,7 @@ std::vector<float> BinSimilarities(size_t num_bins, bin_sim sim_type, float sim_
 	return A;
 }
 
-template<typename T>
-std::tuple<std::vector<int>, std::vector<float>> ComputeHNSWkNN(const std::vector<T>& dataFeatures, hnswlib::SpaceInterface<float> *space, size_t indMultiplier, const std::vector<unsigned int>& foregroundIDsGlobal, unsigned int nn) {
+std::tuple<std::vector<int>, std::vector<float>> ComputeHNSWkNN(const Feature& dataFeatures, hnswlib::SpaceInterface<float> *space, size_t indMultiplier, const std::vector<unsigned int>& foregroundIDsGlobal, unsigned int nn) {
     auto numForegroundPoints = foregroundIDsGlobal.size();
 
     std::vector<int> indices(numForegroundPoints * nn, -1);
@@ -85,20 +107,22 @@ std::tuple<std::vector<int>, std::vector<float>> ComputeHNSWkNN(const std::vecto
 
     // add data points: each data point holds indMultiplier values (number of feature values)
     // add the first data point outside the parallel loop
-    appr_alg.addPoint((void*)(dataFeatures.data() + foregroundIDsGlobal[0] * indMultiplier), (std::size_t) 0);
-
+    //appr_alg.addPoint((void*)(dataFeatures.data() + foregroundIDsGlobal[0] * indMultiplier), (std::size_t) 0);
+    appr_alg.addPoint((void*)(dataFeatures.at(foregroundIDsGlobal[0])), (std::size_t) 0);
 
 #ifdef NDEBUG
     // This loop is for release mode, it's parallel loop implementation from hnswlib
     int num_threads = std::thread::hardware_concurrency();
     hnswlib::ParallelFor(1, numForegroundPoints, num_threads, [&](size_t i, size_t threadId) {
-        appr_alg.addPoint((void*)(dataFeatures.data() + (foregroundIDsGlobal[i] *indMultiplier)), (hnswlib::labeltype) i);
+        //appr_alg.addPoint((void*)(dataFeatures.data() + (foregroundIDsGlobal[i] *indMultiplier)), (hnswlib::labeltype) i);
+        appr_alg.addPoint((void*)(dataFeatures.at(foregroundIDsGlobal[i])), (hnswlib::labeltype) i);
     });
 #else
 // This loop is for debugging, when you want to sequentially add points
     for (int i = 1; i < numForegroundPoints; ++i)
     {
-        appr_alg.addPoint((void*)(dataFeatures.data() + (foregroundIDsGlobal[i] *indMultiplier)), (hnswlib::labeltype) i);
+        //appr_alg.addPoint((void*)(dataFeatures.data() + (foregroundIDsGlobal[i] *indMultiplier)), (hnswlib::labeltype) i);
+        appr_alg.addPoint((void*)(dataFeatures.at(foregroundIDsGlobal[i])), (hnswlib::labeltype) i);
     }
 #endif
 	spdlog::info("Distance calculation: Search akNN Index");
@@ -110,7 +134,8 @@ std::tuple<std::vector<int>, std::vector<float>> ComputeHNSWkNN(const std::vecto
     for (int i = 0; i < numForegroundPoints; ++i)
     {
         // find nearest neighbors
-        auto top_candidates = appr_alg.searchKnn((void*)(dataFeatures.data() + (foregroundIDsGlobal[i] *indMultiplier)), (hnswlib::labeltype)nn);
+        //auto top_candidates = appr_alg.searchKnn((void*)(dataFeatures.data() + (foregroundIDsGlobal[i] *indMultiplier)), (hnswlib::labeltype)nn);
+        auto top_candidates = appr_alg.searchKnn((void*)(dataFeatures.at(foregroundIDsGlobal[i])), (hnswlib::labeltype)nn);
         while (top_candidates.size() > nn) {
             top_candidates.pop();
         }
@@ -132,13 +157,8 @@ std::tuple<std::vector<int>, std::vector<float>> ComputeHNSWkNN(const std::vecto
 
     return std::make_tuple(indices, distances_squared);
 }
-// Resolve linker errors with explicit instantiation, https://isocpp.org/wiki/faq/templates#separate-template-fn-defn-from-decl
-template std::tuple<std::vector<int>, std::vector<float>> ComputeHNSWkNN<float>(const std::vector<float>& dataFeatures, hnswlib::SpaceInterface<float> *space, size_t indMultiplier, const std::vector<unsigned int>& foregroundIDsGlobal, unsigned int nn);
-template std::tuple<std::vector<int>, std::vector<float>> ComputeHNSWkNN<unsigned int>(const std::vector<unsigned int>& dataFeatures, hnswlib::SpaceInterface<float> *space, size_t indMultiplier, const std::vector<unsigned int>& foregroundIDsGlobal, unsigned int nn);
 
-
-template<typename T>
-std::tuple<std::vector<int>, std::vector<float>> ComputeExactKNN(const std::vector<T> dataFeatures, hnswlib::SpaceInterface<float> *space, size_t featureSize, const std::vector<unsigned int>& foregroundIDsGlobal, unsigned int nn, bool fullDistMat) {
+std::tuple<std::vector<int>, std::vector<float>> ComputeExactKNN(const Feature& dataFeatures, hnswlib::SpaceInterface<float> *space, size_t featureSize, const std::vector<unsigned int>& foregroundIDsGlobal, unsigned int nn, bool fullDistMat) {
     auto numForegroundPoints = foregroundIDsGlobal.size();
     
     std::vector<std::pair<int, float>> indices_distances(numForegroundPoints);
@@ -160,7 +180,7 @@ std::tuple<std::vector<int>, std::vector<float>> ComputeExactKNN(const std::vect
 #pragma omp parallel for
 #endif
 		for (int j = 0; j < (int)numForegroundPoints; j++) {
-			indices_distances[j] = std::make_pair(j, distfunc(dataFeatures.data() + foregroundIDsGlobal[i] * featureSize, dataFeatures.data() + foregroundIDsGlobal[j] * featureSize, params));
+			indices_distances[j] = std::make_pair(j, distfunc(dataFeatures.at(foregroundIDsGlobal[i]), dataFeatures.at(foregroundIDsGlobal[j]), params));
 		}
 
 		if (!fullDistMat)
@@ -189,21 +209,14 @@ std::tuple<std::vector<int>, std::vector<float>> ComputeExactKNN(const std::vect
 
 	return std::make_tuple(knn_indices, knn_distances_squared);
 }
-// Resolve linker errors with explicit instantiation, https://isocpp.org/wiki/faq/templates#separate-template-fn-defn-from-decl
-template std::tuple<std::vector<int>, std::vector<float>> ComputeExactKNN<float>(const std::vector<float> dataFeatures, hnswlib::SpaceInterface<float> *space, size_t indMultiplier, const std::vector<unsigned int>& foregroundIDsGlobal, unsigned int nn, bool sort);
-template std::tuple<std::vector<int>, std::vector<float>> ComputeExactKNN<unsigned int>(const std::vector<unsigned int> dataFeatures, hnswlib::SpaceInterface<float> *space, size_t featureSize, const std::vector<unsigned int>& foregroundIDsGlobal, unsigned int nn, bool sort);
 
-template<typename T>
-std::tuple<std::vector<int>, std::vector<float>> ComputeFullDistMat(const std::vector<T> dataFeatures, hnswlib::SpaceInterface<float> *space, size_t featureSize, const std::vector<unsigned int>& foregroundIDsGlobal) {
+std::tuple<std::vector<int>, std::vector<float>> ComputeFullDistMat(const Feature& dataFeatures, hnswlib::SpaceInterface<float> *space, size_t featureSize, const std::vector<unsigned int>& foregroundIDsGlobal) {
 	// set nn = numForegroundPoints and don't sort the nn
 	return ComputeExactKNN(dataFeatures, space, featureSize, foregroundIDsGlobal, foregroundIDsGlobal.size(), true);
 }
-// Resolve linker errors with explicit instantiation, https://isocpp.org/wiki/faq/templates#separate-template-fn-defn-from-decl
-template std::tuple<std::vector<int>, std::vector<float>> ComputeFullDistMat<float>(const std::vector<float> dataFeatures, hnswlib::SpaceInterface<float> *space, size_t featureSize, const std::vector<unsigned int>& foregroundIDsGlobal);
-template std::tuple<std::vector<int>, std::vector<float>> ComputeFullDistMat<unsigned int>(const std::vector<unsigned int> dataFeatures, hnswlib::SpaceInterface<float> *space, size_t featureSize, const std::vector<unsigned int>& foregroundIDsGlobal);
 
 
-hnswlib::SpaceInterface<float>* CreateHNSWSpace(const distance_metric knn_metric, const size_t numDims, const size_t neighborhoodSize, const loc_Neigh_Weighting neighborhoodWeighting, const size_t featureValsPerPoint, const size_t numHistBins, const float* dataVecBegin, float weight, int imgWidth, int numPoints) {
+hnswlib::SpaceInterface<float>* CreateHNSWSpace(const distance_metric knn_metric, const size_t numDims, const size_t neighborhoodSize, const loc_Neigh_Weighting neighborhoodWeighting, const size_t featureValsPerPoint, const size_t numHistBins, int imgWidth, int numPoints) {
     // chose distance metric
     hnswlib::SpaceInterface<float> *space = NULL;
     if (knn_metric == distance_metric::METRIC_QF)
@@ -211,12 +224,6 @@ hnswlib::SpaceInterface<float>* CreateHNSWSpace(const distance_metric knn_metric
         assert(numHistBins > 0);
 		spdlog::info("Distance calculation: QFSpace as vector feature");
         space = new hnswlib::QFSpace(numDims, numHistBins, featureValsPerPoint);
-    }
-    else if (knn_metric == distance_metric::METRIC_EMD)
-    {
-        assert(numHistBins > 0);
-		spdlog::info("Distance calculation: EMDSpace as vector feature");
-        space = new hnswlib::EMDSpace(numDims, numHistBins, featureValsPerPoint);
     }
     else if (knn_metric == distance_metric::METRIC_HEL)
     {
@@ -227,55 +234,32 @@ hnswlib::SpaceInterface<float>* CreateHNSWSpace(const distance_metric knn_metric
     else if (knn_metric == distance_metric::METRIC_EUC)
     {
 		spdlog::info("Distance calculation: EuclidenSpace (L2Space) as scalar feature metric");
-        space = new hnswlib::L2Space(numDims);  // featureValsPerPoint = numDims
+        space = new hnswlib::L2FeatSpace(numDims);  // featureValsPerPoint = numDims
     }
     else if (knn_metric == distance_metric::METRIC_CHA)
     {
-        assert(dataVecBegin != NULL);
 		spdlog::info("Distance calculation: EuclidenSpace (ChamferSpace, Chamfer distance)");
-        space = new hnswlib::ChamferSpace(numDims, neighborhoodSize, neighborhoodWeighting, dataVecBegin, featureValsPerPoint);
+        space = new hnswlib::ChamferSpace(numDims, neighborhoodSize, neighborhoodWeighting);
     }
     else if (knn_metric == distance_metric::METRIC_SSD)
     {
-        assert(dataVecBegin != NULL);
 		spdlog::info("Distance calculation: EuclidenSpace (Sum of Squared Distances)");
-        space = new hnswlib::SSDSpace(numDims, neighborhoodSize, neighborhoodWeighting, dataVecBegin, featureValsPerPoint);
+        space = new hnswlib::SSDSpace(numDims, neighborhoodSize, neighborhoodWeighting);
     }
     else if (knn_metric == distance_metric::METRIC_HAU)
     {
-        assert(dataVecBegin != NULL);
 		spdlog::info("Distance calculation: EuclidenSpace (Hausdorff)");
-        space = new hnswlib::HausdorffSpace(numDims, neighborhoodSize, neighborhoodWeighting, dataVecBegin, featureValsPerPoint);
-    }
-    else if (knn_metric == distance_metric::METRIC_MVN)
-    {
-        assert(dataVecBegin != NULL);
-		spdlog::info("Distance calculation: MVN-Reduce - Spatial and Attribute distancec combined with weight {}", weight);
-        space = new hnswlib::MVNSpace(numDims, weight, imgWidth, dataVecBegin, numPoints);
-    }
-    else if (knn_metric == distance_metric::METRIC_HAU_min)
-    {
-        assert(dataVecBegin != NULL);
-		spdlog::info("Distance calculation: EuclidenSpace (Hausdorff, min)");
-        space = new hnswlib::HausdorffSpace_min(numDims, neighborhoodSize, neighborhoodWeighting, dataVecBegin, featureValsPerPoint);
+        space = new hnswlib::HausdorffSpace(numDims, neighborhoodSize, neighborhoodWeighting);
     }
     else if (knn_metric == distance_metric::METRIC_HAU_med)
     {
-        assert(dataVecBegin != NULL);
 		spdlog::info("Distance calculation: EuclidenSpace (Hausdorff, med)");
-        space = new hnswlib::HausdorffSpace_median(numDims, neighborhoodSize, neighborhoodWeighting, dataVecBegin, featureValsPerPoint);
+        space = new hnswlib::HausdorffSpace_median(numDims, neighborhoodSize, neighborhoodWeighting);
     }
-    else if (knn_metric == distance_metric::METRIC_HAU_medmed)
+    else if (knn_metric == distance_metric::METRIC_BHATTACHARYYA)
     {
-        assert(dataVecBegin != NULL);
-		spdlog::info("Distance calculation: EuclidenSpace (Hausdorff, med)");
-        space = new hnswlib::HausdorffSpace_medianmedian(numDims, neighborhoodSize, neighborhoodWeighting, dataVecBegin, featureValsPerPoint);
-    }
-    else if (knn_metric == distance_metric::METRIC_HAU_minmax)
-    {
-        assert(dataVecBegin != NULL);
-		spdlog::info("Distance calculation: EuclidenSpace (Hausdorff, minmax)");
-        space = new hnswlib::HausdorffSpace_minmax(numDims, neighborhoodSize, neighborhoodWeighting, dataVecBegin, featureValsPerPoint);
+        spdlog::info("Distance calculation: BhattacharyyaSpace (Distance between means and covariance matrices)");
+        space = new hnswlib::Bhattacharyya_Space();
     }
     else
 		spdlog::error("Distance calculation: ERROR: Distance metric unknown.");

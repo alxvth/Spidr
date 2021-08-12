@@ -50,7 +50,7 @@ public:
 	 * \param forceCalcBackgroundFeatures
 	 */
 	void initializeAnalysisSettings(const feature_type featType, const loc_Neigh_Weighting kernelType, const size_t numLocNeighbors, const size_t numHistBins, \
-		const knn_library aknnAlgType, const distance_metric aknnMetric, const float MVNweight, \
+		const knn_library aknnAlgType, const distance_metric aknnMetric, \
 		const int numIterations, const int perplexity, const int exaggeration, const int expDecay, bool forceCalcBackgroundFeatures = false);
 
 
@@ -96,7 +96,7 @@ public:
 
     const SpidrParameters getParameters();
 
-	const std::vector<float> getDataFeatures();
+	const Feature getDataFeatures();
 
     /* Returns _knn_indices, _knn_distances_squared, use with std::tie(_knnIds, _knnDists) = getKNN(); */
 	const std::tuple<std::vector<int>, std::vector<float>> getKNN();
@@ -159,9 +159,6 @@ private:
     /*! Sets the size of a feature, derived from other parameters */
     void setNumFeatureValsPerPoint(feature_type featType, size_t numDims, size_t numHistBins, size_t neighborhoodSize);
 
-    /*! Sets the spatial-attribut distance weight, 0 for only attributes and 1 for only spatial */
-    void setMVNWeight(const float weight);
-
     void setForceCalcBackgroundFeatures(const bool forceCalcBackgroundFeatures);
 
 private:
@@ -179,7 +176,7 @@ private:
     std::vector<float> _emd_with_backgound;
 
 	// features and knn
-	std::vector<float> _dataFeats;						/*!<> */
+	Feature _dataFeats;						/*!<> */
 	std::vector<int> _knn_indices ;						/*!<> */
 	std::vector<float> _knn_distances_squared;			/*!<> */
 
