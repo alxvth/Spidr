@@ -704,7 +704,7 @@ namespace hnswlib {
         // Weight the colDist and rowDist with the inverse of the number of items in the neighborhood
         for (size_t n1 = 0; n1 < neighborhoodSize; n1++) {
             for (size_t n2 = 0; n2 < neighborhoodSize; n2++) {
-				tmpRes += (weights[n1] + weights[n2]) * L2distfunc_(valsN1Begin + (n1*ndim), valsN2Begin + (n2*ndim), &ndim);
+                res += (weights[n1] + weights[n2]) * L2distfunc_(valsN1Begin + (n1*ndim), valsN2Begin + (n2*ndim), &ndim);
 
             }
         }
@@ -724,7 +724,7 @@ namespace hnswlib {
         SSDSpace(size_t dim, size_t neighborhoodSize, loc_Neigh_Weighting weighting, const float* dataVectorBegin, size_t featureValsPerPoint) {
             fstdistfunc_ = SumSquaredDist;
             //data_size_ = featureValsPerPoint * sizeof(float);
-            data_size_ = sizeof(FeatureData<std::vector<int>>);
+            data_size_ = sizeof(FeatureData<Eigen::MatrixXf>);
 
             assert((::std::sqrt(neighborhoodSize) - std::floor(::std::sqrt(neighborhoodSize))) == 0);  // neighborhoodSize must be perfect square
             unsigned int _kernelWidth = (int)::std::sqrt(neighborhoodSize);
@@ -776,6 +776,7 @@ namespace hnswlib {
         const float* dataVectorBegin;
         size_t dim;
         ::std::vector<float> A;         // neighborhood similarity matrix
+        Eigen::VectorXf weights;         // neighborhood similarity matrix
         size_t neighborhoodSize;        //  (2 * (params._numLocNeighbors) + 1) * (2 * (params._numLocNeighbors) + 1)
         DISTFUNC<float> L2distfunc_;
     };
@@ -783,55 +784,41 @@ namespace hnswlib {
 
     static float
         HausdorffDist(const void *pVect1v, const void *pVect2v, const void *qty_ptr) {
-        // TODO: switch from IDs to actual values, maybe?
-        std::vector<int> idsN1 = static_cast<FeatureData<std::vector<int>>*>((IFeatureData*)pVect1v)->data; // vector with IDs in neighborhood 1
-        std::vector<int> idsN2 = static_cast<FeatureData<std::vector<int>>*>((IFeatureData*)pVect2v)->data;
+        const float* valsN1Begin = static_cast<FeatureData<Eigen::MatrixXf>*>((IFeatureData*)pVect1v)->data.data(); // pointer to vector with values in neighborhood 1
+        const float* valsN2Begin = static_cast<FeatureData<Eigen::MatrixXf>*>((IFeatureData*)pVect2v)->data.data();
 
         // parameters
         space_params_Haus* sparam = (space_params_Haus*)qty_ptr;
         const size_t ndim = sparam->dim;
         const size_t neighborhoodSize = sparam->neighborhoodSize;
         const float* dataVectorBegin = sparam->dataVectorBegin;
-        const std::vector<float> weights = sparam->A;
+        const Eigen::VectorXf weights = sparam->weights;
         DISTFUNC<float> L2distfunc_ = sparam->L2distfunc_;
 
-        std::vector<float> colDistMins(neighborhoodSize, FLT_MAX);
-        std::vector<float> rowDistMins(neighborhoodSize, FLT_MAX);
-        float distN1N2 = 0;
-
-        float maxN1 = 0;
-        float maxN2 = 0;
+        //std::vector<float> colDistMins(neighborhoodSize, FLT_MAX);
+        //std::vector<float> rowDistMins(neighborhoodSize, FLT_MAX);
+        
+        Eigen::MatrixXf distMat(neighborhoodSize, neighborhoodSize);
 
         // Euclidean dist between all neighbor pairs
         // Take the min of all dists from a item in neigh1 to all items in Neigh2 (colDist) and vice versa (rowDist)
         // Weight the colDist and rowDist with the inverse of the number of items in the neighborhood
         for (size_t n1 = 0; n1 < neighborhoodSize; n1++) {
-
             for (size_t n2 = 0; n2 < neighborhoodSize; n2++) {
-
-                distN1N2 = L2distfunc_(dataVectorBegin + (idsN1[n1] * ndim), dataVectorBegin + (idsN2[n2] * ndim), &ndim);
-
-                if (distN1N2 < colDistMins[n1])
-                    colDistMins[n1] = distN1N2;
-
-                if (distN1N2 < rowDistMins[n2])
-                    rowDistMins[n2] = distN1N2;
+                distMat(n1, n2) = L2distfunc_(valsN1Begin + (n1*ndim), valsN2Begin + (n2*ndim), &ndim);
             }
         }
 
-        // find largest of mins
-        for (size_t n = 0; n < neighborhoodSize; n++) {
-            if (weights[n] * colDistMins[n] > maxN1)
-                maxN1 = weights[n] * colDistMins[n];
+        // weight min of each col and row
+        //Eigen::VectorXf weightedMinsR = distMat.rowwise().minCoeff().cwiseProduct(weights);
+        //Eigen::VectorXf weightedMinsC = distMat.colwise().minCoeff().transpose().cwiseProduct(weights);
 
-            if (weights[n] * rowDistMins[n] > maxN2)
-                maxN2 = weights[n] * rowDistMins[n];
-        }
+        //// max of weighted mins
+        //float maxR = weightedMinsR.maxCoeff();
+        //float maxC = weightedMinsC.maxCoeff();
 
-        assert(maxN1 < FLT_MAX);
-        assert(maxN2 < FLT_MAX);
-
-        return std::max(maxN1, maxN2);
+        return std::max(distMat.rowwise().minCoeff().cwiseProduct(weights).maxCoeff(), distMat.colwise().minCoeff().transpose().cwiseProduct(weights).maxCoeff());
+        //return std::max(maxR, maxC);
     }
 
 
@@ -846,7 +833,7 @@ namespace hnswlib {
         HausdorffSpace(size_t dim, size_t neighborhoodSize, loc_Neigh_Weighting weighting, const float* dataVectorBegin, size_t featureValsPerPoint) {
             fstdistfunc_ = HausdorffDist;
             //data_size_ = featureValsPerPoint * sizeof(float);
-            data_size_ = sizeof(FeatureData<std::vector<float>>);
+            data_size_ = sizeof(FeatureData<Eigen::MatrixXf>);
 
             assert((::std::sqrt(neighborhoodSize) - std::floor(::std::sqrt(neighborhoodSize))) == 0);  // neighborhoodSize must be perfect square
             unsigned int _kernelWidth = (int)::std::sqrt(neighborhoodSize);
@@ -859,8 +846,9 @@ namespace hnswlib {
             case loc_Neigh_Weighting::WEIGHT_GAUS: A = GaussianKernel2D(_kernelWidth, 1.0, norm_vec::NORM_NONE); break;
             default:  std::fill(A.begin(), A.end(), -1);  break;  // no implemented weighting type given. 
             }
+            Eigen::VectorXf weights = Eigen::Map<Eigen::VectorXf>(&A[0], neighborhoodSize);;
 
-            params_ = { dataVectorBegin, dim, A, neighborhoodSize, L2Sqr };
+            params_ = { dataVectorBegin, dim, A, weights, neighborhoodSize, L2Sqr };
 
 #if defined(USE_SSE) || defined(USE_AVX)
             if (dim % 16 == 0)
@@ -896,60 +884,43 @@ namespace hnswlib {
 
     static float
         HausdorffDist_median(const void *pVect1v, const void *pVect2v, const void *qty_ptr) {
-        // TODO: switch from IDs to actual values, maybe?
-        std::vector<int> idsN1 = static_cast<FeatureData<std::vector<int>>*>((IFeatureData*)pVect1v)->data; // vector with IDs in neighborhood 1
-        std::vector<int> idsN2 = static_cast<FeatureData<std::vector<int>>*>((IFeatureData*)pVect2v)->data;
+        const float* valsN1Begin = static_cast<FeatureData<Eigen::MatrixXf>*>((IFeatureData*)pVect1v)->data.data(); // pointer to vector with values in neighborhood 1
+        const float* valsN2Begin = static_cast<FeatureData<Eigen::MatrixXf>*>((IFeatureData*)pVect2v)->data.data();
 
         // parameters
         space_params_Haus* sparam = (space_params_Haus*)qty_ptr;
         const size_t ndim = sparam->dim;
         const size_t neighborhoodSize = sparam->neighborhoodSize;
         const float* dataVectorBegin = sparam->dataVectorBegin;
-        const std::vector<float> weights = sparam->A;
+        const Eigen::VectorXf weights = sparam->weights;
         DISTFUNC<float> L2distfunc_ = sparam->L2distfunc_;
 
-        std::vector<float> colDistMins(neighborhoodSize, FLT_MAX);
-        std::vector<float> rowDistMins(neighborhoodSize, FLT_MAX);
-        float distN1N2 = 0;
+        //std::vector<float> colDistMins(neighborhoodSize, FLT_MAX);
+        //std::vector<float> rowDistMins(neighborhoodSize, FLT_MAX);
 
-        float colMed = FLT_MAX;
-        float rowMed = FLT_MAX;
+        Eigen::MatrixXf distMat(neighborhoodSize, neighborhoodSize);
 
         // Euclidean dist between all neighbor pairs
         // Take the min of all dists from a item in neigh1 to all items in Neigh2 (colDist) and vice versa (rowDist)
         // Weight the colDist and rowDist with the inverse of the number of items in the neighborhood
         for (size_t n1 = 0; n1 < neighborhoodSize; n1++) {
-
             for (size_t n2 = 0; n2 < neighborhoodSize; n2++) {
-
-                distN1N2 = L2distfunc_(dataVectorBegin + (idsN1[n1] * ndim), dataVectorBegin + (idsN2[n2] * ndim), &ndim);
-
-                if (distN1N2 < colDistMins[n1])
-                    colDistMins[n1] = distN1N2;
-
-                if (distN1N2 < rowDistMins[n2])
-                    rowDistMins[n2] = distN1N2;
+                distMat(n1, n2) = L2distfunc_(valsN1Begin + (n1*ndim), valsN2Begin + (n2*ndim), &ndim);
             }
         }
 
-		assert(neighborhoodSize % 2 != 0); 
-
-		// weight minima
-		std::transform(colDistMins.begin(), colDistMins.end(), weights.begin(), colDistMins.begin(), [](float min, float weight) {if (min < FLT_MAX) { return min * weight; } else { return FLT_MAX; }});
-		std::transform(rowDistMins.begin(), rowDistMins.end(), weights.begin(), rowDistMins.begin(), [](float min, float weight) {if (min < FLT_MAX) { return min * weight; } else { return FLT_MAX; }});
-
-		// count FLT_MAX to determine median pos
-		size_t neighborhoodSize_c = neighborhoodSize - std::count(colDistMins.begin(), colDistMins.end(), FLT_MAX);
-		size_t neighborhoodSize_r = neighborhoodSize - std::count(rowDistMins.begin(), rowDistMins.end(), FLT_MAX);
+        // weight min of each col and row
+        Eigen::VectorXf weightedMinsR = distMat.rowwise().minCoeff().cwiseProduct(weights);
+        Eigen::VectorXf weightedMinsC = distMat.colwise().minCoeff().transpose().cwiseProduct(weights);
 
 		// find median of mins
-		colMed = CalcMedian(colDistMins, neighborhoodSize_c);
-		rowMed = CalcMedian(rowDistMins, neighborhoodSize_r);
+        float colMedian = CalcMedian(weightedMinsR.data(), weightedMinsR.data() + neighborhoodSize, neighborhoodSize);
+        float rowMedian = CalcMedian(weightedMinsC.data(), weightedMinsC.data() + neighborhoodSize, neighborhoodSize);
 
-        assert(colMed < FLT_MAX);
-        assert(rowMed < FLT_MAX);
+        assert(colMedian < FLT_MAX);
+        assert(rowMedian < FLT_MAX);
 
-        return (colMed + rowMed) / 2;
+        return (colMedian + colMedian) / 2;
     }
 
     class HausdorffSpace_median : public SpaceInterface<float> {
@@ -963,7 +934,7 @@ namespace hnswlib {
         HausdorffSpace_median(size_t dim, size_t neighborhoodSize, loc_Neigh_Weighting weighting, const float* dataVectorBegin, size_t featureValsPerPoint) {
             fstdistfunc_ = HausdorffDist_median;
             //data_size_ = featureValsPerPoint * sizeof(float);
-            data_size_ = sizeof(FeatureData<std::vector<int>>);
+            data_size_ = sizeof(FeatureData<Eigen::MatrixXf>);
 
             assert((::std::sqrt(neighborhoodSize) - std::floor(::std::sqrt(neighborhoodSize))) == 0);  // neighborhoodSize must be perfect square
             unsigned int _kernelWidth = (int)::std::sqrt(neighborhoodSize);
@@ -976,8 +947,9 @@ namespace hnswlib {
             case loc_Neigh_Weighting::WEIGHT_GAUS: A = GaussianKernel2D(_kernelWidth, 1.0, norm_vec::NORM_NONE); break;
             default:  std::fill(A.begin(), A.end(), -1);  break;  // no implemented weighting type given. 
             }
+            Eigen::VectorXf weights = Eigen::Map<Eigen::VectorXf>(&A[0], neighborhoodSize);;
 
-            params_ = { dataVectorBegin, dim, A, neighborhoodSize, L2Sqr };
+            params_ = { dataVectorBegin, dim, A, weights, neighborhoodSize, L2Sqr };
 
 #if defined(USE_SSE) || defined(USE_AVX)
             if (dim % 16 == 0)

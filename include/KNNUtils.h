@@ -35,9 +35,11 @@ feature_type GetFeatureTypeFromMetricPair(const metricPair metricPair);
  * \return median
  */
 template<typename T>
-T CalcMedian(std::vector<T> vec, size_t vecSize);
+T CalcMedian(std::vector<T>& vec, size_t vecSize);
 template<typename T>
-T CalcMedian(std::vector<T> vec) { CalcMedian(vec, vec.size()); }
+T CalcMedian(std::vector<T>& vec) { CalcMedian(vec, vec.size()); }
+template<typename T>
+T CalcMedian(T* first, T* last, size_t vecSize);
 
 /*!
  * Computes the similarities of bins of a 1D histogram.

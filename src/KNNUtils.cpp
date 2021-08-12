@@ -25,7 +25,7 @@ feature_type GetFeatureTypeFromMetricPair(const metricPair metricPair) {
 }
 
 template<typename T>
-T CalcMedian(std::vector<T> vec, size_t vecSize) {
+T CalcMedian(std::vector<T>& vec, size_t vecSize) {
 	T median;
 
 	size_t n = vecSize / 2;
@@ -43,7 +43,28 @@ T CalcMedian(std::vector<T> vec, size_t vecSize) {
 
 	return median;
 }
-template float CalcMedian<float>(std::vector<float> vec, size_t vecSize);
+template float CalcMedian<float>(std::vector<float>& vec, size_t vecSize);
+
+template<typename T>
+T CalcMedian(T* first, T* last, size_t vecSize) {
+    T median;
+
+    size_t n = vecSize / 2;
+    std::nth_element(first, first + n, last);
+    T vn = *(first + n);
+    if (vecSize % 2 == 1)	// uneven length
+    {
+        median = vn;
+    }
+    else					// even length, median is average of the central two items
+    {
+        std::nth_element(first, first + n - 1, last);
+        median = 0.5*(vn + *(first + n - 1));
+    }
+
+    return median;
+}
+template float CalcMedian<float>(float* first, float* last, size_t vecSize);
 
 
 std::vector<float> BinSimilarities(size_t num_bins, bin_sim sim_type, float sim_weight) {
