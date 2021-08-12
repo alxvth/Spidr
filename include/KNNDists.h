@@ -332,24 +332,23 @@ namespace hnswlib {
     //    Adapt L2 space
     // ---------------
 
+    struct space_params_L2Feat {
+        size_t dim;
+        DISTFUNC<float> L2distfunc_;
+    };
+
+
     static float
         L2FeatSqr(const void *pVect1v, const void *pVect2v, const void *qty_ptr) {
-        FeatureData<std::vector<float>>* histos1 = static_cast<FeatureData<std::vector<float>>*>((IFeatureData*)pVect1v);
-        FeatureData<std::vector<float>>* histos2 = static_cast<FeatureData<std::vector<float>>*>((IFeatureData*)pVect2v);
+        //FeatureData<std::vector<float>>* histos1 = static_cast<FeatureData<std::vector<float>>*>((IFeatureData*)pVect1v);
+        //FeatureData<std::vector<float>>* histos2 = static_cast<FeatureData<std::vector<float>>*>((IFeatureData*)pVect2v);
+        float *pVect1 = (static_cast<FeatureData<std::vector<float>>*>((IFeatureData*)pVect1v)->data).data();
+        float *pVect2 = (static_cast<FeatureData<std::vector<float>>*>((IFeatureData*)pVect2v)->data).data();
 
-        float *pVect1 = (histos1->data).data();
-        float *pVect2 = (histos2->data).data();
+        const space_params_L2Feat* sparam = (space_params_L2Feat*)qty_ptr;
+        DISTFUNC<float> L2distfunc_ = sparam->L2distfunc_;
 
-        size_t qty = *((size_t *)qty_ptr);
-
-        float res = 0;
-        for (size_t i = 0; i < qty; i++) {
-            float t = *pVect1 - *pVect2;
-            pVect1++;
-            pVect2++;
-            res += t * t;
-        }
-        return (res);
+        return L2distfunc_(pVect1, pVect2, &(sparam->dim));
     }
 
 
@@ -358,23 +357,30 @@ namespace hnswlib {
         DISTFUNC<float> fstdistfunc_;
         size_t data_size_;
         size_t dim_;
+
+        space_params_L2Feat params_;
+
     public:
         L2FeatSpace(size_t dim) {
             fstdistfunc_ = L2FeatSqr;
 
-//#if defined(USE_SSE) || defined(USE_AVX)
-//            if (dim % 16 == 0)
-//                fstdistfunc_ = L2SqrSIMD16Ext;
-//            else if (dim % 4 == 0)
-//                fstdistfunc_ = L2SqrSIMD4Ext;
-//            else if (dim > 16)
-//                fstdistfunc_ = L2SqrSIMD16ExtResiduals;
-//            else if (dim > 4)
-//                fstdistfunc_ = L2SqrSIMD4ExtResiduals;
-//#endif
             dim_ = dim;
             //data_size_ = dim * sizeof(float);
             data_size_ = sizeof(std::vector<float>);
+
+            params_ = { dim, L2Sqr };
+
+#if defined(USE_SSE) || defined(USE_AVX)
+            if (dim % 16 == 0)
+                params_.L2distfunc_ = L2SqrSIMD16Ext;
+            else if (dim % 4 == 0)
+                params_.L2distfunc_ = L2SqrSIMD4Ext;
+            else if (dim > 16)
+                params_.L2distfunc_ = L2SqrSIMD16ExtResiduals;
+            else if (dim > 4)
+                params_.L2distfunc_ = L2SqrSIMD4ExtResiduals;
+#endif
+       
         }
 
         size_t get_data_size() {
@@ -386,7 +392,7 @@ namespace hnswlib {
         }
 
         void *get_dist_func_param() {
-            return &dim_;
+            return &params_;
         }
 
         ~L2FeatSpace() {}
@@ -399,7 +405,7 @@ namespace hnswlib {
 
     // data struct for distance calculation in ChamferSpace
     struct space_params_Chamf {
-        size_t ndim;
+        size_t dim;
         Eigen::VectorXf weights;         // neighborhood similarity matrix
         size_t neighborhoodSize;
         DISTFUNC<float> L2distfunc_;
@@ -413,7 +419,7 @@ namespace hnswlib {
         // parameters
         const space_params_Chamf* sparam = (space_params_Chamf*)qty_ptr;
         const size_t neighborhoodSize = sparam->neighborhoodSize;
-        const size_t ndim = sparam->ndim;
+        const size_t ndim = sparam->dim;
         const Eigen::VectorXf weights = sparam->weights;
         DISTFUNC<float> L2distfunc_ = sparam->L2distfunc_;
 
