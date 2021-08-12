@@ -99,6 +99,7 @@ namespace hnswlib {
         size_t dim;
         size_t bin;
         ::std::vector<float> A;     // bin similarity matrix for 1D histograms: entry A_ij refers to the sim between bin i and bin j 
+        Eigen::MatrixXf weights;    // same as A
     };
 
     static float
@@ -106,8 +107,8 @@ namespace hnswlib {
         FeatureData<std::vector<Eigen::VectorXf>>* histos1 = static_cast<FeatureData<std::vector<Eigen::VectorXf>>*>((IFeatureData*)pVect1v);
         FeatureData<std::vector<Eigen::VectorXf>>* histos2 = static_cast<FeatureData<std::vector<Eigen::VectorXf>>*>((IFeatureData*)pVect2v);
 
-        float* pVect1 = (float*)pVect1v;
-        float* pVect2 = (float*)pVect2v;
+        //float* pVect1 = (float*)pVect1v;
+        //float* pVect2 = (float*)pVect2v;
 
         const space_params_QF* sparam = (space_params_QF*)qty_ptr;
         const size_t ndim = sparam->dim;
@@ -129,89 +130,126 @@ namespace hnswlib {
                 }
             }
             // point to next dimension
-            pVect1 += nbin;
-            pVect2 += nbin;
+            //pVect1 += nbin;
+            //pVect2 += nbin;
         }
 
         return res;
     }
 
+    // This one is much slower
     //static float
-    //    QFSqrSSE(const void* pVect1v, const void* pVect2v, const void* qty_ptr) {
-    //    float* pVect1 = (float*)pVect1v;
-    //    float* pVect2 = (float*)pVect2v;
+    //    QFEigenSqr(const void *pVect1v, const void *pVect2v, const void *qty_ptr) {
+    //    Eigen::VectorXf* histos1 = (static_cast<FeatureData<std::vector<Eigen::VectorXf>>*>((IFeatureData*)pVect1v)->data).data();
+    //    Eigen::VectorXf* histos2 = (static_cast<FeatureData<std::vector<Eigen::VectorXf>>*>((IFeatureData*)pVect2v)->data).data();
 
-    //    space_params_QF* sparam = (space_params_QF*)qty_ptr;
+    //    const space_params_QF* sparam = (space_params_QF*)qty_ptr;
     //    const size_t ndim = sparam->dim;
     //    const size_t nbin = sparam->bin;
-
-    //    size_t nbin4 = nbin >> 2 << 2;		// right shift by 2, left-shift by 2: create a multiple of 4
+    //    const Eigen::MatrixXf weights = sparam->weights;
 
     //    float res = 0;
-    //    float PORTABLE_ALIGN32hnsw TmpRes[8];			// memory aligned float array
-    //    __m128 v1, v2, TmpSum, wRow, diff;			// write in registers of 128 bit size
-    //    float *pA, *pEnd1, *pW, *pWend, *pwR;
-    //    unsigned int wloc;
+    //    float t1 = 0;
+    //    float t2 = 0;
+
+    //    Eigen::VectorXf diff;
 
     //    // add the histogram distance for each dimension
     //    for (size_t d = 0; d < ndim; d++) {
-    //        pA = sparam->A.data();					// reset to first weight for every dimension
+    //        // QF distance = sum_ij ( a_ij * (x_i-y_i) * (x_j-y_j) )
 
-    //       // calculate the QF distance for each dimension
-
-    //       // 1. calculate w = (pVect1-pVect2)
-    //        std::vector<float> w(nbin);
-    //        wloc = 0;
-    //        pEnd1 = pVect1 + nbin4;			// point to the first dimension not to be vectorized
-    //        while (pVect1 < pEnd1) {
-    //            v1 = _mm_loadu_ps(pVect1);					// Load the next four float values
-    //            v2 = _mm_loadu_ps(pVect2);
-    //            diff = _mm_sub_ps(v1, v2);					// substract all float values
-    //            _mm_store_ps(&w[wloc], diff);				// store diff values in memory
-    //            pVect1 += 4;								// advance pointer to position after loaded values
-    //            pVect2 += 4;
-    //            wloc += 4;
-    //        }
-
-    //        // manually calc the rest dims
-    //        for (wloc; wloc < nbin; wloc++) {
-    //            w[wloc] = *pVect1 - *pVect2;
-    //            pVect1++;
-    //            pVect2++;
-    //        }
-
-    //        // 2. calculate d = w'Aw
-    //        for (unsigned int row = 0; row < nbin; row++) {
-    //            TmpSum = _mm_set1_ps(0);
-    //            pW = w.data();					// pointer to first float in w
-    //            pWend = pW + nbin4;			// point to the first dimension not to be vectorized
-    //            pwR = pW + row;
-    //            wRow = _mm_load1_ps(pwR);					// load one float into all elements fo wRow
-
-    //            while (pW < pWend) {
-    //                v1 = _mm_loadu_ps(pW);
-    //                v2 = _mm_loadu_ps(pA);
-    //                TmpSum = _mm_add_ps(TmpSum, _mm_mul_ps(wRow, _mm_mul_ps(v1, v2)));	// multiply all values and add them to temp sum values
-    //                pW += 4;
-    //                pA += 4;
-    //            }
-    //            _mm_store_ps(TmpRes, TmpSum);
-    //            res += TmpRes[0] + TmpRes[1] + TmpRes[2] + TmpRes[3];
-
-    //            // manually calc the rest dims
-    //            for (unsigned int uloc = nbin4; uloc < nbin; uloc++) {
-    //                res += *pwR * *pW * *pA;
-    //                pW++;
-    //                pA++;
-    //            }
-    //        }
-
-    //        // point to next dimension is done in the last iteration
-    //        // of the for loop in the rest calc under point 1. (no pVect1++ necessary here)
+    //        diff = *histos1 - *histos2;
+    //        res += diff.transpose() * weights * diff;
+    //        
+    //        // point to histograms of next dimension
+    //        histos1++;
+    //        histos2++;
     //    }
 
     //    return res;
     //}
+
+    static float
+        QFSqrSSE(const void* pVect1v, const void* pVect2v, const void* qty_ptr) {
+        std::vector<Eigen::VectorXf>* histos1 = &(static_cast<FeatureData<std::vector<Eigen::VectorXf>>*>((IFeatureData*)pVect1v)->data);
+        std::vector<Eigen::VectorXf>* histos2 = &(static_cast<FeatureData<std::vector<Eigen::VectorXf>>*>((IFeatureData*)pVect2v)->data);
+
+        float* pVect1 = nullptr;
+        float* pVect2 = nullptr;
+
+        space_params_QF* sparam = (space_params_QF*)qty_ptr;
+        const size_t ndim = sparam->dim;
+        const size_t nbin = sparam->bin;
+
+        size_t nbin4 = nbin >> 2 << 2;		// right shift by 2, left-shift by 2: create a multiple of 4
+
+        float res = 0;
+        float PORTABLE_ALIGN32hnsw TmpRes[8];			// memory aligned float array
+        __m128 v1, v2, TmpSum, wRow, diff;			// write in registers of 128 bit size
+        float *pA, *pEnd1, *pW, *pWend, *pwR;
+        unsigned int wloc;
+
+        // add the histogram distance for each dimension
+        for (size_t d = 0; d < ndim; d++) {
+            pA = sparam->A.data();					// reset to first weight for every dimension
+
+           // calculate the QF distance for each dimension
+            pVect1 = (histos1->at(d)).data();
+            pVect2 = (histos2->at(d)).data();
+
+           // 1. calculate w = (pVect1-pVect2)
+            std::vector<float> w(nbin);
+            wloc = 0;
+            pEnd1 = pVect1 + nbin4;			// point to the first dimension not to be vectorized
+            while (pVect1 < pEnd1) {
+                v1 = _mm_loadu_ps(pVect1);					// Load the next four float values
+                v2 = _mm_loadu_ps(pVect2);
+                diff = _mm_sub_ps(v1, v2);					// substract all float values
+                _mm_store_ps(&w[wloc], diff);				// store diff values in memory
+                pVect1 += 4;								// advance pointer to position after loaded values
+                pVect2 += 4;
+                wloc += 4;
+            }
+
+            // manually calc the rest dims
+            for (wloc; wloc < nbin; wloc++) {
+                w[wloc] = *pVect1 - *pVect2;
+                pVect1++;
+                pVect2++;
+            }
+
+            // 2. calculate d = w'Aw
+            for (unsigned int row = 0; row < nbin; row++) {
+                TmpSum = _mm_set1_ps(0);
+                pW = w.data();					// pointer to first float in w
+                pWend = pW + nbin4;			// point to the first dimension not to be vectorized
+                pwR = pW + row;
+                wRow = _mm_load1_ps(pwR);					// load one float into all elements fo wRow
+
+                while (pW < pWend) {
+                    v1 = _mm_loadu_ps(pW);
+                    v2 = _mm_loadu_ps(pA);
+                    TmpSum = _mm_add_ps(TmpSum, _mm_mul_ps(wRow, _mm_mul_ps(v1, v2)));	// multiply all values and add them to temp sum values
+                    pW += 4;
+                    pA += 4;
+                }
+                _mm_store_ps(TmpRes, TmpSum);
+                res += TmpRes[0] + TmpRes[1] + TmpRes[2] + TmpRes[3];
+
+                // manually calc the rest dims
+                for (unsigned int uloc = nbin4; uloc < nbin; uloc++) {
+                    res += *pwR * *pW * *pA;
+                    pW++;
+                    pA++;
+                }
+            }
+
+            // point to next dimension is done in the last iteration
+            // of the for loop in the rest calc under point 1. (no pVect1++ necessary here)
+        }
+
+        return res;
+    }
 
 
     class QFSpace : public SpaceInterface<float> {
@@ -225,19 +263,21 @@ namespace hnswlib {
 
             fstdistfunc_ = QFSqr;
             // Not entirely sure why this only shows positive effects for high bin counts...
-            // TODO: adapt the QF distance to work with Eigen matrices. That will automatically make use of SSE
-            // TODO: For that, adapt BinSimilarities as well
-            //if (bin >= 12)
-            //{
-            //    fstdistfunc_ = QFSqrSSE;
-            //}
+            if (bin >= 12)
+            {
+                fstdistfunc_ = QFSqrSSE;
+            }
 
             //data_size_ = featureValsPerPoint * sizeof(float);
             data_size_ = sizeof(std::vector<Eigen::VectorXf>);
 
             ::std::vector<float> A = BinSimilarities(bin, ground_type);
             
-            params_ = { dim, bin, A};
+            Eigen::MatrixXf weights = Eigen::Map<Eigen::MatrixXf>(&A[0], bin, bin);;
+
+            std::cout << weights << "\n";
+
+            params_ = { dim, bin, A, weights };
         }
 
         size_t get_data_size() {
