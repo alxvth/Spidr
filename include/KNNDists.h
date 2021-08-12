@@ -685,9 +685,9 @@ namespace hnswlib {
 
     static float
         SumSquaredDist(const void *pVect1v, const void *pVect2v, const void *qty_ptr) {
-        // TODO: switch from IDs to actual values, maybe?
-        std::vector<int> idsN1 = static_cast<FeatureData<std::vector<int>>*>((IFeatureData*)pVect1v)->data; // vector with IDs in neighborhood 1
-        std::vector<int> idsN2 = static_cast<FeatureData<std::vector<int>>*>((IFeatureData*)pVect2v)->data;
+        const float* valsN1Begin = static_cast<FeatureData<Eigen::MatrixXf>*>((IFeatureData*)pVect1v)->data.data(); // pointer to vector with values in neighborhood 1
+        const float* valsN2Begin = static_cast<FeatureData<Eigen::MatrixXf>*>((IFeatureData*)pVect2v)->data.data();
+
 
         // parameters
         space_params_SSD* sparam = (space_params_SSD*)qty_ptr;
@@ -697,24 +697,19 @@ namespace hnswlib {
         const std::vector<float> weights = sparam->A;
         DISTFUNC<float> L2distfunc_ = sparam->L2distfunc_;
 
-        float tmpRes = 0;
-
-        int numNeighbors1 = neighborhoodSize - std::count(idsN1.begin(), idsN1.end(), -2.0f);
-        int numNeighbors2 = neighborhoodSize - std::count(idsN2.begin(), idsN2.end(), -2.0f);
+        float res = 0;
 
         // Euclidean dist between all neighbor pairs
         // Take the min of all dists from a item in neigh1 to all items in Neigh2 (colDist) and vice versa (rowDist)
         // Weight the colDist and rowDist with the inverse of the number of items in the neighborhood
         for (size_t n1 = 0; n1 < neighborhoodSize; n1++) {
-
             for (size_t n2 = 0; n2 < neighborhoodSize; n2++) {
-
-				tmpRes += (weights[n1] + weights[n2]) * L2distfunc_(dataVectorBegin + (idsN1[n1] * ndim), dataVectorBegin + (idsN2[n2] * ndim), &ndim);
+				tmpRes += (weights[n1] + weights[n2]) * L2distfunc_(valsN1Begin + (n1*ndim), valsN2Begin + (n2*ndim), &ndim);
 
             }
         }
 
-        return tmpRes / (numNeighbors1 * numNeighbors2); 
+        return res / (neighborhoodSize * neighborhoodSize);
     }
 
 
