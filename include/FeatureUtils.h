@@ -79,7 +79,8 @@ unsigned int RiceBinSize(unsigned int numItems);
  * \param _attribute_data
  * \param _neighborhoodSize
  * \param _numDims
- * \return vector with [d1_n1, d1_n1, ..., d2_n1, d2_n2, ...]
+ * \return data layout with dimension d and neighbor n: [n0d0, p0d1, n0d2, ..., n1d0, n1d1, ..., n2d0, n2d1, ...]
+
  */
 std::vector<float> getNeighborhoodValues(const std::vector<int>& neighborIDs, const std::vector<float>& attribute_data, const size_t neighborhoodSize, const size_t numDims);
 

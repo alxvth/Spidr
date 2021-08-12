@@ -399,64 +399,50 @@ namespace hnswlib {
 
     // data struct for distance calculation in ChamferSpace
     struct space_params_Chamf {
-        const float* dataVectorBegin;
-        size_t dim;
-        ::std::vector<float> A;         // neighborhood similarity matrix
-        size_t neighborhoodSize;        //  (2 * (params._numLocNeighbors) + 1) * (2 * (params._numLocNeighbors) + 1)
+        size_t ndim;
+        Eigen::VectorXf weights;         // neighborhood similarity matrix
+        size_t neighborhoodSize;
         DISTFUNC<float> L2distfunc_;
     };
 
     static float
         ChamferDist(const void *pVect1v, const void *pVect2v, const void *qty_ptr) {
-        // TODO: switch from IDs to actual values, maybe?
-        std::vector<int> idsN1 = static_cast<FeatureData<std::vector<int>>*>((IFeatureData*)pVect1v)->data; // vector with IDs in neighborhood 1
-        std::vector<int> idsN2 = static_cast<FeatureData<std::vector<int>>*>((IFeatureData*)pVect2v)->data;
+        const float* valsN1Begin = static_cast<FeatureData<Eigen::MatrixXf>*>((IFeatureData*)pVect1v)->data.data(); // pointer to vector with values in neighborhood 1
+        const float* valsN2Begin = static_cast<FeatureData<Eigen::MatrixXf>*>((IFeatureData*)pVect2v)->data.data();
 
         // parameters
         const space_params_Chamf* sparam = (space_params_Chamf*)qty_ptr;
-        const size_t ndim = sparam->dim;
         const size_t neighborhoodSize = sparam->neighborhoodSize;
-        const float* dataVectorBegin = sparam->dataVectorBegin; 
-        const std::vector<float> weights = sparam->A;
+        const size_t ndim = sparam->ndim;
+        const Eigen::VectorXf weights = sparam->weights;
         DISTFUNC<float> L2distfunc_ = sparam->L2distfunc_;
 
-        float colSum = 0;
-        float rowSum = 0; 
-        std::vector<float> colDistMins(neighborhoodSize, FLT_MAX);
-        std::vector<float> rowDistMins(neighborhoodSize, FLT_MAX);
-        float distN1N2 = 0;
+        //Eigen::VectorXf colDistMins(valsN1.cols()); // (2 * (params._numLocNeighbors) + 1) * (2 * (params._numLocNeighbors) + 1)
+        //Eigen::VectorXf rowDistMins(valsN1.cols());
+
+        Eigen::MatrixXf distMat(neighborhoodSize, neighborhoodSize);
 
         // Euclidean dist between all neighbor pairs
         // Take the min of all dists from a item in neigh1 to all items in Neigh2 (colDist) and vice versa (rowDist)
         // Weight the colDist and rowDist with the inverse of the number of items in the neighborhood
-        for (size_t n1 = 0; n1 < neighborhoodSize; n1++) {
-
-            for (size_t n2 = 0; n2 < neighborhoodSize; n2++) {
-
-                distN1N2 = L2distfunc_(dataVectorBegin + (idsN1[n1] * ndim), dataVectorBegin + (idsN2[n2] * ndim), &ndim);
-
-                if (distN1N2 < colDistMins[n1])
-                    colDistMins[n1] = distN1N2;
-
-                if (distN1N2 < rowDistMins[n2])
-                    rowDistMins[n2] = distN1N2;
-
+        for (int n1 = 0; n1 < neighborhoodSize; n1++) {
+            for (int n2 = 0; n2 < neighborhoodSize; n2++) {
+                distMat(n1, n2) = L2distfunc_(valsN1Begin + (n1*ndim), valsN2Begin + (n2*ndim), &ndim);
             }
         }
+        // Using the SSE function from HSNW is faster than then the matrix version from Eigen
+        // There is probably a smart formulation with the Eigen matrices that would be better though...
+        // not faster:
+        //for (size_t n1 = 0; n1 < neighborhoodSize; n1++) {
+        //    distMat.col(n1) = (valsN1.colwise() - valsN2.col(n1)).colwise().squaredNorm();
+        //}
 
         // weight min of each col and row, and sum over them
-        for (size_t n = 0; n < neighborhoodSize; n++) {
-
-            colSum += colDistMins[n] * weights[n];
-            rowSum += rowDistMins[n] * weights[n];
-
-        }
-
-        assert(colSum < FLT_MAX);
-        assert(rowSum < FLT_MAX);
+        //colDistMins = distMat.rowwise().minCoeff();
+        //rowDistMins = distMat.colwise().minCoeff();
 
         //return colSum / numNeighbors1 + rowSum / numNeighbors2;
-        return (colSum + rowSum) / neighborhoodSize;
+        return (distMat.rowwise().minCoeff().dot(weights) + distMat.colwise().minCoeff().dot(weights)) / neighborhoodSize;
     }
 
 
@@ -471,12 +457,12 @@ namespace hnswlib {
         ChamferSpace(size_t dim, size_t neighborhoodSize, loc_Neigh_Weighting weighting, const float* dataVectorBegin, size_t featureValsPerPoint) {
             fstdistfunc_ = ChamferDist;
             //data_size_ = featureValsPerPoint * sizeof(float);
-            data_size_ = sizeof(FeatureData<std::vector<int>>);
+            data_size_ = sizeof(FeatureData<Eigen::MatrixXf>);
 
             assert((::std::sqrt(neighborhoodSize) - std::floor(::std::sqrt(neighborhoodSize))) == 0);  // neighborhoodSize must be perfect square
             unsigned int _kernelWidth = (int)::std::sqrt(neighborhoodSize);
 
-            ::std::vector<float> A (neighborhoodSize);
+            ::std::vector<float> A(neighborhoodSize);
             switch (weighting)
             {
             case loc_Neigh_Weighting::WEIGHT_UNIF: std::fill(A.begin(), A.end(), 1); break;
@@ -485,7 +471,9 @@ namespace hnswlib {
             default:  std::fill(A.begin(), A.end(), -1);  break;  // no implemented weighting type given. 
             }
 
-            params_ = { dataVectorBegin, dim, A, neighborhoodSize, L2Sqr };
+            Eigen::VectorXf weights = Eigen::Map<Eigen::VectorXf>(&A[0], neighborhoodSize);;
+
+            params_ = { dim, weights, neighborhoodSize, L2Sqr };
 
 #if defined(USE_SSE) || defined(USE_AVX)
             if (dim % 16 == 0)
@@ -513,6 +501,127 @@ namespace hnswlib {
 
         ~ChamferSpace() {}
     };
+
+//    // ---------------
+//    //    Point cloud distance (Chamfer)
+//    // ---------------
+//
+//    // data struct for distance calculation in ChamferSpace
+//    struct space_params_Chamf {
+//        const float* dataVectorBegin;
+//        size_t dim;
+//        ::std::vector<float> A;         // neighborhood similarity matrix
+//        size_t neighborhoodSize;        //  (2 * (params._numLocNeighbors) + 1) * (2 * (params._numLocNeighbors) + 1)
+//        DISTFUNC<float> L2distfunc_;
+//    };
+//
+//    static float
+//        ChamferDist(const void *pVect1v, const void *pVect2v, const void *qty_ptr) {
+//        // TODO: switch from IDs to actual values, maybe?
+//        std::vector<int> idsN1 = static_cast<FeatureData<std::vector<int>>*>((IFeatureData*)pVect1v)->data; // vector with IDs in neighborhood 1
+//        std::vector<int> idsN2 = static_cast<FeatureData<std::vector<int>>*>((IFeatureData*)pVect2v)->data;
+//
+//        // parameters
+//        const space_params_Chamf* sparam = (space_params_Chamf*)qty_ptr;
+//        const size_t ndim = sparam->dim;
+//        const size_t neighborhoodSize = sparam->neighborhoodSize;
+//        const float* dataVectorBegin = sparam->dataVectorBegin;
+//        const std::vector<float> weights = sparam->A;
+//        DISTFUNC<float> L2distfunc_ = sparam->L2distfunc_;
+//
+//        float colSum = 0;
+//        float rowSum = 0;
+//        std::vector<float> colDistMins(neighborhoodSize, FLT_MAX);
+//        std::vector<float> rowDistMins(neighborhoodSize, FLT_MAX);
+//        float distN1N2 = 0;
+//
+//        // Euclidean dist between all neighbor pairs
+//        // Take the min of all dists from a item in neigh1 to all items in Neigh2 (colDist) and vice versa (rowDist)
+//        // Weight the colDist and rowDist with the inverse of the number of items in the neighborhood
+//        for (size_t n1 = 0; n1 < neighborhoodSize; n1++) {
+//
+//            for (size_t n2 = 0; n2 < neighborhoodSize; n2++) {
+//
+//                distN1N2 = L2distfunc_(dataVectorBegin + (idsN1[n1] * ndim), dataVectorBegin + (idsN2[n2] * ndim), &ndim);
+//
+//                if (distN1N2 < colDistMins[n1])
+//                    colDistMins[n1] = distN1N2;
+//
+//                if (distN1N2 < rowDistMins[n2])
+//                    rowDistMins[n2] = distN1N2;
+//
+//            }
+//        }
+//
+//        // weight min of each col and row, and sum over them
+//        for (size_t n = 0; n < neighborhoodSize; n++) {
+//
+//            colSum += colDistMins[n] * weights[n];
+//            rowSum += rowDistMins[n] * weights[n];
+//
+//        }
+//
+//        assert(colSum < FLT_MAX);
+//        assert(rowSum < FLT_MAX);
+//
+//        //return colSum / numNeighbors1 + rowSum / numNeighbors2;
+//        return (colSum + rowSum) / neighborhoodSize;
+//    }
+//
+//
+//    class ChamferSpace : public SpaceInterface<float> {
+//
+//        DISTFUNC<float> fstdistfunc_;
+//        size_t data_size_;
+//
+//        space_params_Chamf params_;
+//
+//    public:
+//        ChamferSpace(size_t dim, size_t neighborhoodSize, loc_Neigh_Weighting weighting, const float* dataVectorBegin, size_t featureValsPerPoint) {
+//            fstdistfunc_ = ChamferDist;
+//            //data_size_ = featureValsPerPoint * sizeof(float);
+//            data_size_ = sizeof(FeatureData<std::vector<int>>);
+//
+//            assert((::std::sqrt(neighborhoodSize) - std::floor(::std::sqrt(neighborhoodSize))) == 0);  // neighborhoodSize must be perfect square
+//            unsigned int _kernelWidth = (int)::std::sqrt(neighborhoodSize);
+//
+//            ::std::vector<float> A(neighborhoodSize);
+//            switch (weighting)
+//            {
+//            case loc_Neigh_Weighting::WEIGHT_UNIF: std::fill(A.begin(), A.end(), 1); break;
+//            case loc_Neigh_Weighting::WEIGHT_BINO: A = BinomialKernel2D(_kernelWidth, norm_vec::NORM_MAX); break;        // weight the center with 1
+//            case loc_Neigh_Weighting::WEIGHT_GAUS: A = GaussianKernel2D(_kernelWidth, 1.0, norm_vec::NORM_NONE); break;
+//            default:  std::fill(A.begin(), A.end(), -1);  break;  // no implemented weighting type given. 
+//            }
+//
+//            params_ = { dataVectorBegin, dim, A, neighborhoodSize, L2Sqr };
+//
+//#if defined(USE_SSE) || defined(USE_AVX)
+//            if (dim % 16 == 0)
+//                params_.L2distfunc_ = L2SqrSIMD16Ext;
+//            else if (dim % 4 == 0)
+//                params_.L2distfunc_ = L2SqrSIMD4Ext;
+//            else if (dim > 16)
+//                params_.L2distfunc_ = L2SqrSIMD16ExtResiduals;
+//            else if (dim > 4)
+//                params_.L2distfunc_ = L2SqrSIMD4ExtResiduals;
+//#endif
+//        }
+//
+//        size_t get_data_size() {
+//            return data_size_;
+//        }
+//
+//        DISTFUNC<float> get_dist_func() {
+//            return fstdistfunc_;
+//        }
+//
+//        void *get_dist_func_param() {
+//            return &params_;
+//        }
+//
+//        ~ChamferSpace() {}
+//    };
 
     // ---------------
     //    Point cloud distance (Sum of squared distances)

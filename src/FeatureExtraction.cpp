@@ -102,8 +102,8 @@ void FeatureExtraction::setup(const std::vector<unsigned int>& pointIDsGlobal, c
     }
     else if (_featType == feature_type::PCLOUD)
     {
-        featFunct = &FeatureExtraction::allNeighborhoodIDs; // allNeighborhoodVals for using the data instead of the IDs
-		spdlog::info("Feature extraction: Point cloud (just the neighborhood, no transformations)");
+        featFunct = &FeatureExtraction::allNeighborhoodVals;  // allNeighborhoodIDs OR allNeighborhoodVals
+		spdlog::info("Feature extraction: Point cloud (all neighborhood values, no transformations)");
     }
     else if (_featType == feature_type::MULTIVAR_NORM)
     {
@@ -289,7 +289,8 @@ void FeatureExtraction::multivarNormDistDescriptor(size_t pointInd, std::vector<
 void FeatureExtraction::allNeighborhoodVals(size_t pointInd, std::vector<float> neighborValues, std::vector<int> neighborIDs) {
 
     // copy neighborValues into _outFeatures
-    _outFeatures.get_data_ptr()->at(pointInd) = new FeatureData<std::vector<float>>(neighborValues);
+    //_outFeatures.get_data_ptr()->at(pointInd) = new FeatureData<std::vector<float>>(neighborValues);
+    _outFeatures.get_data_ptr()->at(pointInd) = new FeatureData<Eigen::MatrixXf>(Eigen::Map<Eigen::MatrixXf>(&neighborValues[0], _numDims, _neighborhoodSize));
 
 }
 

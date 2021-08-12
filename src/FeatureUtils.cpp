@@ -129,6 +129,7 @@ std::vector<float> getNeighborhoodValues(const std::vector<int>& neighborIDs, co
     std::fill(neighborValues.begin(), neighborValues.end(), FLT_MAX);
 #endif
 
+    // data layout with dimension d and neighbor n: [n0d0, p0d1, n0d2, ..., n1d0, n1d1, ..., n2d0, n2d1, ...]
     for (unsigned int neighbor = 0; neighbor < neighborhoodSize; neighbor++) {
         for (unsigned int dim = 0; dim < numDims; dim++) {
             neighborValues[neighbor * numDims + dim] = attribute_data[neighborIDs[neighbor] * numDims + dim];

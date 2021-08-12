@@ -97,15 +97,15 @@ private:
     void FeatureExtraction::multivarNormDistDescriptor(size_t pointInd, std::vector<float> neighborValues, std::vector<int> neighborIDs);
 
     /*! Sets the Feature per element to all it's neighbors attributes
-     * The neighborhood is a square and centered around each item respectively
-     * Padding is done by setting out-of-boundary values to 0
+     * 
+     * neighborIDs is unsused but necessary to stay consistent with featFunct
      * \param weighting
      */
     void allNeighborhoodVals(size_t pointInd, std::vector<float> neighborValues, std::vector<int> neighborIDs);
 
     /*! Sets the Feature per element to all its neighbor's IDs
-     * The neighborhood is a square and centered around each item respectively
-     * Padding is done by setting out-of-boundary values to 0
+     * 
+     * neighborValues is unsused but necessary to stay consistent with featFunct
      * \param weighting
      */
     void allNeighborhoodIDs(size_t pointInd, std::vector<float> neighborValues, std::vector<int> neighborIDs);
