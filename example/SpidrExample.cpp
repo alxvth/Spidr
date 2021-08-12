@@ -44,7 +44,7 @@ int main() {
 
 	// compute spatially informed embedding
 	spidr.setupData(data, pointIDsGlobal, numDims, imgSize, emebddingName);
-	spidr.initializeAnalysisSettings(featureType, loc_Neigh_Weighting::WEIGHT_UNIF, spatialNeighborsInEachDirection, 0, knnLibrary, distanceMetric, 0, numIterations, perplexity, exaggeration, expDecay);
+	spidr.initializeAnalysisSettings(featureType, loc_Neigh_Weighting::WEIGHT_UNIF, spatialNeighborsInEachDirection, 0, knnLibrary, distanceMetric, numIterations, perplexity, exaggeration, expDecay);
 	spidr.compute();
 	const std::vector<float> embedding = spidr.output();
 
