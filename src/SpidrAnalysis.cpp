@@ -26,7 +26,6 @@ void SpidrAnalysis::setupData(const std::vector<float>& attribute_data, const st
     _params._numDims = numDimensions;
 	_params._imgSize = imgSize;
     _params._embeddingName = embeddingName;
-    _params._dataVecBegin = _attribute_data.data();          // used in point cloud distance
     _params._numForegroundPoints = _foregroundIDsGlobal.size();
 
 	spdlog::info("SpidrAnalysis: Setup data with number of points: {0}, num dims: {1}, image size (width, height): ({2}, {3})", _params._numPoints, _params._numDims, _params._imgSize.width, _params._imgSize.height);

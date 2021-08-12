@@ -216,7 +216,7 @@ std::tuple<std::vector<int>, std::vector<float>> ComputeFullDistMat(const Featur
 }
 
 
-hnswlib::SpaceInterface<float>* CreateHNSWSpace(const distance_metric knn_metric, const size_t numDims, const size_t neighborhoodSize, const loc_Neigh_Weighting neighborhoodWeighting, const size_t featureValsPerPoint, const size_t numHistBins, const float* dataVecBegin, int imgWidth, int numPoints) {
+hnswlib::SpaceInterface<float>* CreateHNSWSpace(const distance_metric knn_metric, const size_t numDims, const size_t neighborhoodSize, const loc_Neigh_Weighting neighborhoodWeighting, const size_t featureValsPerPoint, const size_t numHistBins, int imgWidth, int numPoints) {
     // chose distance metric
     hnswlib::SpaceInterface<float> *space = NULL;
     if (knn_metric == distance_metric::METRIC_QF)
@@ -238,31 +238,26 @@ hnswlib::SpaceInterface<float>* CreateHNSWSpace(const distance_metric knn_metric
     }
     else if (knn_metric == distance_metric::METRIC_CHA)
     {
-        assert(dataVecBegin != NULL);
 		spdlog::info("Distance calculation: EuclidenSpace (ChamferSpace, Chamfer distance)");
-        space = new hnswlib::ChamferSpace(numDims, neighborhoodSize, neighborhoodWeighting, dataVecBegin, featureValsPerPoint);
+        space = new hnswlib::ChamferSpace(numDims, neighborhoodSize, neighborhoodWeighting);
     }
     else if (knn_metric == distance_metric::METRIC_SSD)
     {
-        assert(dataVecBegin != NULL);
 		spdlog::info("Distance calculation: EuclidenSpace (Sum of Squared Distances)");
-        space = new hnswlib::SSDSpace(numDims, neighborhoodSize, neighborhoodWeighting, dataVecBegin, featureValsPerPoint);
+        space = new hnswlib::SSDSpace(numDims, neighborhoodSize, neighborhoodWeighting);
     }
     else if (knn_metric == distance_metric::METRIC_HAU)
     {
-        assert(dataVecBegin != NULL);
 		spdlog::info("Distance calculation: EuclidenSpace (Hausdorff)");
-        space = new hnswlib::HausdorffSpace(numDims, neighborhoodSize, neighborhoodWeighting, dataVecBegin, featureValsPerPoint);
+        space = new hnswlib::HausdorffSpace(numDims, neighborhoodSize, neighborhoodWeighting);
     }
     else if (knn_metric == distance_metric::METRIC_HAU_med)
     {
-        assert(dataVecBegin != NULL);
 		spdlog::info("Distance calculation: EuclidenSpace (Hausdorff, med)");
-        space = new hnswlib::HausdorffSpace_median(numDims, neighborhoodSize, neighborhoodWeighting, dataVecBegin, featureValsPerPoint);
+        space = new hnswlib::HausdorffSpace_median(numDims, neighborhoodSize, neighborhoodWeighting);
     }
     else if (knn_metric == distance_metric::METRIC_BHATTACHARYYA)
     {
-        assert(dataVecBegin != NULL);
         spdlog::info("Distance calculation: BhattacharyyaSpace (Distance between means and covariance matrices)");
         space = new hnswlib::Bhattacharyya_Space();
     }

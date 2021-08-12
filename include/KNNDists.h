@@ -275,8 +275,6 @@ namespace hnswlib {
             
             Eigen::MatrixXf weights = Eigen::Map<Eigen::MatrixXf>(&A[0], bin, bin);;
 
-            std::cout << weights << "\n";
-
             params_ = { dim, bin, A, weights };
         }
 
@@ -500,7 +498,7 @@ namespace hnswlib {
         space_params_Chamf params_;
 
     public:
-        ChamferSpace(size_t dim, size_t neighborhoodSize, loc_Neigh_Weighting weighting, const float* dataVectorBegin, size_t featureValsPerPoint) {
+        ChamferSpace(size_t dim, size_t neighborhoodSize, loc_Neigh_Weighting weighting) {
             fstdistfunc_ = ChamferDist;
             //data_size_ = featureValsPerPoint * sizeof(float);
             data_size_ = sizeof(FeatureData<Eigen::MatrixXf>);
@@ -675,25 +673,21 @@ namespace hnswlib {
 
 // data struct for distance calculation in SSDSpace
     struct space_params_SSD {
-        const float* dataVectorBegin;
         size_t dim;
         ::std::vector<float> A;         // neighborhood similarity matrix
         size_t neighborhoodSize;        //  (2 * (params._numLocNeighbors) + 1) * (2 * (params._numLocNeighbors) + 1)
         DISTFUNC<float> L2distfunc_;
     };
 
-
     static float
         SumSquaredDist(const void *pVect1v, const void *pVect2v, const void *qty_ptr) {
         const float* valsN1Begin = static_cast<FeatureData<Eigen::MatrixXf>*>((IFeatureData*)pVect1v)->data.data(); // pointer to vector with values in neighborhood 1
         const float* valsN2Begin = static_cast<FeatureData<Eigen::MatrixXf>*>((IFeatureData*)pVect2v)->data.data();
 
-
         // parameters
         space_params_SSD* sparam = (space_params_SSD*)qty_ptr;
         const size_t ndim = sparam->dim;
         const size_t neighborhoodSize = sparam->neighborhoodSize;
-        const float* dataVectorBegin = sparam->dataVectorBegin;
         const std::vector<float> weights = sparam->A;
         DISTFUNC<float> L2distfunc_ = sparam->L2distfunc_;
 
@@ -721,7 +715,7 @@ namespace hnswlib {
         space_params_SSD params_;
 
     public:
-        SSDSpace(size_t dim, size_t neighborhoodSize, loc_Neigh_Weighting weighting, const float* dataVectorBegin, size_t featureValsPerPoint) {
+        SSDSpace(size_t dim, size_t neighborhoodSize, loc_Neigh_Weighting weighting) {
             fstdistfunc_ = SumSquaredDist;
             //data_size_ = featureValsPerPoint * sizeof(float);
             data_size_ = sizeof(FeatureData<Eigen::MatrixXf>);
@@ -738,7 +732,7 @@ namespace hnswlib {
             default:  std::fill(A.begin(), A.end(), -1);  break;  // no implemented weighting type given. 
             }
 
-            params_ = { dataVectorBegin, dim, A, neighborhoodSize, L2Sqr };
+            params_ = { dim, A, neighborhoodSize, L2Sqr };
 
 #if defined(USE_SSE) || defined(USE_AVX)
             if (dim % 16 == 0)
@@ -773,9 +767,7 @@ namespace hnswlib {
     // ---------------
 
     struct space_params_Haus {
-        const float* dataVectorBegin;
         size_t dim;
-        ::std::vector<float> A;         // neighborhood similarity matrix
         Eigen::VectorXf weights;         // neighborhood similarity matrix
         size_t neighborhoodSize;        //  (2 * (params._numLocNeighbors) + 1) * (2 * (params._numLocNeighbors) + 1)
         DISTFUNC<float> L2distfunc_;
@@ -791,7 +783,6 @@ namespace hnswlib {
         space_params_Haus* sparam = (space_params_Haus*)qty_ptr;
         const size_t ndim = sparam->dim;
         const size_t neighborhoodSize = sparam->neighborhoodSize;
-        const float* dataVectorBegin = sparam->dataVectorBegin;
         const Eigen::VectorXf weights = sparam->weights;
         DISTFUNC<float> L2distfunc_ = sparam->L2distfunc_;
 
@@ -830,7 +821,7 @@ namespace hnswlib {
         space_params_Haus params_;
 
     public:
-        HausdorffSpace(size_t dim, size_t neighborhoodSize, loc_Neigh_Weighting weighting, const float* dataVectorBegin, size_t featureValsPerPoint) {
+        HausdorffSpace(size_t dim, size_t neighborhoodSize, loc_Neigh_Weighting weighting) {
             fstdistfunc_ = HausdorffDist;
             //data_size_ = featureValsPerPoint * sizeof(float);
             data_size_ = sizeof(FeatureData<Eigen::MatrixXf>);
@@ -848,7 +839,7 @@ namespace hnswlib {
             }
             Eigen::VectorXf weights = Eigen::Map<Eigen::VectorXf>(&A[0], neighborhoodSize);;
 
-            params_ = { dataVectorBegin, dim, A, weights, neighborhoodSize, L2Sqr };
+            params_ = { dim, weights, neighborhoodSize, L2Sqr };
 
 #if defined(USE_SSE) || defined(USE_AVX)
             if (dim % 16 == 0)
@@ -891,12 +882,8 @@ namespace hnswlib {
         space_params_Haus* sparam = (space_params_Haus*)qty_ptr;
         const size_t ndim = sparam->dim;
         const size_t neighborhoodSize = sparam->neighborhoodSize;
-        const float* dataVectorBegin = sparam->dataVectorBegin;
         const Eigen::VectorXf weights = sparam->weights;
         DISTFUNC<float> L2distfunc_ = sparam->L2distfunc_;
-
-        //std::vector<float> colDistMins(neighborhoodSize, FLT_MAX);
-        //std::vector<float> rowDistMins(neighborhoodSize, FLT_MAX);
 
         Eigen::MatrixXf distMat(neighborhoodSize, neighborhoodSize);
 
@@ -931,7 +918,7 @@ namespace hnswlib {
         space_params_Haus params_;
 
     public:
-        HausdorffSpace_median(size_t dim, size_t neighborhoodSize, loc_Neigh_Weighting weighting, const float* dataVectorBegin, size_t featureValsPerPoint) {
+        HausdorffSpace_median(size_t dim, size_t neighborhoodSize, loc_Neigh_Weighting weighting) {
             fstdistfunc_ = HausdorffDist_median;
             //data_size_ = featureValsPerPoint * sizeof(float);
             data_size_ = sizeof(FeatureData<Eigen::MatrixXf>);
@@ -949,7 +936,7 @@ namespace hnswlib {
             }
             Eigen::VectorXf weights = Eigen::Map<Eigen::VectorXf>(&A[0], neighborhoodSize);;
 
-            params_ = { dataVectorBegin, dim, A, weights, neighborhoodSize, L2Sqr };
+            params_ = { dim, weights, neighborhoodSize, L2Sqr };
 
 #if defined(USE_SSE) || defined(USE_AVX)
             if (dim % 16 == 0)
