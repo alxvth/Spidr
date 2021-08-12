@@ -984,11 +984,11 @@ namespace hnswlib {
     static float
         Bhattacharyya(const void *pVect1v, const void *pVect2v, const void *qty_ptr) {
         // pointer to the data features, not the actual data
-        FeatureData<multivar_normal_plusDet>* pVect1 = static_cast<FeatureData<multivar_normal_plusDet>*>((IFeatureData*)pVect1v);
-        FeatureData<multivar_normal_plusDet>* pVect2 = static_cast<FeatureData<multivar_normal_plusDet>*>((IFeatureData*)pVect2v);
+        multivar_normal_plusDet pVect1 = static_cast<FeatureData<multivar_normal_plusDet>*>((IFeatureData*)pVect1v)->data;
+        multivar_normal_plusDet pVect2 = static_cast<FeatureData<multivar_normal_plusDet>*>((IFeatureData*)pVect2v)->data;
         
         // Bhattacharyya distance
-        return distBhattacharyya(std::get<0>(pVect1->data), std::get<1>(pVect1->data), std::get<2>(pVect1->data), std::get<0>(pVect2->data), std::get<1>(pVect2->data), std::get<2>(pVect2->data));
+        return distBhattacharyya(std::get<0>(pVect1), std::get<1>(pVect1), std::get<2>(pVect1), std::get<0>(pVect2), std::get<1>(pVect2), std::get<2>(pVect2));
     }
 
     class Bhattacharyya_Space : public SpaceInterface<float> {
