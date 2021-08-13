@@ -22,7 +22,6 @@ SpidrWrapper::SpidrWrapper(distance_metric distMetric,
 	// set _featType depending on distMetric
 	switch (_distMetric) {
 	case distance_metric::METRIC_QF:
-	case distance_metric::METRIC_EMD:
 	case distance_metric::METRIC_HEL: 
 		_featType = feature_type::TEXTURE_HIST_1D; 
 		
@@ -35,6 +34,8 @@ SpidrWrapper::SpidrWrapper(distance_metric distMetric,
 		_featType = feature_type::PCLOUD; break;
 	case distance_metric::METRIC_EUC:
 		_featType = feature_type::LOCALMORANSI; break;
+	case distance_metric::METRIC_BHATTACHARYYA:
+		_featType = feature_type::MULTIVAR_NORM; break;
 	default:
 		throw std::runtime_error("SpidrWrapper::Constructor: Specified distMetric not supported");
 	}
@@ -80,7 +81,7 @@ void SpidrWrapper::compute_fit(
 	}
 
 	// Init all settings (setupData must have been called before initing the settings.)
-	_SpidrAnalysis->initializeAnalysisSettings(_featType, _kernelType, _numLocNeighbors, _numHistBins, _aknnAlgType, _distMetric, 0, _numIterations, _perplexity, _exaggeration, _expDecay, _forceCalcBackgroundFeatures);
+	_SpidrAnalysis->initializeAnalysisSettings(_featType, _kernelType, _numLocNeighbors, _numHistBins, _aknnAlgType, _distMetric, _numIterations, _perplexity, _exaggeration, _expDecay, _forceCalcBackgroundFeatures);
 
 	// Compute knn dists and inds
 	_SpidrAnalysis->computeFeatures();

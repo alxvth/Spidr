@@ -38,11 +38,10 @@ public:
 	 *
 	 * \param featType
 	 * \param kernelInd
-	 * \param numLocNeighbors
+	 * \param numLocNeighbors Number of spatial Neighbors In Each Direction, thus 1 -> 3x3 neighborhood
 	 * \param numHistBins
 	 * \param aknnAlgInd
 	 * \param aknnMetInd
-	 * \param MVNweight
 	 * \param numIterations
 	 * \param perplexity
 	 * \param exaggeration
