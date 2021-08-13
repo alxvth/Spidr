@@ -28,18 +28,29 @@ enum class knn_library : size_t
 };
 
 /*! Defines the distance metric
+* add respective entries to logging::distance_metric_name
  */
 enum class distance_metric : size_t
 {
 	METRIC_QF,       /*!< Quadratic form distance */
 	METRIC_HEL,      /*!< Hellinger distance */
-	METRIC_EUC,      /*!< Euclidean distance - not suitable for histogram features */
-	METRIC_CHA,      /*!< Chamfer distance (point collection)*/
-	METRIC_SSD,      /*!< Sum of squared distances (point collection)*/
-	METRIC_HAU,      /*!< Hausdorff distance (point collection)*/
-	METRIC_HAU_med,      /*!< Hausdorff distance (point collection) but with median instead of max*/
+	METRIC_EUC,      /*!< Euclidean distance */
+	METRIC_CHA,      /*!< Chamfer distance (point cloud)*/
+	METRIC_SSD,      /*!< Sum of squared distances (point cloud)*/
+	METRIC_HAU,      /*!< Hausdorff distance (point cloud)*/
+	METRIC_HAU_med,      /*!< Hausdorff distance (point cloud) but with median instead of max*/
 	METRIC_BHATTACHARYYA,      /*!< Bhattacharyya distance between two multivariate normal distributions, https://en.wikipedia.org/wiki/Bhattacharyya_distance */
+	METRIC_DETMATRATIO,      /*!< Deteterminant Ratio part of Bhattacharyya distance, i.e. Bat distance between two distributions with the same mean */
+	METRIC_CMD_covmat,      /*!< Correlation Matrix distance http://dx.doi.org/10.1109/VETECS.2005.1543265 */
+	METRIC_FRECHET_Gen,      /*!< The Fréchet distance between multivariate normal distributions, https://doi.org/10.1016/0047-259X(82)90077-X */
+    METRIC_FRECHET_CovMat,      /*!< The Fréchet distance between multivariate normal distributions but ignoring the means, https://doi.org/10.1016/0047-259X(82)90077-X */
+	METRIC_FROBENIUS_CovMat,      /*!< Frobenius norm of element-wise differences between covmatrices */
+
 };
+
+namespace logging {
+    std::string distance_metric_name(const distance_metric& metric);
+}
 
 /*!
  * Types of ground distance calculation that are used as the basis for bin similarities
@@ -96,16 +107,15 @@ enum class norm_vec : unsigned int
 	NORM_SUM = 2,   /*!< Normalization such that sum = 1 */
 };
 
-/*!
- *
- * TODO: remove, duplicate of histBinSizeHeuristic
+/*! Heuristics for determining the Number of histogram bins based on the number of data points
+* https://en.wikipedia.org/wiki/Histogram#Number_of_bins_and_width
  */
 enum class bin_size : unsigned int
 {
-	MANUAL = 0,     /*!<> */
-	SQRT = 1,       /*!<> */
-	STURGES = 2,    /*!<> */
-	RICE = 3,       /*!<> */
+	MANUAL = 0,     /*!< define manually> */
+	SQRT = 1,       /*!< sqrt(n) > */
+	STURGES = 2,    /*!< ceil(log2(n)) + 1> */
+	RICE = 3,       /*!< 2 * sqrt3(n) > */
 };
 
 
@@ -125,7 +135,7 @@ static const size_t NumFeatureValsPerPoint(const feature_type featureType, const
 	case feature_type::LOCALMORANSI:    // same as Geary's C
 	case feature_type::LOCALGEARYC:     featureSize = numDims; break;
 	case feature_type::PCLOUD:          featureSize = neighborhoodSize; break; // numDims * neighborhoodSize for copying data instead of IDs
-	case feature_type::MULTIVAR_NORM:   featureSize = numDims + numDims* numDims; break; // channel-wise means + covaraince matrix
+	case feature_type::MULTIVAR_NORM:   featureSize = numDims + numDims* numDims + 2; break; // channel-wise means + covaraince matrix
     default: throw std::runtime_error("No feature size defined for this feature");
 	}
 

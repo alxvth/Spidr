@@ -31,6 +31,7 @@ set(LIB
 	src/DistanceCalculation.cpp
 	src/SpidrAnalysis.cpp
 	src/TsneComputation.cpp
+	src/SpidrAnalysisParameters.cpp
 )
 
 set(UTILS

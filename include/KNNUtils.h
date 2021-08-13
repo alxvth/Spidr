@@ -91,11 +91,10 @@ std::tuple<std::vector<int>, std::vector<float>> ComputeFullDistMat(const Featur
  * \param numDims Number of data channels
  * \param neighborhoodSize Size of neighborhood, must be a perfect square
  * \param neighborhoodWeighting Featureless distances use the weighting
- * \param featureValsPerPoint used for data_size_
  * \param numHistBins Number of histogram bins of feature type is a vector i.e. histogram
  * \param imgWidth 
  * \param numPoints 
  * \return A HNSWLib compatible SpaceInterface, which is used as the basis to compare two points
  */
-hnswlib::SpaceInterface<float>* CreateHNSWSpace(const distance_metric knn_metric, const size_t numDims, const size_t neighborhoodSize, const loc_Neigh_Weighting neighborhoodWeighting, const size_t featureValsPerPoint, const size_t numHistBins=0, int imgWidth = 0, int numPoints = 0);
+hnswlib::SpaceInterface<float>* CreateHNSWSpace(const distance_metric knn_metric, const size_t numDims, const size_t neighborhoodSize, const loc_Neigh_Weighting neighborhoodWeighting, const size_t numHistBins=0, int imgWidth = 0, int numPoints = 0);
 

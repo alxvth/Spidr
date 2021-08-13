@@ -22,9 +22,11 @@
 
 #include <Eigen/Dense>
 #include <Eigen/Core>
+#include <unsupported/Eigen/MatrixFunctions>    //  MatrixBase::sqrt()
 
 #include "SpidrAnalysisParameters.h"
 #include "FeatureUtils.h"
+#include "KNNUtils.h"
 
 namespace hnswlib {
 
@@ -259,7 +261,7 @@ namespace hnswlib {
         space_params_QF params_;
 
     public:
-        QFSpace(size_t dim, size_t bin, size_t featureValsPerPoint, bin_sim ground_type = bin_sim::SIM_EUC) {
+        QFSpace(size_t dim, size_t bin, bin_sim ground_type = bin_sim::SIM_EUC) {
 
             fstdistfunc_ = QFSqr;
             // Not entirely sure why this only shows positive effects for high bin counts...
@@ -342,7 +344,7 @@ namespace hnswlib {
         space_params_Hel params_;
 
     public:
-        HellingerSpace(size_t dim, size_t bin, size_t featureValsPerPoint) {
+        HellingerSpace(size_t dim, size_t bin) {
 
             fstdistfunc_ = HelSqr;
             params_ = { dim, bin };
@@ -967,44 +969,87 @@ namespace hnswlib {
 
 
     // ---------------
-    //    Bhattacharyya Space
+    //    Multivariate Covariant Matrix Space
     // ---------------
+    template<typename MTYPE>
+    using COVMATDIST = MTYPE(*)(const Eigen::VectorXf&, const Eigen::MatrixXf&, const float, const Eigen::VectorXf&, const Eigen::MatrixXf&, const float);
 
     struct space_params_Bhattacharyya {
-
+        COVMATDIST<float> fstdistfunc_;
     };
 
-    inline float distBhattacharyya(const Eigen::VectorXf& mean1, const Eigen::MatrixXf& covmat1, const float det1, const Eigen::VectorXf& mean2, const Eigen::MatrixXf& covmat2, const float det2) {
+    float distBhattacharyya(const Eigen::VectorXf& mean1, const Eigen::MatrixXf& covmat1, const float det1, const Eigen::VectorXf& mean2, const Eigen::MatrixXf& covmat2, const float det2) {
     	Eigen::MatrixXf covmat_comb = (covmat1 + covmat2) / 2.0f;
     	Eigen::VectorXf mean_diff = mean1 - mean2;
     	return 0.125f * mean_diff.transpose() * covmat_comb.inverse() * mean_diff + 0.5f * std::logf(covmat_comb.determinant() / std::sqrt(det1 * det2));
     }
 
-
-    static float
-        Bhattacharyya(const void *pVect1v, const void *pVect2v, const void *qty_ptr) {
-        // pointer to the data features, not the actual data
-        multivar_normal_plusDet pVect1 = static_cast<FeatureData<multivar_normal_plusDet>*>((IFeatureData*)pVect1v)->data;
-        multivar_normal_plusDet pVect2 = static_cast<FeatureData<multivar_normal_plusDet>*>((IFeatureData*)pVect2v)->data;
-        
-        // Bhattacharyya distance
-        return distBhattacharyya(std::get<0>(pVect1), std::get<1>(pVect1), std::get<2>(pVect1), std::get<0>(pVect2), std::get<1>(pVect2), std::get<2>(pVect2));
+    float distDetRatio(const Eigen::VectorXf& mean1, const Eigen::MatrixXf& covmat1, const float det1, const Eigen::VectorXf& mean2, const Eigen::MatrixXf& covmat2, const float det2) {
+        return std::logf(((covmat1 + covmat2) / 2.0f).determinant() / std::sqrt(det1 * det2));
     }
 
-    class Bhattacharyya_Space : public SpaceInterface<float> {
+    // Correlation Matrix distance
+    // http://dx.doi.org/10.1109/VETECS.2005.1543265
+    float CMD(const Eigen::VectorXf& mean1, const Eigen::MatrixXf& covmat1, const float det1, const Eigen::VectorXf& mean2, const Eigen::MatrixXf& covmat2, const float det2) {
+        return 1 - (covmat1*covmat2).trace() / (covmat1.norm() * covmat2.norm());
+    }
+
+    // The Fréchet distance between multivariate normal distributions
+    // https://doi.org/10.1016/0047-259X(82)90077-X
+    float FrechetDistGeneral(const Eigen::VectorXf& mean1, const Eigen::MatrixXf& covmat1, const float det1, const Eigen::VectorXf& mean2, const Eigen::MatrixXf& covmat2, const float det2) {
+        return (mean1- mean2).squaredNorm() + (covmat1 + covmat2 - 2 * (covmat2*covmat1).sqrt()).trace();
+    }
+    float FrechetDistCovMat(const Eigen::VectorXf& mean1, const Eigen::MatrixXf& covmat1, const float det1, const Eigen::VectorXf& mean2, const Eigen::MatrixXf& covmat2, const float det2) {
+        return (covmat1 + covmat2 - 2 * (covmat2*covmat1).sqrt()).trace();
+    }
+
+    // Frobenius between covmatrices
+    float FrobeniusCovMat(const Eigen::VectorXf& mean1, const Eigen::MatrixXf& covmat1, const float det1, const Eigen::VectorXf& mean2, const Eigen::MatrixXf& covmat2, const float det2) {
+        return (covmat1 - covmat2).squaredNorm();
+    }
+
+
+    static float
+        MultiVarCovMat(const void *pVect1v, const void *pVect2v, const void *qty_ptr) {
+        multivar_normal_plusDet pVect1 = static_cast<FeatureData<multivar_normal_plusDet>*>((IFeatureData*)pVect1v)->data;
+        multivar_normal_plusDet pVect2 = static_cast<FeatureData<multivar_normal_plusDet>*>((IFeatureData*)pVect2v)->data;
+
+        const space_params_Bhattacharyya* sparam = (space_params_Bhattacharyya*)qty_ptr;
+        COVMATDIST<float> covmatdist = sparam->fstdistfunc_;
+
+        // Bhattacharyya distance
+        return covmatdist(std::get<0>(pVect1), std::get<1>(pVect1), std::get<2>(pVect1), std::get<0>(pVect2), std::get<1>(pVect2), std::get<2>(pVect2));
+    }
+
+    class MultiVarCovMat_Space : public SpaceInterface<float> {
 
         DISTFUNC<float> fstdistfunc_;
         size_t data_size_;
         space_params_Bhattacharyya params_;
 
     public:
-        Bhattacharyya_Space() {
-
-            fstdistfunc_ = Bhattacharyya;
+        MultiVarCovMat_Space(distance_metric distanceMetric) {
 
             data_size_ = sizeof(FeatureData<multivar_normal_plusDet>);
+            fstdistfunc_ = MultiVarCovMat;
 
-            params_ = { };
+            if (distanceMetric == distance_metric::METRIC_BHATTACHARYYA)
+                params_ = { distBhattacharyya };
+            else if (distanceMetric == distance_metric::METRIC_DETMATRATIO)
+                params_ = { distDetRatio };
+            else if (distanceMetric == distance_metric::METRIC_CMD_covmat)
+                params_ = { CMD };
+            else if (distanceMetric == distance_metric::METRIC_FRECHET_Gen)
+                params_ = { FrechetDistGeneral };
+            else if (distanceMetric == distance_metric::METRIC_FRECHET_CovMat)
+                params_ = { FrechetDistCovMat };
+            else if (distanceMetric == distance_metric::METRIC_FROBENIUS_CovMat)
+                params_ = { FrobeniusCovMat };
+            else
+            {
+                params_ = { distBhattacharyya };
+                spdlog::error("KNNDists: ERROR: No suitable distance for multivar covmat space provided. Defaulting to Bhattacharyya distance.");
+            }
 
         }
 
@@ -1020,7 +1065,7 @@ namespace hnswlib {
             return (void *)&params_;
         }
 
-        ~Bhattacharyya_Space() {}
+        ~MultiVarCovMat_Space() {}
     };
 
 }
