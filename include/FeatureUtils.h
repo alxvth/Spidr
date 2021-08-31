@@ -237,10 +237,10 @@ public:
     unsigned int getNumBins() const { return _counts.size(); };
     unsigned int getCount(unsigned int bin) const { return _counts[bin]; };
 
-    unsigned int getCount() const { return _totalValidBinCounts; };
-    unsigned int getCountAll() const { return _totalBinCounts; };
-    unsigned int getCountUnderflow() const { return _countUnderflow; };
-    unsigned int getCountOverflow() const { return _countOverflow; };
+    unsigned int getCount() const { return _countBinValid; };
+    unsigned int getCountAll() const { return _countBinTotal; };
+    unsigned int getCountUnderflow() const { return _countBinUnderflow; };
+    unsigned int getCountOverflow() const { return _countBinOverflow; };
 
     float getMin() const { return _minVal; };
     float getMax() const { return _maxVal; };
@@ -257,14 +257,14 @@ public:
 
 protected:
     Eigen::Vector<scalar_type, -1> _counts;
-    unsigned int _countOverflow;
-    unsigned int _countUnderflow;
+    unsigned int _countBinOverflow;
+    unsigned int _countBinUnderflow;
+    unsigned int _countBinTotal;
+    unsigned int _countBinValid;
     float _binWidth;
     float _binNormed;
     float _minVal;
     float _maxVal;
-    unsigned int _totalBinCounts;
-    unsigned int _totalValidBinCounts;
     unsigned int _numBins;
 
     void commonInit();

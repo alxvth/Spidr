@@ -156,7 +156,7 @@ Eigen::MatrixXui padConst(Eigen::MatrixXui mat, Eigen::Index pad_size)
 
 
 template< class scalar_type> Histogram_Base< scalar_type>::Histogram_Base(float min, float max, unsigned int numberOfBins) :
-    _minVal(min), _maxVal(max), _numBins(numberOfBins), _totalBinCounts(0), _totalValidBinCounts(0), _countUnderflow(0), _countOverflow(0)
+    _minVal(min), _maxVal(max), _numBins(numberOfBins), _countBinTotal(0), _countBinValid(0), _countBinUnderflow(0), _countBinOverflow(0)
 {
     _binWidth = (_maxVal - _minVal) / (float)_numBins;
     commonInit();
@@ -166,7 +166,7 @@ template Histogram_Base<unsigned int>::Histogram_Base(float min, float max, unsi
 template Histogram_Base<float>::Histogram_Base(float min, float max, unsigned int numberOfBins);
 
 template< class scalar_type> Histogram_Base< scalar_type>::Histogram_Base(float min, float max, float binWidth) :
-    _minVal(min), _maxVal(max), _binWidth(binWidth), _totalBinCounts(0), _totalValidBinCounts(0), _countUnderflow(0), _countOverflow(0)
+    _minVal(min), _maxVal(max), _binWidth(binWidth), _countBinTotal(0), _countBinValid(0), _countBinUnderflow(0), _countBinOverflow(0)
 {
     _numBins = std::ceil((_maxVal - _minVal) / (float)_binWidth);
     commonInit();
@@ -192,21 +192,21 @@ template< class scalar_type> void Histogram_Base< scalar_type>::fill(const float
     if (value >= _minVal && value < _maxVal) {
         binID = std::floor((value - _minVal) * _binNormed);
         _counts[binID] += 1;
-        _totalValidBinCounts += 1;
+        _countBinValid += 1;
     }
     else if (value == _maxVal)
     {
         _counts[_numBins - 1] += 1;
-        _totalValidBinCounts += 1;
+        _countBinValid += 1;
     }
     else if (value > _maxVal) {
-        _countOverflow += 1;
+        _countBinOverflow += 1;
     }
     else {
-        _countUnderflow += 1;
+        _countBinUnderflow += 1;
     }
 
-    _totalBinCounts += 1;
+    _countBinTotal += 1;
 }
 template void Histogram_Base<unsigned int>::fill(const float value);
 template void Histogram_Base<float>::fill(const float value);
@@ -232,21 +232,21 @@ void Histogram_Weighted::fill_weighted(const float value, const float weight) {
     if (value >= _minVal && value < _maxVal) {
         binID = std::floor((value - _minVal) * _binNormed);
         _counts[binID] += weight;
-        _totalValidBinCounts += 1;
+        _countBinValid += 1;
     }
     else if (value == _maxVal)
     {
         _counts[_numBins - 1] += weight;
-        _totalValidBinCounts += 1;
+        _countBinValid += 1;
     }
     else if (value > _maxVal) {
-        _countOverflow += 1;
+        _countBinOverflow += 1;
     }
     else {
-        _countUnderflow += 1;
+        _countBinUnderflow += 1;
     }
 
-    _totalBinCounts += 1;
+    _countBinTotal += 1;
 }
 
 void Histogram_Weighted::fill_weighted(const std::vector<float> values, const std::vector<float> weights) {
