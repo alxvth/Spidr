@@ -236,7 +236,7 @@ void Histogram_Weighted::fill_weighted(const float value, const float weight) {
     }
     else if (value == _maxVal)
     {
-        _counts[_numBins - 1] += 1;
+        _counts[_numBins - 1] += weight;
         _totalValidBinCounts += 1;
     }
     else if (value > _maxVal) {
