@@ -15,7 +15,6 @@
 #include <cmath>        // std::pow
 #include <utility>      // std::forward
 #include <chrono>       // std::chrono
-#include <iostream> 
 
 FeatureExtraction::FeatureExtraction() :
     _neighborhoodSize(1),
@@ -319,14 +318,15 @@ void FeatureExtraction::weightNeighborhood(loc_Neigh_Weighting weighting) {
         assert(_neighborhoodWeights.size() == (centralID-1)*(centralID-1));
         _neighborhoodWeights[centralID] = 0;
 
-        // DEPRECATED normalize neighborhood to the sum w/o the center
-        // NormVector(_neighborhoodWeights, std::accumulate(_neighborhoodWeights.begin(), _neighborhoodWeights.end(), 0.0f));
     }
 
+    // Normalize such that sum(_neighborhoodWeights) = 1
+    NormVector(_neighborhoodWeights, std::accumulate(_neighborhoodWeights.begin(), _neighborhoodWeights.end(), 0.0f)); 
     _neighborhoodWeightsSum = std::accumulate(_neighborhoodWeights.begin(), _neighborhoodWeights.end(), 0.0f);
 
     _neighborhoodWeights_eig = Eigen::Map<Eigen::VectorXf>(_neighborhoodWeights.data(), _neighborhoodSize);
-    assert(_neighborhoodWeights_eig.sum() == _neighborhoodWeightsSum);
+    assert(std::abs(_neighborhoodWeights_eig.sum() - _neighborhoodWeightsSum) < 0.01f);
+
 }
 
 void FeatureExtraction::setNeighborhoodWeighting(loc_Neigh_Weighting weighting) {

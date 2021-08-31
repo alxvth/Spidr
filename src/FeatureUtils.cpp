@@ -306,6 +306,7 @@ multivar_normal compMultiVarFeatures(Eigen::MatrixXf data) {
 }
 
 multivar_normal compMultiVarFeatures(Eigen::MatrixXf data, Eigen::VectorXf probs) {
+    // TODO: add https://en.wikipedia.org/wiki/Sample_mean_and_covariance#Weighted_samples
     Eigen::VectorXf mean = data.rowwise().mean();
     Eigen::MatrixXf centered = data.colwise() - mean;
     Eigen::MatrixXf cov_mat = ((centered * probs.asDiagonal()) * centered.transpose());
