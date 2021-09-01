@@ -261,7 +261,7 @@ void Histogram_Weighted::fill_weighted(const std::vector<float> values, const st
 float variance(Eigen::VectorXf vec)
 {
     Eigen::VectorXf centered = vec.array() - vec.mean();
-    return (1.0f / vec.size()) * centered.dot(centered);
+    return (1.0f / (vec.size() - 1)) * centered.dot(centered);
 }
 
 float covariance(Eigen::VectorXf vec1, Eigen::VectorXf vec2)
@@ -269,16 +269,18 @@ float covariance(Eigen::VectorXf vec1, Eigen::VectorXf vec2)
     assert(vec1.size() == vec2.size());
     Eigen::VectorXf centered1 = vec1.array() - vec1.mean();
     Eigen::VectorXf centered2 = vec2.array() - vec2.mean();
-    return (1.0f / vec1.size()) * centered1.dot(centered2);
+    return (1.0f / (vec1.size() - 1)) * centered1.dot(centered2);
 }
 
 Eigen::MatrixXf covmat(Eigen::MatrixXf data)
 {
     // see https://stackoverflow.com/a/15142446 and https://en.wikipedia.org/wiki/Sample_mean_and_covariance#Definition_of_sample_covariance
     // also https://en.wikipedia.org/wiki/Sample_mean_and_covariance#Unbiasedness for discussion over (1 / (neighborhood.cols() - 1)) and (1 / neighborhood.cols())
-    // Since we know all the neighrborhood, we go for (1 / neighborhood.cols())
-    Eigen::MatrixXf centered = data.colwise() - data.rowwise().mean();
-    return (1.0f / data.cols()) * (centered * centered.transpose());
+    // To align with the weighted case, we go for (1 / (neighborhood.cols() - 1))
+    Eigen::VectorXf mean_vec = data.rowwise().mean();
+    Eigen::MatrixXf centered = data.colwise() - mean_vec;
+    float norm_weight = data.cols() - 1.0f;
+    return (centered * centered.transpose()) / norm_weight;
 }
 
 Eigen::MatrixXf covmat(Eigen::MatrixXf data, Eigen::VectorXf probs)
@@ -286,29 +288,22 @@ Eigen::MatrixXf covmat(Eigen::MatrixXf data, Eigen::VectorXf probs)
     assert(probs.size() == data.cols());			// one prob value for each observation
     assert(std::abs(probs.sum() - 1.0f) < 0.001);  // cumulative prob must be 1
 
-    // see https://stackoverflow.com/a/15142446 and https://en.wikipedia.org/wiki/Sample_mean_and_covariance#Definition_of_sample_covariance
-    // also https://en.wikipedia.org/wiki/Sample_mean_and_covariance#Unbiasedness for why it's (1 / (neighborhood.cols() - 1)) and not (1 / neighborhood.cols())
     // see https://stackoverflow.com/a/42945996 for centered * probs.asDiagonal() 
-    Eigen::MatrixXf centered = data.colwise() - data.rowwise().mean();
-    return ((centered * probs.asDiagonal()) * centered.transpose());
-
-    // just for me to check that they are actually identical
-    // std::cout << "test 1: \n" << neighborhood.array().rowwise() * probs.transpose().array() << "\n";
-    // std::cout << "test 2: \n" << neighborhood * probs.asDiagonal() << "\n";
-
+    // see https://en.wikipedia.org/wiki/Sample_mean_and_covariance#Weighted_samples for the 1 / (1 - probs.squaredNorm()) weight
+    Eigen::VectorXf weighted_mean_vec = data * probs;
+    Eigen::MatrixXf centered = data.colwise() - weighted_mean_vec;
+    float norm_weight = 1 - probs.squaredNorm();
+    return ((centered * probs.asDiagonal()) * centered.transpose()) / norm_weight;
 }
 
 multivar_normal compMultiVarFeatures(Eigen::MatrixXf data) {
     Eigen::VectorXf mean = data.rowwise().mean();
-    Eigen::MatrixXf centered = data.colwise() - mean;
-    Eigen::MatrixXf cov_mat = (centered * centered.transpose()) / data.cols();
+    Eigen::MatrixXf cov_mat = covmat(data);
     return std::make_pair(mean, cov_mat);
 }
 
 multivar_normal compMultiVarFeatures(Eigen::MatrixXf data, Eigen::VectorXf probs) {
-    // TODO: add https://en.wikipedia.org/wiki/Sample_mean_and_covariance#Weighted_samples
-    Eigen::VectorXf mean = data.rowwise().mean();
-    Eigen::MatrixXf centered = data.colwise() - mean;
-    Eigen::MatrixXf cov_mat = ((centered * probs.asDiagonal()) * centered.transpose());
-    return std::make_pair(mean, cov_mat);
+    Eigen::VectorXf weighted_mean = data * probs;
+    Eigen::MatrixXf cov_mat = covmat(data, probs);
+    return std::make_pair(weighted_mean, cov_mat);
 }
