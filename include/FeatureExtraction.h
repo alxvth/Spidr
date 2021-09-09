@@ -70,6 +70,19 @@ private:
      */
     void calculateHistogram(size_t pointInd, std::vector<float> neighborValues, std::vector<int> neighborIDs);
 
+    /*! Calculate Channel histograms
+     * Compute one 1D histogram where each bin corresponds to one channel and counts active (above a threshold) values.
+     * Note: a bin does therefor not correspond with a value range.
+
+     * Currently only binary thresholding is implented. That is, values >= 1 are counted. Data has to be thresholded by the user in advance.
+
+     * Sets _outFeatures.
+     *
+     * \param pointInd
+     * \param neighborValues
+     */
+    void calculateChannelHistogram(size_t pointInd, std::vector<float> neighborValues, std::vector<int> neighborIDs);
+
     /*! Calculate Local Indicator of Spatial Association features for each item
      * Compute Local Moran's I of the neighborhood values for pointID. 
      * Sets _outFeatures.

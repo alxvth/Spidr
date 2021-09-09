@@ -89,6 +89,11 @@ void FeatureExtraction::setup(const std::vector<unsigned int>& pointIDsGlobal, c
         featFunct = &FeatureExtraction::calculateHistogram;  // will be called as calculateHistogram(_pointIDsGlobal[pointID], neighborValues);
 		spdlog::info("Feature extraction: Type 1d texture histogram, Num Bins: {}", _numHistBins);
     }
+    else if (_featType == feature_type::CHANNEL_HIST)
+    {
+        featFunct = &FeatureExtraction::calculateChannelHistogram;
+        spdlog::info("Feature extraction: Channel Histograms, i.e. one bin per channel");
+    }
     else if(_featType == feature_type::LOCALMORANSI)
     {
         featFunct = &FeatureExtraction::calculateLISA;
@@ -202,6 +207,21 @@ void FeatureExtraction::calculateHistogram(size_t pointInd, std::vector<float> n
     }
     _outFeatures.get_data_ptr()->at(pointInd) = new FeatureData<std::vector<Eigen::VectorXf>>(feat);
 
+}
+
+void FeatureExtraction::calculateChannelHistogram(size_t pointInd, std::vector<float> neighborValues, std::vector<int> neighborIDs) {
+    assert(std::none_of(neighborIDs.begin(), neighborIDs.end(), [](int i) {return i == -1; }));
+
+    Channel_Histogram_Weighted channelHist = Channel_Histogram_Weighted(_numDims);
+
+    for (unsigned int neighID = 0; neighID < _neighborhoodSize; neighID++) {
+        {
+            for (unsigned int dim = 0; dim < _numDims; dim++)
+                channelHist.fill_ch_weighted(dim, neighborValues[neighID * _numDims + dim], _neighborhoodWeights[neighID]);
+        }
+    }
+
+    _outFeatures.get_data_ptr()->at(pointInd) = new FeatureData<std::vector<float>>(channelHist.counts_std());
 }
 
 void FeatureExtraction::calculateLISA(size_t pointInd, std::vector<float> neighborValues, std::vector<int> neighborIDs) {

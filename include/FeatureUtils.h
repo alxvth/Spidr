@@ -79,7 +79,7 @@ unsigned int RiceBinSize(unsigned int numItems);
  * \param _attribute_data
  * \param _neighborhoodSize
  * \param _numDims
- * \return data layout with dimension d and neighbor n: [n0d0, p0d1, n0d2, ..., n1d0, n1d1, ..., n2d0, n2d1, ...]
+ * \return data layout with dimension d and neighbor n: [n0d0, n0d1, n0d2, ..., n1d0, n1d1, ..., n2d0, n2d1, ...]
 
  */
 std::vector<float> getNeighborhoodValues(const std::vector<int>& neighborIDs, const std::vector<float>& attribute_data, const size_t neighborhoodSize, const size_t numDims);
@@ -297,6 +297,74 @@ public:
 };
 
 
+/*! Base class for channel histograms
+ *
+ * This histogram class counts active channel values, i.e. one bin is one channel and not a value range
+ */
+template <class scalar_type>
+class Channel_Histogram_Base
+{
+public:
+    Channel_Histogram_Base() = delete;
+    Channel_Histogram_Base(size_t numDims, float threshold = 1);
+    Channel_Histogram_Base(std::vector<float> tresholds);
+
+    void fill_ch(const size_t ch, const float value);
+    void fill_ch(const size_t ch, const std::vector<float> values);
+
+    // Getter
+
+    unsigned int getNumBins() const { return _counts.size(); };
+    unsigned int getCount(unsigned int bin) const { return _counts[bin]; };
+
+    unsigned int getCount() const { return _totalBinCounts; };
+
+    auto cbegin() const { return _counts.cbegin(); };
+    auto cend() const { return _counts.cend(); };
+
+    scalar_type operator[](size_t index) const;
+
+    Eigen::Vector<scalar_type, -1> counts() const { return _counts; };
+    const Eigen::Vector<scalar_type, -1>* countsp() const { return &_counts; };
+    Eigen::VectorXf normalizedCounts() const { return _counts.cast<float>() / _counts.sum(); };
+
+    std::vector<scalar_type> counts_std() const { return std::vector<scalar_type>(_counts.data(), _counts.data() + _counts.size()); };
+    std::vector<float> normalizedCounts_std() const { auto eigen_counts_norm = normalizedCounts(); return std::vector<scalar_type>(eigen_counts_norm.data(), eigen_counts_norm.data() + eigen_counts_norm.size()); };
+
+
+protected:
+    Eigen::Vector<scalar_type, -1> _counts;
+
+    std::vector<float> _tresholds;
+
+    size_t _totalBinCounts;
+    size_t _numBins;
+
+};
+
+
+class Channel_Histogram : public Channel_Histogram_Base<unsigned int>
+{
+public:
+    Channel_Histogram() = delete;
+    Channel_Histogram(unsigned int numDims, float threshold = 1) : Channel_Histogram_Base(numDims, threshold) { };
+    Channel_Histogram(std::vector<float> tresholds) : Channel_Histogram_Base(tresholds) { };
+
+};
+
+class Channel_Histogram_Weighted : public Channel_Histogram_Base<float>
+{
+public:
+    Channel_Histogram_Weighted() = delete;
+    Channel_Histogram_Weighted(size_t numDims, float threshold = 1) : Channel_Histogram_Base(numDims, threshold) { };
+    Channel_Histogram_Weighted(std::vector<float> tresholds) : Channel_Histogram_Base(tresholds) { };
+
+    void fill_ch_weighted(const size_t ch, const float value, const float weight);
+    void fill_ch_weighted(const size_t ch, const std::vector<float> values, const std::vector<float> weights);
+
+};
+
+// ####
 float variance(Eigen::VectorXf vec);
 float covariance(Eigen::VectorXf vec1, Eigen::VectorXf vec2);
 Eigen::MatrixXf covmat(Eigen::MatrixXf data);

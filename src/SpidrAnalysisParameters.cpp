@@ -7,8 +7,8 @@ namespace logging {
         switch (metric) {
         case distance_metric::METRIC_QF: return "Quadratic form distance";
         case distance_metric::METRIC_HEL: return "Hellinger distance";
-        case distance_metric::METRIC_EUC: return "Euclidean distance";
-        case distance_metric::METRIC_CHA: return "Chamfer distance (point collection)";
+        case distance_metric::METRIC_EUC: return "Euclidean distance (squared)";
+        case distance_metric::METRIC_CHA: return "Chamfer distance (point cloud)";
         case distance_metric::METRIC_SSD: return "Sum of squared distances (point cloud)";
         case distance_metric::METRIC_HAU: return "Hausdorff distance (point cloud)";
         case distance_metric::METRIC_HAU_med: return "Hausdorff distance (point cloud) but with median instead of max";

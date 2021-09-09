@@ -257,6 +257,75 @@ void Histogram_Weighted::fill_weighted(const std::vector<float> values, const st
 }
 
 
+template< class scalar_type> Channel_Histogram_Base< scalar_type>::Channel_Histogram_Base(size_t numDims, float threshold) :
+    _totalBinCounts(0), _numBins(numDims)
+{
+
+    _tresholds = std::vector<float>(_numBins, threshold);
+    _counts = Eigen::Vector<scalar_type, -1>::Zero(_numBins);
+}
+// Resolve linker errors with explicit instantiation, https://isocpp.org/wiki/faq/templates#separate-template-fn-defn-from-decl
+template Channel_Histogram_Base<unsigned int>::Channel_Histogram_Base(size_t numDims, float threshold);
+template Channel_Histogram_Base<float>::Channel_Histogram_Base(size_t numDims, float threshold);
+
+
+template< class scalar_type> Channel_Histogram_Base< scalar_type>::Channel_Histogram_Base(std::vector<float> tresholds) :
+    _tresholds(tresholds), _totalBinCounts(0)
+{
+
+    _numBins = _tresholds.size();
+    _counts = Eigen::Vector<scalar_type, -1>::Zero(_numBins);
+}
+// Resolve linker errors with explicit instantiation, https://isocpp.org/wiki/faq/templates#separate-template-fn-defn-from-decl
+template Channel_Histogram_Base<unsigned int>::Channel_Histogram_Base(std::vector<float> tresholds);
+template Channel_Histogram_Base<float>::Channel_Histogram_Base(std::vector<float> tresholds);
+
+
+template< class scalar_type> void Channel_Histogram_Base< scalar_type>::fill_ch(const size_t ch, const float value) {
+
+    if (value >= _tresholds[ch])
+    {
+        _counts[ch] += 1;
+        _totalBinCounts += 1;
+    }
+}
+template void Channel_Histogram_Base<unsigned int>::fill_ch(const size_t ch, const float values);
+template void Channel_Histogram_Base<float>::fill_ch(const size_t ch, const float values);
+
+
+template< class scalar_type> void Channel_Histogram_Base< scalar_type>::fill_ch(const size_t ch, const std::vector<float> values) {
+    for (const float &value : values)
+        fill_ch(ch, value);
+}
+template void Channel_Histogram_Base<unsigned int>::fill_ch(const size_t ch, const std::vector<float> values);
+template void Channel_Histogram_Base<float>::fill_ch(const size_t ch, const std::vector<float> values);
+
+
+template< class scalar_type> scalar_type Channel_Histogram_Base< scalar_type>::operator[](size_t index) const {
+    assert(index >= 0 && index < _numBins);
+    return _counts[index];
+}
+template unsigned int Channel_Histogram_Base<unsigned int>::operator[](size_t index) const;
+template float Channel_Histogram_Base<float>::operator[](size_t size_t) const;
+
+
+void Channel_Histogram_Weighted::fill_ch_weighted(const size_t ch, const float value, const float weight) {
+
+    if (value >= _tresholds[ch])
+    {
+        _counts[ch] += weight;
+        _totalBinCounts += 1;
+    }
+}
+
+
+void Channel_Histogram_Weighted::fill_ch_weighted(const size_t ch, const std::vector<float> values, const std::vector<float> weights) {
+    assert(values.size() == weights.size());
+
+    for (unsigned int i = 0; i < values.size(); i++)
+        fill_ch_weighted(ch, values[i], weights[i]);
+}
+
 
 float variance(Eigen::VectorXf vec)
 {

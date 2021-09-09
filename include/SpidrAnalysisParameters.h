@@ -74,6 +74,7 @@ enum class feature_type : unsigned int
 	LOCALGEARYC = 2,        /*!< Local Geary's C (Local Indicator of Spatial Associations), scalar feature */
 	PCLOUD = 3,             /*!< Point cloud, i.e. just the neighborhood, no transformations*/
 	MULTIVAR_NORM = 4,      /*!< Mean and covariance matrix  */
+	CHANNEL_HIST = 5,       /*!< Histogram with one bis per channel that counts active (>1) values */
 };
 
 // Heuristic for setting the histogram bin size
@@ -132,7 +133,8 @@ static const size_t NumFeatureValsPerPoint(const feature_type featureType, const
 	size_t featureSize = 0;
 	switch (featureType) {
 	case feature_type::TEXTURE_HIST_1D: featureSize = numDims * numHistBins; break;
-	case feature_type::LOCALMORANSI:    // same as Geary's C
+	case feature_type::CHANNEL_HIST:    // same as Geary's C, one bin per channel in this type of histogram
+	case feature_type::LOCALMORANSI:    // same as Geary's C, one scalar value per channel
 	case feature_type::LOCALGEARYC:     featureSize = numDims; break;
 	case feature_type::PCLOUD:          featureSize = neighborhoodSize; break; // numDims * neighborhoodSize for copying data instead of IDs
 	case feature_type::MULTIVAR_NORM:   featureSize = numDims + numDims* numDims + 2; break; // channel-wise means + covaraince matrix
