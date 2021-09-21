@@ -79,8 +79,8 @@ void FeatureExtraction::setup(const std::vector<unsigned int>& pointIDsGlobal, c
     // Convert the background IDs into an Eigen matrix
     // there is no standard Eigen typedef for unsigned typesa and Eigen::MatrixXi does not work
     Eigen::MatrixXui _indices_mat = Eigen::Map<Eigen::MatrixXui>(&_pointIDsGlobal[0], _imgSize.width, _imgSize.height);
-    // pad the matrix in all directions with _numLocNeighbors values
-    _indices_mat_padded = padConst(_indices_mat, _numLocNeighbors);
+    // pad the matrix in all directions with the pad with _numLocNeighbors with the edge (border value)
+    _indices_mat_padded = padEdge(_indices_mat, _numLocNeighbors);
 
     assert(_attribute_data.size() == _numPoints * _numDims);
 
