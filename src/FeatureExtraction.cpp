@@ -290,11 +290,16 @@ void FeatureExtraction::multivarNormDistDescriptor(size_t pointInd, std::vector<
     assert(_neighborhoodWeights.size() == _neighborhoodSize);
 
     // transform std data to eigen
+    // data layout of neighborValues with dimension d and neighbor n: [n0d0, n0d1, n0d2, ..., n1d0, n1d1, ..., n2d0, n2d1, ...]
     Eigen::MatrixXf neighborValues_mat(_numDims, _neighborhoodSize);
-    for (int ch = 0; ch < _numDims; ch++)
-        neighborValues_mat.row(ch) = Eigen::Map<Eigen::VectorXf>(neighborValues.data() + ch* _neighborhoodSize, _neighborhoodSize);
+    for (int d = 0; d < _numDims; d++) {
+        for (int n = 0; n < _neighborhoodSize; n++)
+        {
+            neighborValues_mat.row(d)[n] = neighborValues[n * _numDims + d];
+        }
+    }
 
-    // compute features
+    // compute features: mean vector and covariance matrix
     multivar_normal mean_covmat = compMultiVarFeatures(neighborValues_mat, _neighborhoodWeights_eig);
 
     // save features
