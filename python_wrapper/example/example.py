@@ -23,14 +23,22 @@ imgHeight = imgWidth
 numPoints = data.shape[0]
 data_img = data.reshape((imgHeight, imgWidth, 2))
 
+# settings
+sp_metric = spidr.DistMetric.Chamfer_pc  # Chamfer_pc, QF_hist (define numHistBins), Bhattacharyya
+sp_weight = spidr.WeightLoc.uniform
+sp_neighborhoodSize = 1  # one neighbor in each direction, i.e. a 3x3 neighborhood
+
+#################################
+# spatially informed embeddings #
+#################################
 
 #########
 # t-SNE #
 #########
-print("Texture-aware t-SNE with HDILib (nptsne)")
+print("# Texture-aware t-SNE with HDILib (nptsne)")
 # instantiate spidrlib
-alg_spidr = spidr.SpidrAnalysis(distMetric=spidr.DistMetric.Chamfer_pc, kernelType=spidr.WeightLoc.uniform,
-                                numLocNeighbors=1, aknnAlgType=spidr.KnnAlgorithm.hnsw)
+alg_spidr = spidr.SpidrAnalysis(distMetric=sp_metric, kernelType=sp_weight,  # numHistBins=5,
+                                numLocNeighbors=sp_neighborhoodSize, aknnAlgType=spidr.KnnAlgorithm.hnsw)
 
 # embed with t-SNE
 emb_tsne = alg_spidr.fit_transform(X=data, pointIDsGlobal=data_glob_ids, imgWidth=imgWidth, imgHeight=imgHeight)
@@ -39,10 +47,10 @@ emb_tsne = alg_spidr.fit_transform(X=data, pointIDsGlobal=data_glob_ids, imgWidt
 ########
 # UMAP #
 ########
-print("Texture-aware UMAP with umap-learn")
+print("# Texture-aware UMAP with umap-learn")
 # instantiate spidrlib
-alg_spidr = spidr.SpidrAnalysis(distMetric=spidr.DistMetric.Chamfer_pc, kernelType=spidr.WeightLoc.uniform,
-                                numLocNeighbors=1, aknnAlgType=spidr.KnnAlgorithm.hnsw)
+alg_spidr = spidr.SpidrAnalysis(distMetric=sp_metric, kernelType=sp_weight,  # numHistBins=5,
+                                numLocNeighbors=sp_neighborhoodSize, aknnAlgType=spidr.KnnAlgorithm.hnsw)
 nn = alg_spidr.nn
 
 # get knn dists to compute umap
@@ -63,10 +71,10 @@ emb_umap = alg_umap.fit_transform(knn_csr)
 #######
 # MDS #
 #######
-print("Texture-aware MDS with scikit-learn")
+print("# Texture-aware MDS with scikit-learn")
 # instantiate spidrlib
-alg_spidr = spidr.SpidrAnalysis(distMetric=spidr.DistMetric.Chamfer_pc, kernelType=spidr.WeightLoc.uniform,
-                                numLocNeighbors=1, aknnAlgType=spidr.KnnAlgorithm.full_dist_matrix)
+alg_spidr = spidr.SpidrAnalysis(distMetric=sp_metric, kernelType=sp_weight,  # numHistBins=5,
+                                numLocNeighbors=sp_neighborhoodSize, aknnAlgType=spidr.KnnAlgorithm.full_dist_matrix)
 
 # get full dist matrix to compute mds
 _, knn_dists = alg_spidr.fit(X=data, pointIDsGlobal=data_glob_ids, imgWidth=imgWidth, imgHeight=imgHeight)
@@ -84,17 +92,17 @@ emb_mds = alg_mds.fit_transform(knn_dists)
 #######################
 
 # standard t-SNE
-print("Standard t-SNE with HDILib (nptsne)")
+print("# Standard t-SNE with HDILib (nptsne)")
 alg_tsne = TSNE()
 emb_tsne_std = alg_tsne.fit_transform(data).reshape((numPoints, 2))
 
 # standard UMAP
-print("Standard UMAP with umap-learn")
+print("# Standard UMAP with umap-learn")
 alg_umap = UMAP()
 emb_umap_std = alg_umap.fit_transform(data)
 
 # standard MDS
-print("Standard MDS with scikit-learn")
+print("# Standard MDS with scikit-learn")
 alg_mds = MDS(dissimilarity='euclidean', n_jobs=-1)
 emb_mds_std = alg_mds.fit_transform(data)
 

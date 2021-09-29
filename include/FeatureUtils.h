@@ -186,7 +186,7 @@ struct padUpperLeft {
 	Eigen::Index in_size, out_size;
 };
 
-/*! Helper struct for constant padding, see padConst
+/*! Helper struct for constant padding, see padEdge
  *  Creates a sequence of indices: padAllDirections{3, 1} -> [0 0 1 2 2]
  *  Thus padding const values like [0 1 2] -> [(0) 0 1 2 (2)]
  *
@@ -202,11 +202,12 @@ struct padAllDirections {
 
 
 /*! Pads a matrix (2d) in all directions with the border values
+ * Similar to numpy's np.pad(..., mode='edge')
  *
  * \param mat
  * \param pad_size
  */
-Eigen::MatrixXui padConst(Eigen::MatrixXui mat, Eigen::Index pad_size);
+Eigen::MatrixXui padEdge(Eigen::MatrixXui mat, Eigen::Index pad_size);
 
 /*! Get rectangle neighborhood point ids for one data item
  *  

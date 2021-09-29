@@ -146,7 +146,7 @@ std::vector<int> getNeighborhoodInds(const unsigned int coord_row, const unsigne
 }
 
 
-Eigen::MatrixXui padConst(Eigen::MatrixXui mat, Eigen::Index pad_size)
+Eigen::MatrixXui padEdge(Eigen::MatrixXui mat, Eigen::Index pad_size)
 {
 	//auto slice_sequence_rows = padAllDirections{ mat.rows(), pad_size };
 	//auto slice_sequence_cols = padAllDirections{ mat.cols(), pad_size };
