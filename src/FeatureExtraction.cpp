@@ -303,7 +303,7 @@ void FeatureExtraction::multivarNormDistDescriptor(size_t pointInd, std::vector<
     multivar_normal mean_covmat = compMultiVarFeatures(neighborValues_mat, _neighborhoodWeights_eig);
 
     // save features
-    multivar_normal_plusDet feat = multivar_normal_plusDet(mean_covmat.first, mean_covmat.second, mean_covmat.second.determinant());
+    multivar_normal_plusDet feat = multivar_normal_plusDet(mean_covmat.first, mean_covmat.second, std::sqrt(mean_covmat.second.determinant()));
     std::vector<IFeatureData*>* ib_featdata = _outFeatures.get_data_ptr();
     ib_featdata->at(pointInd) = new FeatureData<multivar_normal_plusDet> (feat);
 

@@ -990,7 +990,7 @@ namespace hnswlib {
         assert(det1 > 0);
         assert(det2 > 0);
 
-        return 0.125f * mean_diff.transpose() * covmat_comb.inverse() * mean_diff + 0.5f * std::logf(det_comb / std::sqrt(det1 * det2));
+        return 0.125f * mean_diff.transpose() * covmat_comb.inverse() * mean_diff + 0.5f * std::logf(det_comb / (det1 * det2));
     }
 
     // Bhattacharyya distance, only determinant ratio
@@ -1002,7 +1002,7 @@ namespace hnswlib {
         assert(det1 > 0);
         assert(det2 > 0);
 
-        return std::logf(det_comb / std::sqrt(det1 * det2));
+        return std::logf(det_comb / (det1 * det2));
     }
 
     // Bhattacharyya distance, only mean part -- FOR TESTING ONLY 
