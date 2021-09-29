@@ -252,6 +252,7 @@ hnswlib::SpaceInterface<float>* CreateHNSWSpace(const distance_metric knn_metric
 
     case distance_metric::METRIC_BHATTACHARYYA:
     case distance_metric::METRIC_DETMATRATIO:
+    case distance_metric::METRIC_BHATTACHARYYATESTONLYMEANS:
     case distance_metric::METRIC_CMD_covmat:
     case distance_metric::METRIC_FRECHET_Gen:
     case distance_metric::METRIC_FRECHET_CovMat:

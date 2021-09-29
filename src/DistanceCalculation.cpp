@@ -27,7 +27,7 @@ void DistanceCalculation::setup(const Feature dataFeatures, const std::vector<un
     // SpidrParameters
     _knn_lib = params._aknn_algorithm;
     _knn_metric = params._aknn_metric;
-    _nn = params.get_nn();
+    _nn = params.get_nn();                           // see SpidrAnalysis::update_nn ->  (size_t)(params.get_perplexity() * params.get_perplexity_multiplier() + 1)
     _neighborhoodSize = params._neighborhoodSize;    // square neighborhood with _numLocNeighbors to each side from the center
     _neighborhoodWeighting = params._neighWeighting;
 
@@ -46,8 +46,6 @@ void DistanceCalculation::setup(const Feature dataFeatures, const std::vector<un
     // Output
     //_knn_indices.resize(_numForegroundPoints*_nn, -1);              // unnecessary, done in ComputeHNSWkNN
     //_knn_distances_squared.resize(_numForegroundPoints*_nn, -1);    // unnecessary, done in ComputeHNSWkNN
-
-    assert(params.get_nn() == (size_t)(params.get_perplexity() * params.get_perplexity_multiplier() + 1));     // should be set in SpidrAnalysis::initializeAnalysisSettings
 
     spdlog::info("Distance calculation: Feature values per point: {0}, Number of NN to calculate {1}. Metric: {2}", _numFeatureValsPerPoint, _nn, static_cast<size_t> (_knn_metric));
 

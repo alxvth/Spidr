@@ -978,15 +978,44 @@ namespace hnswlib {
         COVMATDIST<float> fstdistfunc_;
     };
 
+    // Bhattacharyya distance between two multivariate normal distributions 
+    // https://en.wikipedia.org/wiki/Bhattacharyya_distance
+    // https://doi.org/10.1016/S0031-3203(03)00035-9
     float distBhattacharyya(const Eigen::VectorXf& mean1, const Eigen::MatrixXf& covmat1, const float det1, const Eigen::VectorXf& mean2, const Eigen::MatrixXf& covmat2, const float det2) {
     	Eigen::MatrixXf covmat_comb = (covmat1 + covmat2) / 2.0f;
     	Eigen::VectorXf mean_diff = mean1 - mean2;
-    	return 0.125f * mean_diff.transpose() * covmat_comb.inverse() * mean_diff + 0.5f * std::logf(covmat_comb.determinant() / std::sqrt(det1 * det2));
+        const float det_comb = covmat_comb.determinant();
+        
+        assert(det_comb > 0);
+        assert(det1 > 0);
+        assert(det2 > 0);
+
+        return 0.125f * mean_diff.transpose() * covmat_comb.inverse() * mean_diff + 0.5f * std::logf(det_comb / std::sqrt(det1 * det2));
     }
 
+    // Bhattacharyya distance, only determinant ratio
+    // i.e. for two distributions with the same means
     float distDetRatio(const Eigen::VectorXf& mean1, const Eigen::MatrixXf& covmat1, const float det1, const Eigen::VectorXf& mean2, const Eigen::MatrixXf& covmat2, const float det2) {
-        return std::logf(((covmat1 + covmat2) / 2.0f).determinant() / std::sqrt(det1 * det2));
+        const float det_comb = ((covmat1 + covmat2) / 2.0f).determinant();
+        
+        assert(det_comb > 0);
+        assert(det1 > 0);
+        assert(det2 > 0);
+
+        return std::logf(det_comb / std::sqrt(det1 * det2));
     }
+
+    // Bhattacharyya distance, only mean part -- FOR TESTING ONLY 
+    float distBhattacharyyaMean(const Eigen::VectorXf& mean1, const Eigen::MatrixXf& covmat1, const float det1, const Eigen::VectorXf& mean2, const Eigen::MatrixXf& covmat2, const float det2) {
+        Eigen::MatrixXf covmat_comb = (covmat1 + covmat2) / 2.0f;
+        Eigen::VectorXf mean_diff = mean1 - mean2;
+        const float det_comb = covmat_comb.determinant();
+
+        assert(det_comb > 0);
+
+        return 0.125f * mean_diff.transpose() * covmat_comb.inverse() * mean_diff;
+    }
+
 
     // Correlation Matrix distance
     // http://dx.doi.org/10.1109/VETECS.2005.1543265
@@ -1037,6 +1066,8 @@ namespace hnswlib {
                 params_ = { distBhattacharyya };
             else if (distanceMetric == distance_metric::METRIC_DETMATRATIO)
                 params_ = { distDetRatio };
+            else if (distanceMetric == distance_metric::METRIC_BHATTACHARYYATESTONLYMEANS)
+                params_ = { distBhattacharyyaMean };
             else if (distanceMetric == distance_metric::METRIC_CMD_covmat)
                 params_ = { CMD };
             else if (distanceMetric == distance_metric::METRIC_FRECHET_Gen)

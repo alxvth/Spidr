@@ -40,6 +40,7 @@ enum class distance_metric : size_t
 	METRIC_HAU,      /*!< Hausdorff distance (point cloud)*/
 	METRIC_HAU_med,      /*!< Hausdorff distance (point cloud) but with median instead of max*/
 	METRIC_BHATTACHARYYA,      /*!< Bhattacharyya distance between two multivariate normal distributions, https://en.wikipedia.org/wiki/Bhattacharyya_distance */
+	METRIC_BHATTACHARYYATESTONLYMEANS,      /*!< TEST Bhattacharyya distance only means */
 	METRIC_DETMATRATIO,      /*!< Deteterminant Ratio part of Bhattacharyya distance, i.e. Bat distance between two distributions with the same mean */
 	METRIC_CMD_covmat,      /*!< Correlation Matrix distance http://dx.doi.org/10.1109/VETECS.2005.1543265 */
 	METRIC_FRECHET_Gen,      /*!< The Fréchet distance between multivariate normal distributions, https://doi.org/10.1016/0047-259X(82)90077-X */
@@ -208,7 +209,7 @@ private:
 		// see Van Der Maaten, L. (2014). Accelerating t-SNE using tree-based algorithms. The Journal of Machine Learning Research, 15(1), 3221-3245.
 		_nn = _perplexity * _perplexity_multiplier + 1;
 
-		// For small data sets, use less kNN
+		// For small data sets, cap the kNN at the number of points
 		if (_nn > _numPoints)
 		{
 			spdlog::warn("SpidrParameters: Few data points - reduce number nn to number of points");
