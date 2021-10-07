@@ -7,9 +7,14 @@
 def load_binary(path, dtype="<f"):
     import numpy as np
     with open(path, "rb") as file:
-        # specify little endian float
+        # specify little endian float: dtype="<f"
         dat = np.fromfile(file, dtype=dtype)
     return dat
+
+
+def write_binary(dataArray, path):
+    with open(path, "wb") as file:
+        dataArray.tofile(file)
 
 
 def interpol_texture(im, coords, hexa=False):

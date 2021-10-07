@@ -46,11 +46,12 @@ for sp_metric in sp_metrics:
     #########
     print("# Texture-aware t-SNE with HDILib (nptsne)")
     # instantiate spidrlib
-    alg_spidr = spidr.SpidrAnalysis(distMetric=sp_metric, kernelType=sp_weight, numHistBins=5,
+    alg_spidr = spidr.SpidrAnalysis(distMetric=sp_metric, kernelType=sp_weight, perplexity=20, numHistBins=5,
                                     numLocNeighbors=sp_neighborhoodSize, aknnAlgType=spidr.KnnAlgorithm.hnsw)
 
     # embed with t-SNE
     embs_tsne_sp[sp_metric] = alg_spidr.fit_transform(X=data, pointIDsGlobal=data_glob_ids, imgWidth=imgWidth, imgHeight=imgHeight)
+
 
     ########
     # UMAP #
@@ -72,7 +73,8 @@ for sp_metric in sp_metrics:
     knn_csr = csr_matrix((knn_dists, (knn_ind_row, knn_ind)), shape=(numPoints, numPoints))
 
     # embed with umap
-    alg_umap = UMAP()
+    seed_umap = 123
+    alg_umap = UMAP(random_state=seed_umap)
     embs_umap_sp[sp_metric] = alg_umap.fit_transform(knn_csr)
 
 
@@ -91,7 +93,8 @@ for sp_metric in sp_metrics:
     knn_dists = np.array(knn_dists).reshape((numPoints, numPoints))
 
     # embed with MDS
-    alg_mds = MDS(dissimilarity='precomputed', n_jobs=-1)
+    seed_mds = 123456
+    alg_mds = MDS(dissimilarity='precomputed', n_jobs=-1, random_state=seed_mds)
     embs_mds_sp[sp_metric] = alg_mds.fit_transform(knn_dists)
 
 
@@ -101,7 +104,7 @@ for sp_metric in sp_metrics:
 
 # standard t-SNE
 print("# Standard t-SNE with HDILib (nptsne)")
-alg_tsne = TSNE()
+alg_tsne = TSNE(perplexity=20)
 emb_tsne_std = alg_tsne.fit_transform(data).reshape((numPoints, 2))
 
 # standard UMAP
@@ -149,6 +152,7 @@ def pltColProj(row_n, col_n, title, emb, emb_cols):
     # img re-colored
     axs[row_n, col_n+1].imshow(emb_cols.reshape((imgHeight, imgWidth, 3)), aspect="auto")
     axs[row_n, col_n+1].xaxis.tick_top()
+    axs[row_n, col_n+1].invert_yaxis()
     axs[row_n, col_n+1].get_xaxis().set_visible(False)
     axs[row_n, col_n+1].get_yaxis().set_visible(False)
 
@@ -164,9 +168,10 @@ pltColProj(1, 0, 'UMAP std', emb_umap_std, emb_umap_std_colors)
 pltColProj(2, 0, 'MDS std', emb_mds_std, emb_mds_std_colors)
 
 # label rows
+# xytext depends on scatterplot ranges, automating this would be better
 pad = 5
-axs[0, 0].annotate("t-SNE", xy=(0, 0), xytext=(-65, 0), size=10)    # xytext depends on scatterplot ranges
-axs[1, 0].annotate("UMAP", xy=(0, 0), xytext=(-20, 2), size=10)     # automating this would be better
+axs[0, 0].annotate("t-SNE", xy=(0, 0), xytext=(-75, 0), size=10)
+axs[1, 0].annotate("UMAP", xy=(0, 0), xytext=(-20, 2), size=10)
 axs[2, 0].annotate("MDS", xy=(0, 0), xytext=(-1.5, -.1), size=10)
 
 # label columns
@@ -198,5 +203,15 @@ im2 = axs[1].imshow(data_img[:, :, 1], aspect="auto", vmin=data_min, vmax=data_m
 fig.colorbar(im2, ax=axs.ravel().tolist())
 
 #plt.tight_layout()
-plt.savefig("example_data_channels.pdf", format="pdf", bbox_inches="tight")
+plt.show()
+#plt.savefig("example_data_channels.pdf", format="pdf", bbox_inches="tight")
+
+
+###################
+# Save embeddings #
+###################
+from utils import write_binary
+savepath = "D:\\Documents\\SURFdrive\\Documents\\Project 2020a\\SpidrEvaluation\\Data\\Embeddings\\Artificial Test Images\\CheckerBoxed_PlusHom_2Ch_32 - 211001\\"
+write_binary(embs_mds_sp[spidr.DistMetric.Bhattacharyya].flatten().astype(np.float32),
+             savepath + "CB_2Ch_32_sp-tsne_emb_P20_I1000_k1_Bat.bin")
 

@@ -24,7 +24,7 @@ numPoints = data.shape[0]
 data_img = data.reshape((imgHeight, imgWidth, 2))
 
 # settings
-sp_metric = spidr.DistMetric.Chamfer_pc  # Chamfer_pc, QF_hist (define numHistBins), Bhattacharyya
+sp_metric = spidr.DistMetric.Bhattacharyya  # Chamfer_pc, QF_hist (define numHistBins),
 sp_weight = spidr.WeightLoc.uniform
 sp_neighborhoodSize = 1  # one neighbor in each direction, i.e. a 3x3 neighborhood
 
@@ -83,7 +83,7 @@ _, knn_dists = alg_spidr.fit(X=data, pointIDsGlobal=data_glob_ids, imgWidth=imgW
 knn_dists = np.array(knn_dists).reshape((numPoints, numPoints))
 
 # embed with MDS
-alg_mds = MDS(dissimilarity='precomputed', n_jobs=-1)
+alg_mds = MDS(dissimilarity='precomputed', n_jobs=-1, random_state=1234)
 emb_mds = alg_mds.fit_transform(knn_dists)
 
 
@@ -111,7 +111,7 @@ emb_mds_std = alg_mds.fit_transform(data)
 # Plots #
 #########
 
-# Plot the embeddings and data
+## Plot the embeddings and data
 fig, axs = plt.subplots(2, 4, figsize=(8, 5))
 fig.suptitle('Data channels and embeddings')
 
@@ -139,7 +139,7 @@ pltColEmb(3, 'MDS', emb_mds, emb_mds_std)
 plt.tight_layout()
 plt.show()
 
-
+## Plot embeddings and recolored images
 # map embedding positions to colors and then back to the image space
 clm_path = '../../example/eval/2d_Mittelstaed.png'
 emb_tsne_colors = assign_embedding_colors(emb_tsne, clm_path, rot90=3)
