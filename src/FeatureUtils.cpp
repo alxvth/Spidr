@@ -5,6 +5,7 @@
 #include <numeric>      // iota
 #include <cmath> 
 #include <stdexcept>
+#include <random>
 
 
 template<typename T>
@@ -375,4 +376,12 @@ multivar_normal compMultiVarFeatures(Eigen::MatrixXf data, Eigen::VectorXf probs
     Eigen::VectorXf weighted_mean = data * probs;
     Eigen::MatrixXf cov_mat = covmat(data, probs);
     return std::make_pair(weighted_mean, cov_mat);
+}
+
+Eigen::VectorXf randomVector(unsigned int len, float lo, float hi) {
+    std::random_device rd;
+    std::mt19937 gen(rd()); // Standard mersenne_twister_engine seeded with rd()
+    std::uniform_real_distribution<float> dis(lo, hi);
+
+    return Eigen::VectorXf::NullaryExpr(len, [&]() { return dis(gen); });   // definition with nullary expression: coefficients are defined by a functor
 }

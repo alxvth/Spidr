@@ -221,6 +221,13 @@ Eigen::MatrixXui padEdge(Eigen::MatrixXui mat, Eigen::Index pad_size);
 std::vector<int> getNeighborhoodInds(const unsigned int coord_row, const unsigned int coord_col, const size_t kernelWidth, Eigen::MatrixXui* padded_ids);
 
 
+/*! Returns a random Eigen vector sampled from a uniform distribution
+ * \param len length of the vector
+ * \param lo lower bound of uniform distribution
+ * \param high higher bound of uniform distribution
+*/
+Eigen::VectorXf randomVector(unsigned int len, float lo, float hi);
+
 template <class scalar_type>
 class Histogram_Base
 {

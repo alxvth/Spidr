@@ -139,6 +139,7 @@ private:
 
     // Options 
     feature_type _featType;                         /*!< Type of feature to extract */
+    distance_metric _distType;                      /*!< Distance between features */
     size_t       _numFeatureValsPerPoint;           /*!< depending on the feature type, the features vector has a different length (scalar features vs vector features per dimension)> */
     size_t       _numLocNeighbors;                  /*!< Number of neighbors in each direction */
     size_t       _kernelWidth;                      /*!< Width of the kernel (2* _numLocNeighbors +1) */

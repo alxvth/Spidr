@@ -986,6 +986,14 @@ namespace hnswlib {
     	Eigen::VectorXf mean_diff = mean1 - mean2;
         const float det_comb = covmat_comb.determinant();
         
+        if (! (det_comb > 0))
+        {
+            std::cout << covmat_comb << "\n";
+            std::cout << covmat1 << "\n";
+            std::cout << covmat2 << "\n";
+
+        }
+
         assert(det_comb > 0);
         assert(det1 > 0);
         assert(det2 > 0);
@@ -1028,6 +1036,7 @@ namespace hnswlib {
     float FrechetDistGeneral(const Eigen::VectorXf& mean1, const Eigen::MatrixXf& covmat1, const float det1, const Eigen::VectorXf& mean2, const Eigen::MatrixXf& covmat2, const float det2) {
         return (mean1- mean2).squaredNorm() + (covmat1 + covmat2 - 2 * (covmat2*covmat1).sqrt()).trace();
     }
+    // Fréchet distance without the means comparison
     float FrechetDistCovMat(const Eigen::VectorXf& mean1, const Eigen::MatrixXf& covmat1, const float det1, const Eigen::VectorXf& mean2, const Eigen::MatrixXf& covmat2, const float det2) {
         return (covmat1 + covmat2 - 2 * (covmat2*covmat1).sqrt()).trace();
     }
