@@ -16,7 +16,6 @@ PLAT_TO_CMAKE = {
     "win-arm64": "ARM64",
 }
 
-
 # A CMakeExtension needs a sourcedir instead of a file list.
 # The name must be the _single_ output extension from the CMake build.
 # If you need multiple extensions, see scikit-build.
@@ -28,7 +27,7 @@ class CMakeExtension(Extension):
 
 class CMakeBuild(build_ext):
     def build_extension(self, ext):
-
+        
         extdir = os.path.abspath(os.path.dirname(self.get_ext_fullpath(ext.name)))
 
         # required for auto-detection of auxiliary "native" libs
@@ -50,8 +49,16 @@ class CMakeBuild(build_ext):
             "-DEXAMPLE_VERSION_INFO={}".format(self.distribution.get_version()),
             "-DCMAKE_BUILD_TYPE={}".format(cfg),  # not used on MSVC, but no harm
         ]
-        build_args = []
+        
+        # Check environment variable to decide whether the AVX instruction set should be used 
+        if "USE_AVX" in os.environ:
+            if os.environ["USE_AVX"] == 'ON':
+                cmake_args.append("-DUSE_AVX='ON'")
+        else:
+            cmake_args.append("-DUSE_AVX='OFF'")
 
+        build_args = []
+        
         if self.compiler.compiler_type != "msvc":
             # Using Ninja-build since it a) is available as a wheel and b)
             # multithreads automatically. MSVC would require all variables be

@@ -9,6 +9,16 @@ Make sure, that the external pybind11 submodule is present. That should be the c
 pip install . --use-feature=in-tree-build
 ```
 
+To enable AXV instructions, before building the package set an environment variable `USE_AVX=ON`. For example, assuming you use a conda shell and a virtual environment:
+```conda
+conda activate ENV_NAME
+conda env config vars set USE_AVX=ON
+conda activate ENV_NAME                 // reload conda env to make use of variabel change
+
+conda env config vars unset USE_AVX     // un-set variable to fall back to SEE instructions
+conda activate ENV_NAME
+```
+
 ## Usage
 
 See `example/example.py` for t-SNE, UMAP and MDS examples with a synthetic data set.
