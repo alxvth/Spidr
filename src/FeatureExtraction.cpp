@@ -301,35 +301,47 @@ void FeatureExtraction::multivarNormDistDescriptor(size_t pointInd, std::vector<
     }
 
     // compute features: mean vector and covariance matrix
-    multivar_normal mean_covmat = compMultiVarFeatures(neighborValues_mat, _neighborhoodWeights_eig);
-    float determinant_covmat = mean_covmat.second.determinant();
+    Multivar_normal meanCov_feat = compMultiVarFeatures(neighborValues_mat, _neighborhoodWeights_eig);
 
     // if the cov matrix is not invertible but the intended distance matrix builds on that
     // we add small random noise to each dimension, uniformly sampled from (-abs(max(dim)), abs(max(dim))) * noiseMagnitude
-    if (_distType == distance_metric::METRIC_BHATTACHARYYA && std::abs(determinant_covmat) < 1e-5f)
+    if (_distType == distance_metric::METRIC_BHATTACHARYYA && std::abs(meanCov_feat.cov_mat_det) < 1e-5f)
     {
-        float noiseMagnitude = 0.01;
+        // define noise range per dimension
+        float noiseMagnitude = 0.01f;  
         Eigen::VectorXf absMaxsDims = neighborValues_mat.cwiseAbs().rowwise().maxCoeff();
         Eigen::VectorXf noiseRangeDims = absMaxsDims * noiseMagnitude;
-
         for (auto& range : noiseRangeDims) { if (range < noiseMagnitude) range = noiseMagnitude; };
-        //std::for_each(noiseRangeDims.begin(), noiseRangeDims.end(), [](auto& val) {if (range < noiseMagnitude) range = noiseMagnitude; }); // would this be better/faster?
+        
+        //std::cout << "vals:\n" << "Noise Range:\n" << noiseRangeDims << "\n";
 
-        for (int d = 0; d < _numDims; d++) {
-            neighborValues_mat.row(d) += randomVector(_neighborhoodSize, -1 * noiseRangeDims[d], noiseRangeDims[d]);
-        }
+        //std::cout << neighborValues_mat << "\n";
 
-        mean_covmat = compMultiVarFeatures(neighborValues_mat, _neighborhoodWeights_eig);
-        determinant_covmat = mean_covmat.second.determinant();
+        // make sure that det !=0 by repeatedly adding noise until the condition is met
+        //do
+        //{
+            for (int d = 0; d < _numDims; d++) {
+                neighborValues_mat.row(d) += randomVector(_neighborhoodSize, -1 * noiseRangeDims[d], noiseRangeDims[d]);;
+            }
 
-        //assert(std::abs(determinant_covmat) > 1e-5f);
+            meanCov_feat = compMultiVarFeatures(neighborValues_mat, _neighborhoodWeights_eig);
+
+            //std::cout << "vals:\n" << neighborValues_mat << "\n";
+            //std::cout << "cov_mat:\n" << meanCov_feat.cov_mat << "\n";
+            //std::cout << "det:\n" << meanCov_feat.cov_mat_det << "\n";
+            //std::cout << "det:\n" << meanCov_feat.cov_mat.determinant() << "\n";
+
+        //} 
+        //while (std::abs(meanCov_feat.cov_mat_det) < 1e-5f);
+
+        assert(std::abs(meanCov_feat.cov_mat_det) > 1e-5f);
     }
 
 
     // save features
-    multivar_normal_plusDet feat = multivar_normal_plusDet(mean_covmat.first, mean_covmat.second, std::sqrt(determinant_covmat));
+    MeanCov_feat feat = MeanCov_feat{ meanCov_feat.mean_vec, meanCov_feat.cov_mat, std::sqrt(meanCov_feat.cov_mat_det) };
     std::vector<IFeatureData*>* ib_featdata = _outFeatures.get_data_ptr();
-    ib_featdata->at(pointInd) = new FeatureData<multivar_normal_plusDet> (feat);
+    ib_featdata->at(pointInd) = new FeatureData<MeanCov_feat> (feat);
 
 }
 

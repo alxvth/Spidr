@@ -366,16 +366,16 @@ Eigen::MatrixXf covmat(Eigen::MatrixXf data, Eigen::VectorXf probs)
     return ((centered * probs.asDiagonal()) * centered.transpose()) / norm_weight;
 }
 
-multivar_normal compMultiVarFeatures(Eigen::MatrixXf data) {
+Multivar_normal compMultiVarFeatures(Eigen::MatrixXf data) {
     Eigen::VectorXf mean = data.rowwise().mean();
     Eigen::MatrixXf cov_mat = covmat(data);
-    return std::make_pair(mean, cov_mat);
+    return Multivar_normal{ mean , cov_mat };
 }
 
-multivar_normal compMultiVarFeatures(Eigen::MatrixXf data, Eigen::VectorXf probs) {
+Multivar_normal compMultiVarFeatures(Eigen::MatrixXf data, Eigen::VectorXf probs) {
     Eigen::VectorXf weighted_mean = data * probs;
     Eigen::MatrixXf cov_mat = covmat(data, probs);
-    return std::make_pair(weighted_mean, cov_mat);
+    return Multivar_normal{ weighted_mean , cov_mat };
 }
 
 Eigen::VectorXf randomVector(unsigned int len, float lo, float hi) {

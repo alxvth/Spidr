@@ -13,6 +13,7 @@
 #include <numeric>   // std::inner_product, std:accumulate 
 #include <algorithm> // std::find, fill, sort
 #include <vector>
+#include <iterator>
 #include <thread>
 #include <atomic>
 
@@ -971,6 +972,8 @@ namespace hnswlib {
     // ---------------
     //    Multivariate Covariant Matrix Space
     // ---------------
+
+    // function takes: mean vec 1, covmat 1, sqrt of covmat det 1, mean vec 2, covmat 2, sqrt of covmat det 2
     template<typename MTYPE>
     using COVMATDIST = MTYPE(*)(const Eigen::VectorXf&, const Eigen::MatrixXf&, const float, const Eigen::VectorXf&, const Eigen::MatrixXf&, const float);
 
@@ -981,40 +984,136 @@ namespace hnswlib {
     // Bhattacharyya distance between two multivariate normal distributions 
     // https://en.wikipedia.org/wiki/Bhattacharyya_distance
     // https://doi.org/10.1016/S0031-3203(03)00035-9
-    float distBhattacharyya(const Eigen::VectorXf& mean1, const Eigen::MatrixXf& covmat1, const float det1, const Eigen::VectorXf& mean2, const Eigen::MatrixXf& covmat2, const float det2) {
-    	Eigen::MatrixXf covmat_comb = (covmat1 + covmat2) / 2.0f;
-    	Eigen::VectorXf mean_diff = mean1 - mean2;
-        const float det_comb = covmat_comb.determinant();
-        
-        if (! (det_comb > 0))
-        {
-            std::cout << covmat_comb << "\n";
-            std::cout << covmat1 << "\n";
-            std::cout << covmat2 << "\n";
+    //float distBhattacharyya(const Eigen::VectorXf& mean1, const Eigen::MatrixXf& covmat1, const float det_sqrt_1, const Eigen::VectorXf& mean2, const Eigen::MatrixXf& covmat2, const float det_sqrt_2) {
+    //	Eigen::MatrixXf covmat_comb = (covmat1 + covmat2) / 2.0f;
+    //	Eigen::VectorXf mean_diff = mean1 - mean2;
+    //    const float det_comb = covmat_comb.determinant();
+    //    
+    //    //if (! (det_comb > 0))
+    //    //{
+    //    //    std::cout << covmat_comb << "\n";
+    //    //    std::cout << det_comb << "\n";
+    //    //    std::cout << covmat1 << "\n";
+    //    //    std::cout << det_sqrt_1 << "\n";
+    //    //    std::cout << covmat2 << "\n";
+    //    //    std::cout << det_sqrt_2 << "\n";
+    //    //
+    //    //}
 
+    //    assert(det_comb > 0);
+    //    assert(det_sqrt_1 > 0);
+    //    assert(det_sqrt_2 > 0);
+
+    //    if (det_comb > 1e-5f)
+    //        return 0.125f * mean_diff.transpose() * covmat_comb.inverse() * mean_diff + 0.5f * std::logf(det_comb / (det_sqrt_1 * det_sqrt_2));
+    //    else
+    //        return 0.0f;
+    //}
+
+    typedef struct SVD {
+        Eigen::MatrixXf u;
+        Eigen::VectorXf d;
+        Eigen::MatrixXf v;
+        SVD() = delete;
+        SVD(Eigen::MatrixXf u, Eigen::VectorXf d, Eigen::MatrixXf v) : u(u), d(d), v(v) {};
+    } SVD;
+
+    typedef Eigen::Matrix<bool, -1, 1> VectorXb;
+
+
+    SVD svd(Eigen::MatrixXf mat) {
+        Eigen::BDCSVD<Eigen::MatrixXf> bdcsvd;
+        bdcsvd.compute(mat, Eigen::ComputeThinU | Eigen::ComputeThinV);
+        return SVD{ bdcsvd.matrixU(), bdcsvd.singularValues(), bdcsvd.matrixV() };
+    }
+
+    inline float LogDetReduced(const SVD& svd, const Eigen::MatrixXf& mat, std::vector<int> activeD) {
+
+        Eigen::MatrixXf Ut = svd.u(Eigen::all, activeD).transpose();
+        Eigen::MatrixXf V = svd.v(Eigen::all, activeD);
+
+        Eigen::MatrixXf reduced = Ut * mat * V;
+        float det = reduced.determinant();
+
+        return std::log(std::abs(det));
+    }
+
+    inline std::vector<int> GetActiveDIds(Eigen::VectorXf vec) {
+        std::vector<int> ids_ActiveD;
+
+        VectorXb activeD = vec.array() > 1e-5f;
+
+        for (int i = 0; i < vec.size(); i++) {
+            if (activeD[i] == true)
+                ids_ActiveD.push_back(i);
         }
 
-        assert(det_comb > 0);
-        assert(det1 > 0);
-        assert(det2 > 0);
-
-        return 0.125f * mean_diff.transpose() * covmat_comb.inverse() * mean_diff + 0.5f * std::logf(det_comb / (det1 * det2));
+        return ids_ActiveD;
     }
+
+
+    float distBhattacharyya(const Eigen::VectorXf& mean1, const Eigen::MatrixXf& covmat1, const float det_sqrt_1, const Eigen::VectorXf& mean2, const Eigen::MatrixXf& covmat2, const float det_sqrt_2) {
+        Eigen::MatrixXf covmat_comb = (covmat1 + covmat2) / 2.0f;
+        Eigen::VectorXf mean_diff = mean1 - mean2;
+
+        // log determinant terms
+
+        SVD c_svd = svd(covmat_comb);
+
+        std::vector<int> activeDIds = GetActiveDIds(c_svd.d);
+
+        float a = c_svd.d(activeDIds).array().log().sum();
+        float b = LogDetReduced(c_svd, covmat1, activeDIds) / (-2.0f);
+        float c = LogDetReduced(c_svd, covmat2, activeDIds) / (-2.0f);
+
+        float batlogdet = a + b + c;
+
+        // Mahalanobis term
+
+        // check validity
+        if (activeDIds.size() < c_svd.d.size())
+        {
+            std::vector<int> allIds{ static_cast<int>(c_svd.d.size()) };
+            std::iota(allIds.begin(), allIds.end(), 0);
+            std::vector<int> inactiveDIds;
+
+            std::set_difference(allIds.begin(), allIds.end(), activeDIds.begin(), activeDIds.end(),
+                std::inserter(inactiveDIds, activeDIds.begin()));
+
+            Eigen::VectorXf checkSpan = c_svd.u(Eigen::all, inactiveDIds).transpose() * mean_diff;
+
+            if (std::any_of(checkSpan.begin(), checkSpan.end(), [](auto& val) { return val != 0; }))
+                return FLT_MAX;
+        }
+
+
+        Eigen::VectorXf inverse_activeDs = c_svd.d(activeDIds).array().inverse();
+        Eigen::MatrixXf inverse_activeDs_diag = inverse_activeDs.asDiagonal();
+        Eigen::MatrixXf inverse_activeDs_diag2 = inverse_activeDs.asDiagonal().toDenseMatrix();
+
+        Eigen::MatrixXf activeV = c_svd.v(Eigen::all, activeDIds);
+        Eigen::MatrixXf activeU = c_svd.u(Eigen::all, activeDIds);
+
+        Eigen::VectorXf maha = activeV * inverse_activeDs_diag * activeU.transpose() * mean_diff;
+
+        return (mean_diff.cwiseProduct(maha)).sum() / 8 + batlogdet / 2;
+    }
+
 
     // Bhattacharyya distance, only determinant ratio
     // i.e. for two distributions with the same means
-    float distDetRatio(const Eigen::VectorXf& mean1, const Eigen::MatrixXf& covmat1, const float det1, const Eigen::VectorXf& mean2, const Eigen::MatrixXf& covmat2, const float det2) {
+    float distDetRatio(const Eigen::VectorXf& mean1, const Eigen::MatrixXf& covmat1, const float det_sqrt_1, const Eigen::VectorXf& mean2, const Eigen::MatrixXf& covmat2, const float det_sqrt_2) {
         const float det_comb = ((covmat1 + covmat2) / 2.0f).determinant();
         
         assert(det_comb > 0);
-        assert(det1 > 0);
-        assert(det2 > 0);
+        assert(det_sqrt_1 > 0);
+        assert(det_sqrt_2 > 0);
 
-        return std::logf(det_comb / (det1 * det2));
+        return std::logf(det_comb / (det_sqrt_1 * det_sqrt_2));
     }
 
     // Bhattacharyya distance, only mean part -- FOR TESTING ONLY 
-    float distBhattacharyyaMean(const Eigen::VectorXf& mean1, const Eigen::MatrixXf& covmat1, const float det1, const Eigen::VectorXf& mean2, const Eigen::MatrixXf& covmat2, const float det2) {
+    float distBhattacharyyaMean(const Eigen::VectorXf& mean1, const Eigen::MatrixXf& covmat1, const float det_sqrt_1, const Eigen::VectorXf& mean2, const Eigen::MatrixXf& covmat2, const float det_sqrt_2) {
         Eigen::MatrixXf covmat_comb = (covmat1 + covmat2) / 2.0f;
         Eigen::VectorXf mean_diff = mean1 - mean2;
         const float det_comb = covmat_comb.determinant();
@@ -1027,36 +1126,36 @@ namespace hnswlib {
 
     // Correlation Matrix distance
     // http://dx.doi.org/10.1109/VETECS.2005.1543265
-    float CMD(const Eigen::VectorXf& mean1, const Eigen::MatrixXf& covmat1, const float det1, const Eigen::VectorXf& mean2, const Eigen::MatrixXf& covmat2, const float det2) {
+    float CMD(const Eigen::VectorXf& mean1, const Eigen::MatrixXf& covmat1, const float det_sqrt_1, const Eigen::VectorXf& mean2, const Eigen::MatrixXf& covmat2, const float det_sqrt_2) {
         return 1 - (covmat1*covmat2).trace() / (covmat1.norm() * covmat2.norm());
     }
 
     // The Fréchet distance between multivariate normal distributions
     // https://doi.org/10.1016/0047-259X(82)90077-X
-    float FrechetDistGeneral(const Eigen::VectorXf& mean1, const Eigen::MatrixXf& covmat1, const float det1, const Eigen::VectorXf& mean2, const Eigen::MatrixXf& covmat2, const float det2) {
+    float FrechetDistGeneral(const Eigen::VectorXf& mean1, const Eigen::MatrixXf& covmat1, const float det_sqrt_1, const Eigen::VectorXf& mean2, const Eigen::MatrixXf& covmat2, const float det_sqrt_2) {
         return (mean1- mean2).squaredNorm() + (covmat1 + covmat2 - 2 * (covmat2*covmat1).sqrt()).trace();
     }
     // Fréchet distance without the means comparison
-    float FrechetDistCovMat(const Eigen::VectorXf& mean1, const Eigen::MatrixXf& covmat1, const float det1, const Eigen::VectorXf& mean2, const Eigen::MatrixXf& covmat2, const float det2) {
+    float FrechetDistCovMat(const Eigen::VectorXf& mean1, const Eigen::MatrixXf& covmat1, const float det_sqrt_1, const Eigen::VectorXf& mean2, const Eigen::MatrixXf& covmat2, const float det_sqrt_2) {
         return (covmat1 + covmat2 - 2 * (covmat2*covmat1).sqrt()).trace();
     }
 
     // Frobenius between covmatrices
-    float FrobeniusCovMat(const Eigen::VectorXf& mean1, const Eigen::MatrixXf& covmat1, const float det1, const Eigen::VectorXf& mean2, const Eigen::MatrixXf& covmat2, const float det2) {
+    float FrobeniusCovMat(const Eigen::VectorXf& mean1, const Eigen::MatrixXf& covmat1, const float det_sqrt_1, const Eigen::VectorXf& mean2, const Eigen::MatrixXf& covmat2, const float det_sqrt_2) {
         return (covmat1 - covmat2).squaredNorm();
     }
 
 
     static float
         MultiVarCovMat(const void *pVect1v, const void *pVect2v, const void *qty_ptr) {
-        multivar_normal_plusDet pVect1 = static_cast<FeatureData<multivar_normal_plusDet>*>((IFeatureData*)pVect1v)->data;
-        multivar_normal_plusDet pVect2 = static_cast<FeatureData<multivar_normal_plusDet>*>((IFeatureData*)pVect2v)->data;
+        MeanCov_feat pVect1 = static_cast<FeatureData<MeanCov_feat>*>((IFeatureData*)pVect1v)->data;
+        MeanCov_feat pVect2 = static_cast<FeatureData<MeanCov_feat>*>((IFeatureData*)pVect2v)->data;
 
         const space_params_Bhattacharyya* sparam = (space_params_Bhattacharyya*)qty_ptr;
         COVMATDIST<float> covmatdist = sparam->fstdistfunc_;
 
         // Bhattacharyya distance
-        return covmatdist(std::get<0>(pVect1), std::get<1>(pVect1), std::get<2>(pVect1), std::get<0>(pVect2), std::get<1>(pVect2), std::get<2>(pVect2));
+        return covmatdist(pVect1.mean_vec, pVect1.cov_mat, pVect1.cov_mat_det_sqrt, pVect2.mean_vec, pVect2.cov_mat, pVect2.cov_mat_det_sqrt);
     }
 
     class MultiVarCovMat_Space : public SpaceInterface<float> {
@@ -1068,7 +1167,7 @@ namespace hnswlib {
     public:
         MultiVarCovMat_Space(distance_metric distanceMetric) {
 
-            data_size_ = sizeof(FeatureData<multivar_normal_plusDet>);
+            data_size_ = sizeof(FeatureData<MeanCov_feat>);
             fstdistfunc_ = MultiVarCovMat;
 
             if (distanceMetric == distance_metric::METRIC_BHATTACHARYYA)

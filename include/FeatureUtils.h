@@ -378,11 +378,30 @@ float covariance(Eigen::VectorXf vec1, Eigen::VectorXf vec2);
 Eigen::MatrixXf covmat(Eigen::MatrixXf data);
 Eigen::MatrixXf covmat(Eigen::MatrixXf data, Eigen::VectorXf probs);
 
-typedef std::pair<Eigen::VectorXf, Eigen::MatrixXf> multivar_normal;
-typedef std::tuple<Eigen::VectorXf, Eigen::MatrixXf, float> multivar_normal_plusDet;
+// Feature struct: mean vector and covariance matrix + it's determinant
+typedef struct Multivar_normal{
+    Eigen::VectorXf mean_vec;
+    Eigen::MatrixXf cov_mat;
+    float cov_mat_det;
 
-multivar_normal compMultiVarFeatures(Eigen::MatrixXf data);
-multivar_normal compMultiVarFeatures(Eigen::MatrixXf data, Eigen::VectorXf probs);
+    Multivar_normal() = delete;
+    Multivar_normal(Eigen::VectorXf m, Eigen::MatrixXf c) : mean_vec(m), cov_mat(c), cov_mat_det(c.determinant()) {};
+    Multivar_normal(Eigen::VectorXf m, Eigen::MatrixXf c, float d) : mean_vec(m), cov_mat(c), cov_mat_det(d) {};
+} Multivar_normal;
+
+// Feature struct: mean vector and covariance matrix + square root of it's determinant
+typedef struct MeanCov_feat {
+    Eigen::VectorXf mean_vec;
+    Eigen::MatrixXf cov_mat;
+    float cov_mat_det_sqrt;
+
+    MeanCov_feat() = delete;
+    MeanCov_feat(Eigen::VectorXf m, Eigen::MatrixXf c, float d) : mean_vec(m), cov_mat(c), cov_mat_det_sqrt(d) {};
+} MeanCov_feat;
+
+
+Multivar_normal compMultiVarFeatures(Eigen::MatrixXf data);
+Multivar_normal compMultiVarFeatures(Eigen::MatrixXf data, Eigen::VectorXf probs);
 
 
 class IFeatureData
