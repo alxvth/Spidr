@@ -313,28 +313,14 @@ void FeatureExtraction::multivarNormDistDescriptor(size_t pointInd, std::vector<
         Eigen::VectorXf noiseRangeDims = absMaxsDims * noiseMagnitude;
         for (auto& range : noiseRangeDims) { if (range < noiseMagnitude) range = noiseMagnitude; };
         
-        //std::cout << "vals:\n" << "Noise Range:\n" << noiseRangeDims << "\n";
+        // adding noise
+        for (int d = 0; d < _numDims; d++) {
+            neighborValues_mat.row(d) += randomVector(_neighborhoodSize, -1 * noiseRangeDims[d], noiseRangeDims[d]);;
+        }
 
-        //std::cout << neighborValues_mat << "\n";
+        meanCov_feat = compMultiVarFeatures(neighborValues_mat, _neighborhoodWeights_eig);
 
-        // make sure that det !=0 by repeatedly adding noise until the condition is met
-        //do
-        //{
-            for (int d = 0; d < _numDims; d++) {
-                neighborValues_mat.row(d) += randomVector(_neighborhoodSize, -1 * noiseRangeDims[d], noiseRangeDims[d]);;
-            }
-
-            meanCov_feat = compMultiVarFeatures(neighborValues_mat, _neighborhoodWeights_eig);
-
-            //std::cout << "vals:\n" << neighborValues_mat << "\n";
-            //std::cout << "cov_mat:\n" << meanCov_feat.cov_mat << "\n";
-            //std::cout << "det:\n" << meanCov_feat.cov_mat_det << "\n";
-            //std::cout << "det:\n" << meanCov_feat.cov_mat.determinant() << "\n";
-
-        //} 
-        //while (std::abs(meanCov_feat.cov_mat_det) < 1e-5f);
-
-        assert(std::abs(meanCov_feat.cov_mat_det) > 1e-5f);
+        //assert(std::abs(meanCov_feat.cov_mat_det) > 1e-5f); // this is often not the case
     }
 
 

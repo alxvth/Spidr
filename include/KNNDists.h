@@ -1083,7 +1083,10 @@ namespace hnswlib {
             Eigen::VectorXf checkSpan = c_svd.u(Eigen::all, inactiveDIds).transpose() * mean_diff;
 
             if (std::any_of(checkSpan.begin(), checkSpan.end(), [](auto& val) { return val != 0; }))
+            {
+                spdlog::warn("KNNDists: distBhattacharyya: FLT_MAX.");
                 return FLT_MAX;
+            }
         }
 
 
@@ -1112,7 +1115,7 @@ namespace hnswlib {
         return std::logf(det_comb / (det_sqrt_1 * det_sqrt_2));
     }
 
-    // Bhattacharyya distance, only mean part -- FOR TESTING ONLY 
+    // Bhattacharyya distance, only Mahalanobis part
     float distBhattacharyyaMean(const Eigen::VectorXf& mean1, const Eigen::MatrixXf& covmat1, const float det_sqrt_1, const Eigen::VectorXf& mean2, const Eigen::MatrixXf& covmat2, const float det_sqrt_2) {
         Eigen::MatrixXf covmat_comb = (covmat1 + covmat2) / 2.0f;
         Eigen::VectorXf mean_diff = mean1 - mean2;
