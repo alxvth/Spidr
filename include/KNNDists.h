@@ -263,6 +263,7 @@ namespace hnswlib {
 
     public:
         QFSpace(size_t dim, size_t bin, bin_sim ground_type = bin_sim::SIM_EUC) {
+            spdlog::info("KNNDist: create QFSpace");
 
             fstdistfunc_ = QFSqr;
             // Not entirely sure why this only shows positive effects for high bin counts...
@@ -346,7 +347,7 @@ namespace hnswlib {
 
     public:
         HellingerSpace(size_t dim, size_t bin) {
-
+            spdlog::info("KNNDist: create HellingerSpace");
             fstdistfunc_ = HelSqr;
             params_ = { dim, bin };
             //data_size_ = featureValsPerPoint * sizeof(float);
@@ -403,6 +404,7 @@ namespace hnswlib {
 
     public:
         L2FeatSpace(size_t dim) {
+            spdlog::info("KNNDist: create L2FeatSpace");
             fstdistfunc_ = L2FeatSqr;
 
             dim_ = dim;
@@ -502,6 +504,7 @@ namespace hnswlib {
 
     public:
         ChamferSpace(size_t dim, size_t neighborhoodSize, loc_Neigh_Weighting weighting) {
+            spdlog::info("KNNDist: create ChamferSpace");
             fstdistfunc_ = ChamferDist;
             //data_size_ = featureValsPerPoint * sizeof(float);
             data_size_ = sizeof(FeatureData<Eigen::MatrixXf>);
@@ -719,6 +722,7 @@ namespace hnswlib {
 
     public:
         SSDSpace(size_t dim, size_t neighborhoodSize, loc_Neigh_Weighting weighting) {
+            spdlog::info("KNNDist: create SSDSpace");
             fstdistfunc_ = SumSquaredDist;
             //data_size_ = featureValsPerPoint * sizeof(float);
             data_size_ = sizeof(FeatureData<Eigen::MatrixXf>);
@@ -825,6 +829,7 @@ namespace hnswlib {
 
     public:
         HausdorffSpace(size_t dim, size_t neighborhoodSize, loc_Neigh_Weighting weighting) {
+            spdlog::info("KNNDist: create HausdorffSpace");
             fstdistfunc_ = HausdorffDist;
             //data_size_ = featureValsPerPoint * sizeof(float);
             data_size_ = sizeof(FeatureData<Eigen::MatrixXf>);
@@ -922,6 +927,7 @@ namespace hnswlib {
 
     public:
         HausdorffSpace_median(size_t dim, size_t neighborhoodSize, loc_Neigh_Weighting weighting) {
+            spdlog::info("KNNDist: create HausdorffSpace_median");
             fstdistfunc_ = HausdorffDist_median;
             //data_size_ = featureValsPerPoint * sizeof(float);
             data_size_ = sizeof(FeatureData<Eigen::MatrixXf>);
@@ -1169,6 +1175,7 @@ namespace hnswlib {
 
     public:
         MultiVarCovMat_Space(distance_metric distanceMetric) {
+            spdlog::info("KNNDist: create MultiVarCovMat_Space");
 
             data_size_ = sizeof(FeatureData<MeanCov_feat>);
             fstdistfunc_ = MultiVarCovMat;

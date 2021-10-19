@@ -238,9 +238,11 @@ hnswlib::SpaceInterface<float>* CreateHNSWSpace(const distance_metric knn_metric
 
     case distance_metric::METRIC_CHA:
         space = new hnswlib::ChamferSpace(numDims, neighborhoodSize, neighborhoodWeighting);
+        break;
 
     case distance_metric::METRIC_SSD:
         space = new hnswlib::SSDSpace(numDims, neighborhoodSize, neighborhoodWeighting);
+        break;
 
     case distance_metric::METRIC_HAU:
         space = new hnswlib::HausdorffSpace(numDims, neighborhoodSize, neighborhoodWeighting);
