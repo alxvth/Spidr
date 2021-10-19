@@ -121,7 +121,7 @@ void FeatureExtraction::setup(const std::vector<unsigned int>& pointIDsGlobal, c
 		spdlog::error("Feature extraction: unknown feature type");
     }
 
-	spdlog::info("Feature extraction: Num neighbors (in each direction): {0} (total neighbors: {1}) Neighbor weighting: {2}", _numLocNeighbors , _neighborhoodSize, static_cast<unsigned int> (_neighborhoodWeighting));
+	spdlog::info("Feature extraction: Num neighbors (in each direction): {0} (total neighbors: {1}) Neighbor weighting: {2}", _numLocNeighbors , _neighborhoodSize, logging::neighborhood_weighting_name(_neighborhoodWeighting));
 
 }
 

@@ -47,7 +47,7 @@ void DistanceCalculation::setup(const Feature dataFeatures, const std::vector<un
     //_knn_indices.resize(_numForegroundPoints*_nn, -1);              // unnecessary, done in ComputeHNSWkNN
     //_knn_distances_squared.resize(_numForegroundPoints*_nn, -1);    // unnecessary, done in ComputeHNSWkNN
 
-    spdlog::info("Distance calculation: Feature values per point: {0}, Number of NN to calculate {1}. Metric: {2}", _numFeatureValsPerPoint, _nn, static_cast<size_t> (_knn_metric));
+    spdlog::info("Distance calculation: Feature values per point: {0}, Number of NN to calculate {1}. Metric: {2}", _numFeatureValsPerPoint, _nn, logging::distance_metric_name(_knn_metric));
 
     if (_numPoints != _numForegroundPoints)
         spdlog::info("Distance calculation: Do not consider {} background points", _numPoints - _numForegroundPoints);

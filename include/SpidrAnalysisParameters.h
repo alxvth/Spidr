@@ -49,9 +49,6 @@ enum class distance_metric : size_t
 
 };
 
-namespace logging {
-    std::string distance_metric_name(const distance_metric& metric);
-}
 
 /*!
  * Types of ground distance calculation that are used as the basis for bin similarities
@@ -145,6 +142,10 @@ static const size_t NumFeatureValsPerPoint(const feature_type featureType, const
 	return featureSize;
 }
 
+namespace logging {
+    std::string distance_metric_name(const distance_metric& metric);
+    std::string neighborhood_weighting_name(const loc_Neigh_Weighting& weighting);
+}
 
 
 /*!

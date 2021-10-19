@@ -21,4 +21,14 @@ namespace logging {
         default: return "";
         }
     }
+
+    std::string neighborhood_weighting_name(const loc_Neigh_Weighting& weighting) {
+        switch (weighting) {
+        case loc_Neigh_Weighting::WEIGHT_UNIF: return "Uniform weighting";
+        case loc_Neigh_Weighting::WEIGHT_BINO: return "Binomial weighting";
+        case loc_Neigh_Weighting::WEIGHT_GAUS: return "Gaussian weighting";
+        default: return "";
+        }
+    }
+
 }
