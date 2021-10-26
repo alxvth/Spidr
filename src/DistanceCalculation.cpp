@@ -45,7 +45,7 @@ void DistanceCalculation::setup(const Feature dataFeatures, const std::vector<un
 
     // Output
     //_knn_indices.resize(_numForegroundPoints*_nn, -1);              // unnecessary, done in ComputeHNSWkNN
-    //_knn_distances_squared.resize(_numForegroundPoints*_nn, -1);    // unnecessary, done in ComputeHNSWkNN
+    //_knn_distances.resize(_numForegroundPoints*_nn, -1);    // unnecessary, done in ComputeHNSWkNN
 
     spdlog::info("Distance calculation: Feature values per point: {0}, Number of NN to calculate {1}. Metric: {2}", _numFeatureValsPerPoint, _nn, logging::distance_metric_name(_knn_metric));
 
@@ -80,66 +80,19 @@ void DistanceCalculation::computekNN() {
     if (_knn_lib == knn_library::KNN_HNSW) {
 		spdlog::info("Distance calculation: HNSWLib for knn computation");
 
-        std::tie(_knn_indices, _knn_distances_squared) = ComputeHNSWkNN(_dataFeatures, space, _numFeatureValsPerPoint, _foregroundIDsGlobal, _nn);
+        std::tie(_knn_indices, _knn_distances) = ComputeHNSWkNN(_dataFeatures, space, _numFeatureValsPerPoint, _foregroundIDsGlobal, _nn);
 
     }
     else if (_knn_lib == knn_library::KKN_EXACT) {
 		spdlog::info("Distance calculation: Exact kNN computation");
 
-        std::tie(_knn_indices, _knn_distances_squared) = ComputeExactKNN(_dataFeatures, space, _numFeatureValsPerPoint, _foregroundIDsGlobal, _nn);
-
-    }
-    else if (_knn_lib == knn_library::EVAL_KNN_EXACT) {
-        // Save the entire distance matrix to disk. Then calc the exact kNN and perform the embedding
-        // Note: You could also sort the distance matrix instead of recalculating it - but I'm lazy and will only use this for small data set where the performance is not an issue.
-
-		spdlog::info("Distance calculation: Evaluation mode (exact) - Calc full distance matrix for writing to disk");
-        std::vector<int> all_dists_indices_to_Disk;
-        std::vector<float> all_distances_squared_to_Disk;
-        std::tie(all_dists_indices_to_Disk, all_distances_squared_to_Disk) = ComputeFullDistMat(_dataFeatures, space, _numFeatureValsPerPoint, _foregroundIDsGlobal);
-
-		spdlog::info("Distance calculation: Evaluation mode (exact) - Write full distance matrix to disk");
-
-        // Write (full) distance matrix and IDs to disk
-        std::string savePath = _embeddingName;
-        std::string infoStr = "_nD_" + std::to_string(_numDims) + "_nP_" + std::to_string(_numForegroundPoints) + "_nN_" + std::to_string(_numForegroundPoints);
-        writeVecToBinary(all_dists_indices_to_Disk, savePath + "_allInds" + infoStr + ".bin");
-        writeVecToBinary(all_distances_squared_to_Disk, savePath + "_allDists" + infoStr + ".bin");
-
-        // Write features to disk
-        // TODO: This does not work anymore
-        //infoStr = "_nFpP_" + std::to_string(_numFeatureValsPerPoint) + "_nP_" + std::to_string(_numForegroundPoints) + "_nD_" + std::to_string(_numDims);
-        //writeVecToBinary(_dataFeatures.get_data_ptr(), savePath + "_features" + infoStr + ".bin");
-
-		spdlog::info("Distance calculation: Evaluation mode (exact) - Calc exact knn distance matrix for embedding");
-        std::tie(_knn_indices, _knn_distances_squared) = ComputeExactKNN(_dataFeatures, space, _numFeatureValsPerPoint, _foregroundIDsGlobal, _nn);
-
-        // Write exact knn distances to disk
-		spdlog::info("Distance calculation: Evaluation mode (exact) - Write knn distance matrix to disk");
-        infoStr = "_nD_" + std::to_string(_numDims) + "_nP_" + std::to_string(_numForegroundPoints) + "_nN_" + std::to_string(_nn);
-        writeVecToBinary(_knn_indices, savePath + "_knnInds" + infoStr + ".bin");
-        writeVecToBinary(_knn_distances_squared, savePath + "_knnDists" + infoStr + ".bin");
-
-    }
-    else if (_knn_lib == knn_library::EVAL_KNN_HNSW) {
-        // Save the akNN distance matrix to disk. 
-
-		spdlog::info("Distance calculation: Evaluation mode (akNN) - HNSWLib for knn computation");
-        std::tie(_knn_indices, _knn_distances_squared) = ComputeHNSWkNN(_dataFeatures, space, _numFeatureValsPerPoint, _foregroundIDsGlobal, _nn);
-
-        // Write aknn distances to disk
-		spdlog::info("Distance calculation: Evaluation mode (akNN) - Write aknn distance matrix to disk");
-        std::string savePath = _embeddingName;
-        std::string infoStr = "_nD_" + std::to_string(_numDims) + "_nP_" + std::to_string(_numForegroundPoints) + "_nN_" + std::to_string(_nn);
-        writeVecToBinary(_knn_indices, savePath + "_aknnInds" + infoStr + ".bin");
-        writeVecToBinary(_knn_distances_squared, savePath + "_aknnDists" + infoStr + ".bin");
+        std::tie(_knn_indices, _knn_distances) = ComputeExactKNN(_dataFeatures, space, _numFeatureValsPerPoint, _foregroundIDsGlobal, _nn);
 
     }
 	else if (_knn_lib == knn_library::FULL_DIST_BRUTE_FORCE) {
 		// Use entire distance matrix 
 		spdlog::info("Distance calculation: Calc full distance matrix brute force");
-		std::tie(_knn_indices, _knn_distances_squared) = ComputeFullDistMat(_dataFeatures, space, _numFeatureValsPerPoint, _foregroundIDsGlobal);
-
+		std::tie(_knn_indices, _knn_distances) = ComputeFullDistMat(_dataFeatures, space, _numFeatureValsPerPoint, _foregroundIDsGlobal);
 
 	}
 	else
@@ -150,22 +103,22 @@ void DistanceCalculation::computekNN() {
 
     // -1 would mark unset values
     assert(_knn_indices.size() == _numForegroundPoints * _nn);
-    assert(_knn_distances_squared.size() == _numForegroundPoints * _nn);
+    assert(_knn_distances.size() == _numForegroundPoints * _nn);
     assert(std::none_of(_knn_indices.begin(), _knn_indices.end(), [](int i) {return i == -1; }));
-    assert(std::none_of(_knn_distances_squared.begin(), _knn_distances_squared.end(), [](float i) {return i == -1.0f; }));
+    assert(std::none_of(_knn_distances.begin(), _knn_distances.end(), [](float i) {return i == -1.0f; }));
 
 }
 
-const std::tuple< std::vector<int>, std::vector<float>> DistanceCalculation::output() {
-    return { _knn_indices, _knn_distances_squared };
+std::tuple< std::vector<int>, std::vector<float>> DistanceCalculation::output() const {
+    return { _knn_indices, _knn_distances };
 }
 
-std::vector<int> DistanceCalculation::get_knn_indices() {
+std::vector<int> DistanceCalculation::get_knn_indices() const {
     return _knn_indices;
 }
 
-std::vector<float> DistanceCalculation::get_knn_distances_squared() {
-    return _knn_distances_squared;
+std::vector<float> DistanceCalculation::get_knn_distances() const {
+    return _knn_distances;
 }
 
 

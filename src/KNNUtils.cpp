@@ -144,7 +144,7 @@ std::tuple<std::vector<int>, std::vector<float>> ComputeHNSWkNN(const Feature& d
 
         assert(top_candidates.size() == nn);
 
-        // save nn in _knn_indices and _knn_distances_squared 
+        // save nn in _knn_indices and _knn_distances 
         auto *distances_offset = distances_squared.data() + (i*nn);
         auto indices_offset = indices.data() + (i*nn);
         int j = 0;

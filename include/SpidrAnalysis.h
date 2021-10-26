@@ -64,7 +64,7 @@ public:
 	void computeFeatures();
 
 	/*! Based on _dataFeats, compute kNN
-	 * sets _knn_indices and _knn_distances_squared
+	 * sets _knn_indices and _knn_distances
 	 */
 	void computekNN();
 
@@ -83,25 +83,39 @@ public:
     const size_t getNumImagePoints();
     bool embeddingIsRunning();
 
-    /*! Return embdding
-	 *
+    /*! Return reference to embdding
      */
-    const std::vector<float> &output();
+     const std::vector<float> &output() const;
 
-	/*! Return embdding with background
+     /*! Return copy of embdding
+      */
+     const std::vector<float> output_copy() const;
+
+
+	/*! Return reference to embdding with background
 	 * Checks if during setupData() any background points were specified and, if so, adds them into a corner in the embedding
 	 */
-	const std::vector<float> &outputWithBackground();
+    const std::vector<float> &outputWithBackground();
 
-    const SpidrParameters getParameters();
+    /*! Return copy of embdding with background
+     * Checks if during setupData() any background points were specified and, if so, adds them into a corner in the embedding
+     */
+    const std::vector<float> outputWithBackground_copy() const;
 
-	const Feature getDataFeatures();
+    const SpidrParameters getParameters() const;
 
-    /* Returns _knn_indices, _knn_distances_squared, use with std::tie(_knnIds, _knnDists) = getKNN(); */
-	const std::tuple<std::vector<int>, std::vector<float>> getKNN();
+    const Feature getDataFeatures() const;
+
+    /* Returns _knn_indices, _knn_distances, use with std::tie(_knnIds, _knnDists) = getKnn(); */
+    const std::tuple<std::vector<int>, std::vector<float>> getKnn() const;
+
+    const std::vector<int> getKnnIndices() const;
+
+    const std::vector<float> getKnnDistances() const;
+
 
     /* Add bg points to emb, uses the ID info set for an instance of this class */
-    void addBackgroundToEmbedding(std::vector<float>& emb, const std::vector<float>& emb_wo_bg);
+    void addBackgroundToEmbedding(std::vector<float>& emb, const std::vector<float>& emb_wo_bg) const;
 
 private:
     
@@ -177,7 +191,7 @@ private:
 	// features and knn
 	Feature _dataFeats;						            /*!<> */
 	std::vector<int> _knn_indices ;						/*!<> */
-	std::vector<float> _knn_distances_squared;			/*!<> */
+	std::vector<float> _knn_distances;			/*!<> */
 
 };
 

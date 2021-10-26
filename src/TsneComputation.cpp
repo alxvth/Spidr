@@ -196,7 +196,7 @@ void TsneComputation::copyFloatOutput()
     _outputData = _embedding.getContainer();
 }
 
-const std::vector<float>& TsneComputation::output()
+const std::vector<float>& TsneComputation::output() const
 {
     return _outputData;
 }

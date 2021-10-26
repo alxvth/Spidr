@@ -78,11 +78,11 @@ void SpidrAnalysis::computekNN() {
 	_distCalc.setup(_dataFeats, _foregroundIDsGlobal, _params);
 	_distCalc.compute();
 	_knn_indices = _distCalc.get_knn_indices();
-	_knn_distances_squared = _distCalc.get_knn_distances_squared();
+	_knn_distances = _distCalc.get_knn_distances();
 }
 
 void SpidrAnalysis::computeEmbedding() {
-	_tsne.setup(_knn_indices, _knn_distances_squared, _params);
+	_tsne.setup(_knn_indices, _knn_distances, _params);
 	_tsne.compute();
 }
 
@@ -163,8 +163,15 @@ bool SpidrAnalysis::embeddingIsRunning() {
     return _tsne.isTsneRunning();
 }
 
-const std::vector<float>& SpidrAnalysis::output() {
+const std::vector<float>& SpidrAnalysis::output() const {
     return _tsne.output();
+}
+
+const std::vector<float> SpidrAnalysis::output_copy() const {
+    std::vector<float> emb;
+    const std::vector<float>& emb_ref = _tsne.output();
+    emb.assign(emb_ref.begin(), emb_ref.end());  // copy vector 
+    return emb;
 }
 
 const std::vector<float>& SpidrAnalysis::outputWithBackground() {
@@ -181,7 +188,22 @@ const std::vector<float>& SpidrAnalysis::outputWithBackground() {
     }
 }
 
-void SpidrAnalysis::addBackgroundToEmbedding(std::vector<float>& emb, const std::vector<float>& emb_wo_bg) {
+const std::vector<float> SpidrAnalysis::outputWithBackground_copy() const {
+    const std::vector<float>& emb = _tsne.output();
+    std::vector<float> emd_with_backgound;
+
+    if (_backgroundIDsGlobal.empty())
+    {
+        return emb;
+    }
+    else
+    {
+        addBackgroundToEmbedding(emd_with_backgound, emb);
+        return emd_with_backgound;
+    }
+}
+
+void SpidrAnalysis::addBackgroundToEmbedding(std::vector<float>& emb, const std::vector<float>& emb_wo_bg) const {
     spdlog::info("SpidrAnalysis: Add background back to embedding");
     auto start = std::chrono::steady_clock::now();
 
@@ -232,14 +254,22 @@ void SpidrAnalysis::stopComputation() {
     _tsne.stopGradientDescent();
 }
 
-const SpidrParameters SpidrAnalysis::getParameters() {
+const SpidrParameters SpidrAnalysis::getParameters() const {
     return _params;
 }
 
-const Feature SpidrAnalysis::getDataFeatures() {
+const Feature SpidrAnalysis::getDataFeatures() const {
 	return _dataFeats;
 }
 
-const std::tuple<std::vector<int>, std::vector<float>> SpidrAnalysis::getKNN() {
-	return std::make_tuple(_knn_indices, _knn_distances_squared);
+const std::tuple<std::vector<int>, std::vector<float>> SpidrAnalysis::getKnn() const {
+	return std::make_tuple(_knn_indices, _knn_distances);
+}
+
+const std::vector<int> SpidrAnalysis::getKnnIndices() const {
+    return _knn_indices;
+}
+
+const std::vector<float> SpidrAnalysis::getKnnDistances() const {
+    return _knn_distances;
 }

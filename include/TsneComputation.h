@@ -62,11 +62,11 @@ public:
      * 
      * \return 
      */
-    const std::vector<float>& output();
+    const std::vector<float>& output() const;
 
-    inline bool isTsneRunning() { return _isTsneRunning; }
-    inline bool isGradientDescentRunning() { return _isGradientDescentRunning; }
-    inline bool isMarkedForDeletion() { return _isMarkedForDeletion; }
+    inline bool isTsneRunning() const { return _isTsneRunning; }
+    inline bool isGradientDescentRunning() const { return _isGradientDescentRunning; }
+    inline bool isMarkedForDeletion() const { return _isMarkedForDeletion; }
 
 private:
     void computeGradientDescent();

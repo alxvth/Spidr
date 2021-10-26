@@ -20,14 +20,13 @@ class DistanceCalculation
 public:
     //DistanceCalculation();
 
-    /*!
-     * 
-     * 
+    /*! Returns knn indices and distances as a tuple
+     * Use with std::tie(_knn_indices, _knn_distances) = output()
      */
-    const std::tuple< std::vector<int>, std::vector<float>> output(); // tuple of indices and dists
+    std::tuple< std::vector<int>, std::vector<float>> output() const; // tuple of indices and dists
     
-    std::vector<int> get_knn_indices();
-    std::vector<float> get_knn_distances_squared();
+    std::vector<int> get_knn_indices() const;
+    std::vector<float> get_knn_distances() const;
 
     void setKnnAlgorithm(knn_library knn);
     void setDistanceMetric(distance_metric metric);
@@ -76,5 +75,5 @@ private:
 
     // Output
     std::vector<int> _knn_indices;                      /*!<> */
-    std::vector<float> _knn_distances_squared;          /*!<> */
+    std::vector<float> _knn_distances;          /*!<> */
 };
