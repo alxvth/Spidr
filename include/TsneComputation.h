@@ -25,13 +25,13 @@ public:
     void setIterations(int iterations);
     void setExaggerationIter(int exaggerationIter);
     void setExponentialDecay(int exponentialDecay);
-    void setPerplexity(int perplexity);
+    void setPerplexity(float perplexity);
     void setNumDimensionsOutput(int numDimensionsOutput);
 
     inline bool verbose() { return _verbose; }
     inline int iterations() { return _iterations; }
     inline int exaggerationIter() { return _exaggerationIter; }
-    inline int perplexity() { return _perplexity; }
+    inline float perplexity() { return _perplexity; }
     inline int numDimensionsOutput() { return _numDimensionsOutput; }
 
     /*!

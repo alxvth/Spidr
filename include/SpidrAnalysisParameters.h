@@ -160,7 +160,9 @@ public:
         _kernelWidth(0), _neighborhoodSize(0), _numFeatureValsPerPoint(0), _forceCalcBackgroundFeatures(false),
 		_aknn_algorithm(knn_library::KNN_HNSW), _aknn_metric(distance_metric::METRIC_QF),
 		_perplexity(30), _perplexity_multiplier(3), _numIterations(1000), _exaggeration(250)
-	{}
+	{
+        // the default constructor sets un-useable values - the user has to set them
+    }
 
 	SpidrParameters(size_t numPoints, size_t numDims, ImgSize imgSize, std::string embeddingName, const float* dataVecBegin,
 		feature_type featureType, loc_Neigh_Weighting neighWeighting, size_t numLocNeighbors, size_t numHistBins,
@@ -169,9 +171,9 @@ public:
 		_numPoints(numPoints), _numDims(numDims), _imgSize(imgSize), _embeddingName(embeddingName),
 		_featureType(featureType), _neighWeighting(neighWeighting), _numNeighborsInEachDirection(numLocNeighbors), _numHistBins(numHistBins),
 		_aknn_algorithm(aknn_algorithm), _aknn_metric(aknn_metric), _forceCalcBackgroundFeatures(forceCalcBackgroundFeatures),
-		_perplexity(perplexity), _perplexity_multiplier(3), _numIterations(numIterations), _exaggeration(exaggeration)
+		_perplexity_multiplier(3), _numIterations(numIterations), _exaggeration(exaggeration)
 	{
-		update_nn();	// sets nn based on perplexity
+        set_perplexity(perplexity);  // sets nn based on perplexity
 		_numForegroundPoints = numPoints; // No background default to all points in the foreground
 		_kernelWidth = (2 * _numNeighborsInEachDirection) + 1;
 		_neighborhoodSize = _kernelWidth * _kernelWidth;
@@ -185,10 +187,10 @@ public:
         _numPoints(numPoints), _numDims(numDims), _imgSize(imgSize), _embeddingName(embeddingName), _numForegroundPoints(numForegroundPoints),
         _featureType(featureType), _neighWeighting(neighWeighting), _numNeighborsInEachDirection(numLocNeighbors), _numHistBins(numHistBins),
         _aknn_algorithm(aknn_algorithm), _aknn_metric(aknn_metric), _forceCalcBackgroundFeatures(forceCalcBackgroundFeatures),
-        _perplexity(perplexity), _perplexity_multiplier(3), _numIterations(numIterations), _exaggeration(exaggeration)
+        _perplexity_multiplier(3), _numIterations(numIterations), _exaggeration(exaggeration)
     {
-		update_nn();	// sets nn based on perplexity
-		_kernelWidth = (2 * _numNeighborsInEachDirection) + 1;
+        set_perplexity(perplexity);  // sets nn based on perplexity
+        _kernelWidth = (2 * _numNeighborsInEachDirection) + 1;
         _neighborhoodSize = _kernelWidth * _kernelWidth;
         _numFeatureValsPerPoint = NumFeatureValsPerPoint(_featureType, _numDims, _numHistBins, _neighborhoodSize);
     }
@@ -200,14 +202,19 @@ public:
 
 	// setting the perplexity also changes the number of knn
 	void set_perplexity(float perp) { 
-		_perplexity = perp;
+        if (perp <= 0) {
+            spdlog::warn("SpidrParameters: perplexity must be positive - set to 5 instead");
+            _perplexity = 5.0f;
+        }
+        else
+            _perplexity = perp;
 		update_nn();	// sets nn based on perplexity
 	}
 
 private:
 	void update_nn() {
 		// see Van Der Maaten, L. (2014). Accelerating t-SNE using tree-based algorithms. The Journal of Machine Learning Research, 15(1), 3221-3245.
-		_nn = _perplexity * _perplexity_multiplier + 1;
+		_nn = static_cast<size_t> ( _perplexity * _perplexity_multiplier + 1);
 
 		// For small data sets, cap the kNN at the number of points
 		if (_nn > _numPoints)

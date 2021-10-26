@@ -37,7 +37,7 @@ void SpidrAnalysis::setupData(const std::vector<float>& attribute_data, const st
 
 void SpidrAnalysis::initializeAnalysisSettings(const feature_type featType, const loc_Neigh_Weighting kernelWeightType, const size_t numLocNeighbors, const size_t numHistBins,\
                                                const knn_library aknnAlgType, const distance_metric aknnMetric,\
-                                               const int numIterations, const int perplexity, const int exaggeration, const int expDecay, bool forceCalcBackgroundFeatures) {
+                                               const int numIterations, const float perplexity, const int exaggeration, const int expDecay, bool forceCalcBackgroundFeatures) {
 	if (_params._numDims < 0 || _params._numHistBins < 0)
 		spdlog::error("SpidrWrapper: first call SpidrAnalysis::setupData() before initializing the settings with SpidrAnalysis::initializeAnalysisSettings since some might depend on the data dimensions.");
 
@@ -126,7 +126,7 @@ void SpidrAnalysis::setDistanceMetric(const distance_metric distance_metric) {
     _params._aknn_metric = distance_metric;
 }
 
-void SpidrAnalysis::setPerplexity(const unsigned perplexity) {
+void SpidrAnalysis::setPerplexity(const float perplexity) {
     _params.set_perplexity(perplexity);
 }
 

@@ -50,7 +50,7 @@ public:
 	 */
 	void initializeAnalysisSettings(const feature_type featType, const loc_Neigh_Weighting kernelType, const size_t numLocNeighbors, const size_t numHistBins, \
 		const knn_library aknnAlgType, const distance_metric aknnMetric, \
-		const int numIterations, const int perplexity, const int exaggeration, const int expDecay, bool forceCalcBackgroundFeatures = false);
+		const int numIterations, const float perplexity, const int exaggeration, const int expDecay, bool forceCalcBackgroundFeatures = false);
 
 
 	/*! Compute feature extraction and embedding
@@ -139,11 +139,11 @@ private:
     void setDistanceMetric(const distance_metric distance_metric_index);
 
     /*! Sets the perplexity and automatically determines the number of approximated kNN
-    * nn = 3 * perplexity
+    * nn = 3 * perplexity + 1 
     *
     * \param perplexity
     */
-    void setPerplexity(const unsigned perplexity);
+    void setPerplexity(const float perplexity);
     /*! Sets the number of histogram bins */
 
     /*! Sets the number of gradient descent iteration */

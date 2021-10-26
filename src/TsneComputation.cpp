@@ -29,7 +29,7 @@ _isTsneRunning(false),
 _isMarkedForDeletion(false),
 _continueFromIteration(0)
 {
-    _nn = _perplexity * _perplexity_multiplier + 1;
+    _nn = static_cast<int> (_perplexity * _perplexity_multiplier + 1);
 }
 
 
@@ -221,7 +221,7 @@ void TsneComputation::setExponentialDecay(int exponentialDecay)
     _exponentialDecay = exponentialDecay;
 }
 
-void TsneComputation::setPerplexity(int perplexity)
+void TsneComputation::setPerplexity(float perplexity)
 {
     _perplexity = perplexity;
 }

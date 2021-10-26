@@ -184,7 +184,7 @@ void FeatureExtraction::calculateHistogram(size_t pointInd, std::vector<float> n
         float minHist = _minMaxVals[2 * dim];
         float maxHist = _minMaxVals[2 * dim + 1];
         if (maxHist == minHist)     // ensure that the histogram can be made
-            maxHist += 0.01;
+            maxHist += 0.01f;
 
         Histogram_Weighted hist = Histogram_Weighted(minHist, maxHist, static_cast<unsigned int>(_numHistBins)); 
         for (size_t neighbor = 0; neighbor < _neighborhoodSize; neighbor++) {
@@ -199,7 +199,7 @@ void FeatureExtraction::calculateHistogram(size_t pointInd, std::vector<float> n
 
         // normalize the histogram: sum(hist) := 1
         normHist = hist.normalizedCounts();
-        assert(std::abs(normHist.sum() - 1) < 0.01);  
+        assert(std::abs(normHist.sum() - 1) < 0.01f);  
 
         // save the histogram in _outFeatures 
         feat[dim] = normHist;

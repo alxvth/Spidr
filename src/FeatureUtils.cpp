@@ -36,17 +36,17 @@ std::vector<float> BinomialKernel2D(const unsigned int width, norm_vec norm) {
     std::vector<float> bino2D(width * width, -1);
 
     // helper for normalization
-    int sum = 0;
-    int max = 0;
+    float sum = 0;
+    float max = 0;
 
     // outter product
     for (unsigned int row = 0; row < width; row++) {
         for (unsigned int col = 0; col < width; col++) {
-            bino2D[row*width + col] = bino1D[row] * bino1D[col];
+            bino2D[row*width + col] = static_cast<float>(bino1D[row] * bino1D[col]);
 
             // helper for normalization
             sum += +bino2D[row*width + col];
-            if (bino2D[row*width + col] > (float)max)
+            if (bino2D[row*width + col] > max)
                 max = bino2D[row*width + col];
         }
     }
@@ -169,7 +169,7 @@ template Histogram_Base<float>::Histogram_Base(float min, float max, unsigned in
 template< class scalar_type> Histogram_Base< scalar_type>::Histogram_Base(float min, float max, float binWidth) :
     _minVal(min), _maxVal(max), _binWidth(binWidth), _countBinTotal(0), _countBinValid(0), _countBinUnderflow(0), _countBinOverflow(0)
 {
-    _numBins = std::ceil((_maxVal - _minVal) / (float)_binWidth);
+    _numBins = static_cast <unsigned int> (std::ceil((_maxVal - _minVal) / (float)_binWidth));
     commonInit();
 }
 template Histogram_Base<unsigned int>::Histogram_Base(float min, float max, float binWidth);
@@ -191,7 +191,7 @@ template void Histogram_Base<float>::commonInit();
 template< class scalar_type> void Histogram_Base< scalar_type>::fill(const float value) {
     unsigned int binID;
     if (value >= _minVal && value < _maxVal) {
-        binID = std::floor((value - _minVal) * _binNormed);
+        binID = static_cast<unsigned int> (std::floor((value - _minVal) * _binNormed));
         _counts[binID] += 1;
         _countBinValid += 1;
     }
@@ -231,7 +231,7 @@ template float Histogram_Base<float>::operator[](int index) const;
 void Histogram_Weighted::fill_weighted(const float value, const float weight) {
     unsigned int binID;
     if (value >= _minVal && value < _maxVal) {
-        binID = std::floor((value - _minVal) * _binNormed);
+        binID = static_cast <unsigned int>( std::floor((value - _minVal) * _binNormed));
         _counts[binID] += weight;
         _countBinValid += 1;
     }
