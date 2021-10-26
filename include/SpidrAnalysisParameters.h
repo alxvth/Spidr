@@ -7,11 +7,11 @@
 
 /*! Image width and height container */
 typedef struct ImgSize {
-	int width;
-	int height;
+    size_t width;
+    size_t height;
 
 	ImgSize() : width(-1), height(-1) {};
-	ImgSize(int width, int height) : width(width), height(height) {};
+	ImgSize(size_t width, size_t height) : width(width), height(height) {};
 
 } ImgSize;
 

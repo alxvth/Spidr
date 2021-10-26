@@ -199,8 +199,8 @@ void SpidrAnalysis::addBackgroundToEmbedding(std::vector<float>& emb, const std:
             miny = emb_wo_bg[i + 1];
     }
 
-    minx -= std::abs(minx) * 0.05;
-    miny -= std::abs(miny) * 0.05;
+    minx -= std::abs(minx) * 0.05f;
+    miny -= std::abs(miny) * 0.05f;
 
     // Place all background pixel in the lower left corner of the embedding
 #ifdef NDEBUG

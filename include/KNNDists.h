@@ -240,7 +240,7 @@ namespace hnswlib {
                 res += TmpRes[0] + TmpRes[1] + TmpRes[2] + TmpRes[3];
 
                 // manually calc the rest dims
-                for (unsigned int uloc = nbin4; uloc < nbin; uloc++) {
+                for (unsigned int uloc = static_cast<unsigned int>(nbin4); uloc < nbin; uloc++) {
                     res += *pwR * *pW * *pA;
                     pW++;
                     pA++;
@@ -1077,7 +1077,7 @@ namespace hnswlib {
         // Mahalanobis term
 
         // check validity
-        if (activeDIds.size() < c_svd.d.size())
+        if (activeDIds.size() < static_cast<size_t>(c_svd.d.size()) )
         {
             std::vector<int> allIds{ static_cast<int>(c_svd.d.size()) };
             std::iota(allIds.begin(), allIds.end(), 0);

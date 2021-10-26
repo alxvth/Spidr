@@ -312,7 +312,7 @@ void FeatureExtraction::multivarNormDistDescriptor(size_t pointInd, std::vector<
         for (auto& range : noiseRangeDims) { if (range < noiseMagnitude) range = noiseMagnitude; };
         
         // adding noise
-        for (int d = 0; d < _numDims; d++) {
+        for (size_t d = 0; d < _numDims; d++) {
             neighborValues_mat.row(d) += randomVector(_neighborhoodSize, -1 * noiseRangeDims[d], noiseRangeDims[d]);;
         }
 
@@ -352,7 +352,7 @@ void FeatureExtraction::weightNeighborhood(loc_Neigh_Weighting weighting) {
     {
     case loc_Neigh_Weighting::WEIGHT_UNIF: std::fill(_neighborhoodWeights.begin(), _neighborhoodWeights.end(), 1.0f); break; 
     case loc_Neigh_Weighting::WEIGHT_BINO: _neighborhoodWeights = BinomialKernel2D(_kernelWidth, norm_vec::NORM_MAX); break;            // kernel norm: max(_neighborhoodWeights) = 1
-    case loc_Neigh_Weighting::WEIGHT_GAUS: _neighborhoodWeights = GaussianKernel2D(_kernelWidth, 1.0, norm_vec::NORM_MAX); break;       // kernel norm: max(_neighborhoodWeights) = 1
+    case loc_Neigh_Weighting::WEIGHT_GAUS: _neighborhoodWeights = GaussianKernel2D(_kernelWidth, 1.0f, norm_vec::NORM_MAX); break;       // kernel norm: max(_neighborhoodWeights) = 1
     default:  std::fill(_neighborhoodWeights.begin(), _neighborhoodWeights.end(), -1.0f);  break;  // no implemented weighting type given. 
     }
 

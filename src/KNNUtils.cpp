@@ -27,6 +27,7 @@ feature_type GetFeatureTypeFromMetricPair(const metricPair metricPair) {
 template<typename T>
 T CalcMedian(std::vector<T>& vec, size_t vecSize) {
 	T median;
+    const T half = static_cast<const T> (0.5);
 
 	size_t n = vecSize / 2;
 	std::nth_element(vec.begin(), vec.begin() + n, vec.end());
@@ -38,7 +39,7 @@ T CalcMedian(std::vector<T>& vec, size_t vecSize) {
 	else					// even length, median is average of the central two items
 	{
 		std::nth_element(vec.begin(), vec.begin() + n - 1, vec.end());
-		median = 0.5*(vn + vec[n - 1]);
+		median = half *(vn + vec[n - 1]);
 	}
 
 	return median;
@@ -48,6 +49,7 @@ template float CalcMedian<float>(std::vector<float>& vec, size_t vecSize);
 template<typename T>
 T CalcMedian(T* first, T* last, size_t vecSize) {
     T median;
+    const T half = static_cast<const T>( 0.5);
 
     size_t n = vecSize / 2;
     std::nth_element(first, first + n, last);
@@ -59,7 +61,7 @@ T CalcMedian(T* first, T* last, size_t vecSize) {
     else					// even length, median is average of the central two items
     {
         std::nth_element(first, first + n - 1, last);
-        median = 0.5*(vn + *(first + n - 1));
+        median = half * (vn + *(first + n - 1));
     }
 
     return median;
@@ -95,7 +97,7 @@ std::vector<float> BinSimilarities(size_t num_bins, bin_sim sim_type, float sim_
 	return A;
 }
 
-std::tuple<std::vector<int>, std::vector<float>> ComputeHNSWkNN(const Feature& dataFeatures, hnswlib::SpaceInterface<float> *space, size_t indMultiplier, const std::vector<unsigned int>& foregroundIDsGlobal, unsigned int nn) {
+std::tuple<std::vector<int>, std::vector<float>> ComputeHNSWkNN(const Feature& dataFeatures, hnswlib::SpaceInterface<float> *space, const size_t indMultiplier, const std::vector<unsigned int>& foregroundIDsGlobal, const size_t nn) {
     auto numForegroundPoints = foregroundIDsGlobal.size();
 
     std::vector<int> indices(numForegroundPoints * nn, -1);
@@ -158,7 +160,7 @@ std::tuple<std::vector<int>, std::vector<float>> ComputeHNSWkNN(const Feature& d
     return std::make_tuple(indices, distances_squared);
 }
 
-std::tuple<std::vector<int>, std::vector<float>> ComputeExactKNN(const Feature& dataFeatures, hnswlib::SpaceInterface<float> *space, size_t featureSize, const std::vector<unsigned int>& foregroundIDsGlobal, unsigned int nn, bool fullDistMat) {
+std::tuple<std::vector<int>, std::vector<float>> ComputeExactKNN(const Feature& dataFeatures, hnswlib::SpaceInterface<float> *space, const size_t featureSize, const std::vector<unsigned int>& foregroundIDsGlobal, const size_t nn, bool fullDistMat) {
     auto numForegroundPoints = foregroundIDsGlobal.size();
     
     std::vector<std::pair<int, float>> indices_distances(numForegroundPoints);
@@ -210,13 +212,13 @@ std::tuple<std::vector<int>, std::vector<float>> ComputeExactKNN(const Feature& 
 	return std::make_tuple(knn_indices, knn_distances_squared);
 }
 
-std::tuple<std::vector<int>, std::vector<float>> ComputeFullDistMat(const Feature& dataFeatures, hnswlib::SpaceInterface<float> *space, size_t featureSize, const std::vector<unsigned int>& foregroundIDsGlobal) {
+std::tuple<std::vector<int>, std::vector<float>> ComputeFullDistMat(const Feature& dataFeatures, hnswlib::SpaceInterface<float> *space, const size_t featureSize, const std::vector<unsigned int>& foregroundIDsGlobal) {
 	// set nn = numForegroundPoints and don't sort the nn
 	return ComputeExactKNN(dataFeatures, space, featureSize, foregroundIDsGlobal, foregroundIDsGlobal.size(), true);
 }
 
 
-hnswlib::SpaceInterface<float>* CreateHNSWSpace(const distance_metric knn_metric, const size_t numDims, const size_t neighborhoodSize, const loc_Neigh_Weighting neighborhoodWeighting, const size_t numHistBins, int imgWidth, int numPoints) {
+hnswlib::SpaceInterface<float>* CreateHNSWSpace(const distance_metric knn_metric, const size_t numDims, const size_t neighborhoodSize, const loc_Neigh_Weighting neighborhoodWeighting, const size_t numHistBins, const size_t imgWidth, const size_t numPoints) {
     // chose distance metric
     hnswlib::SpaceInterface<float> *space = NULL;
     spdlog::info("Distance calculation: Metric {}", logging::distance_metric_name(knn_metric));

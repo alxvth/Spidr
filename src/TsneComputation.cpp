@@ -46,7 +46,7 @@ void TsneComputation::setup(const std::vector<int> knn_indices, const std::vecto
     _perplexity = params.get_perplexity();
     _exaggerationIter = params._exaggeration;
     _exponentialDecay = params._expDecay;
-    _nn = params.get_nn();                       // same as in constructor = _perplexity * 3 + 1;
+    _nn = static_cast<int> (params.get_nn());                       // same as in constructor = _perplexity * 3 + 1;
     _numForegroundPoints = params._numForegroundPoints;         // if no background IDs are given, _numForegroundPoints = _numPoints
     _perplexity_multiplier = params.get_perplexity_multiplier();
 

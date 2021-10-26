@@ -17,18 +17,18 @@ void NormVector(std::vector<T>& vec, T normVal) {
 
 }
 
-std::vector<unsigned int> PascalsTriangleRow(const unsigned int n) {
+std::vector<unsigned int> PascalsTriangleRow(const size_t n) {
     std::vector<unsigned int> row(n + 1, 1);
     unsigned int entry = 1;
-    for (unsigned int i = 1; i < n + 1; i++) {
-        entry = (unsigned int)(entry * (n + 1 - i) / i);
+    for (size_t i = 1; i < n + 1; i++) {
+        entry = entry * (n + 1 - i) / i;
         row[i] = entry;
     }
     return row;
 }
 
 // @param norm: 1 indicates max, 2 indicates sum, 0 indicates no normalization
-std::vector<float> BinomialKernel2D(const unsigned int width, norm_vec norm) {
+std::vector<float> BinomialKernel2D(const size_t width, const norm_vec norm) {
     if (width % 2 == 0)
         throw std::invalid_argument("n must be odd");
 
@@ -40,8 +40,8 @@ std::vector<float> BinomialKernel2D(const unsigned int width, norm_vec norm) {
     float max = 0;
 
     // outter product
-    for (unsigned int row = 0; row < width; row++) {
-        for (unsigned int col = 0; col < width; col++) {
+    for (size_t row = 0; row < width; row++) {
+        for (size_t col = 0; col < width; col++) {
             bino2D[row*width + col] = static_cast<float>(bino1D[row] * bino1D[col]);
 
             // helper for normalization
@@ -60,7 +60,7 @@ std::vector<float> BinomialKernel2D(const unsigned int width, norm_vec norm) {
     return bino2D;
 }
 
-std::vector<float> GaussianKernel1D(const unsigned int width, const float sd) {
+std::vector<float> GaussianKernel1D(const size_t width, const float sd) {
     if (width % 2 == 0)
         throw std::invalid_argument("n must be odd");
     if (sd < 0)
@@ -77,7 +77,7 @@ std::vector<float> GaussianKernel1D(const unsigned int width, const float sd) {
 }
 
 // @param norm: 1 indicates max, 2 indicates sum, 0 indicates no normalization
-std::vector<float> GaussianKernel2D(const unsigned int width, const float sd, norm_vec norm) {
+std::vector<float> GaussianKernel2D(const size_t width, const float sd, norm_vec norm) {
     if (width % 2 == 0)
         throw std::invalid_argument("n must be odd");
     if (sd < 0)
@@ -91,8 +91,8 @@ std::vector<float> GaussianKernel2D(const unsigned int width, const float sd, no
     float max = 0;
 
     // outter product
-    for (unsigned int row = 0; row < width; row++) {
-        for (unsigned int col = 0; col < width; col++) {
+    for (size_t row = 0; row < width; row++) {
+        for (size_t col = 0; col < width; col++) {
             gauss2D[row*width + col] = gauss1D[row] *  gauss1D[col];
 
             // helper for normalization
@@ -221,7 +221,7 @@ template void Histogram_Base<float>::fill(const std::vector<float> values);
 
 
 template< class scalar_type> scalar_type Histogram_Base< scalar_type>::operator[](int index) const {
-    assert(index >= 0 && index < _numBins);
+    assert(index >= 0 && index < _numBins );
     return _counts[index];
 }
 template unsigned int Histogram_Base<unsigned int>::operator[](int index) const;

@@ -57,7 +57,7 @@ private:
     feature_type _featureType;                      /*!<> */
     knn_library _knn_lib;                           /*!<> */
     distance_metric _knn_metric;                /*!<> */
-    unsigned int _nn;                               /*!<> */
+    size_t _nn;                               /*!<> */
     size_t _neighborhoodSize;                       /*!< might be used for some distance metrics */
     loc_Neigh_Weighting _neighborhoodWeighting;     /*!< used when calculating distance directly from high-dim points (_featureType is no feature/PCLOUD) */
 
@@ -72,7 +72,7 @@ private:
     std::string _embeddingName;                     /*!< Name of the embedding */
     const float* _dataVecBegin;                     /*!< Points to the first element in the data vector> */
     std::vector<unsigned int> _foregroundIDsGlobal;  /*!<> */
-    int _imgWidth;                                  /*!<> */
+    size_t _imgWidth;                                  /*!<> */
 
     // Output
     std::vector<int> _knn_indices;                      /*!<> */

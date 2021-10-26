@@ -23,7 +23,7 @@ void NormVector(std::vector<T>& vec, T normVal);
  * \param n
  * \return
  */
-std::vector<unsigned int> PascalsTriangleRow(const unsigned int n);
+std::vector<unsigned int> PascalsTriangleRow(const size_t n);
 
 /*!
  *
@@ -31,7 +31,7 @@ std::vector<unsigned int> PascalsTriangleRow(const unsigned int n);
  * \param norm
  * \return
  */
-std::vector<float> BinomialKernel2D(const unsigned int width, norm_vec norm = norm_vec::NORM_NONE);
+std::vector<float> BinomialKernel2D(const size_t width, norm_vec norm = norm_vec::NORM_NONE);
 
 /*!
  *
@@ -39,7 +39,7 @@ std::vector<float> BinomialKernel2D(const unsigned int width, norm_vec norm = no
  * \param sd
  * \return
  */
-std::vector<float> GaussianKernel1D(const unsigned int width, const float sd = 1);
+std::vector<float> GaussianKernel1D(const size_t width, const float sd = 1);
 
 /*!
  *
@@ -48,7 +48,7 @@ std::vector<float> GaussianKernel1D(const unsigned int width, const float sd = 1
  * \param norm
  * \return
  */
-std::vector<float> GaussianKernel2D(const unsigned int width, const float sd = 1, norm_vec norm = norm_vec::NORM_NONE);
+std::vector<float> GaussianKernel2D(const size_t width, const float sd = 1, norm_vec norm = norm_vec::NORM_NONE);
 
 /*!
  *
