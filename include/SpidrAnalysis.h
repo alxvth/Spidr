@@ -1,9 +1,9 @@
 #pragma once
 
+#include "SpidrAnalysisParameters.h"
 #include "TsneComputation.h"
 #include "DistanceCalculation.h"
 #include "FeatureExtraction.h"
-#include "SpidrAnalysisParameters.h"
 #include "FeatureUtils.h"
 #include "KNNUtils.h"
 
@@ -175,7 +175,7 @@ private:
     std::vector<float> _emd_with_backgound;
 
 	// features and knn
-	Feature _dataFeats;						/*!<> */
+	Feature _dataFeats;						            /*!<> */
 	std::vector<int> _knn_indices ;						/*!<> */
 	std::vector<float> _knn_distances_squared;			/*!<> */
 

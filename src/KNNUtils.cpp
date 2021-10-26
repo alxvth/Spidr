@@ -86,11 +86,11 @@ std::vector<float> BinSimilarities(size_t num_bins, bin_sim sim_type, float sim_
 		}
 	}
 	else if (sim_type == bin_sim::SIM_UNI) {
-		std::fill(A.begin(), A.end(), 1);
+		std::fill(A.begin(), A.end(), 1.0f);
 	}
 
 	// if there is a -1 in A, this value was not set (invalid ground_type option selected)
-	assert(std::find(A.begin(), A.end(), -1) == A.end());
+	assert(std::find(A.begin(), A.end(), -1.0f) == A.end());
 
 	return A;
 }

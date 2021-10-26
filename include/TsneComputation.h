@@ -1,4 +1,5 @@
 #pragma once
+#include "SpidrAnalysisParameters.h"
 
 #ifdef __APPLE__
 #include "glad/glad_3_3.h"

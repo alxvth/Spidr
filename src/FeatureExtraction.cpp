@@ -350,10 +350,10 @@ void FeatureExtraction::weightNeighborhood(loc_Neigh_Weighting weighting) {
     // Set neighborhood weights
     switch (weighting)
     {
-    case loc_Neigh_Weighting::WEIGHT_UNIF: std::fill(_neighborhoodWeights.begin(), _neighborhoodWeights.end(), 1); break; 
+    case loc_Neigh_Weighting::WEIGHT_UNIF: std::fill(_neighborhoodWeights.begin(), _neighborhoodWeights.end(), 1.0f); break; 
     case loc_Neigh_Weighting::WEIGHT_BINO: _neighborhoodWeights = BinomialKernel2D(_kernelWidth, norm_vec::NORM_MAX); break;            // kernel norm: max(_neighborhoodWeights) = 1
     case loc_Neigh_Weighting::WEIGHT_GAUS: _neighborhoodWeights = GaussianKernel2D(_kernelWidth, 1.0, norm_vec::NORM_MAX); break;       // kernel norm: max(_neighborhoodWeights) = 1
-    default:  std::fill(_neighborhoodWeights.begin(), _neighborhoodWeights.end(), -1);  break;  // no implemented weighting type given. 
+    default:  std::fill(_neighborhoodWeights.begin(), _neighborhoodWeights.end(), -1.0f);  break;  // no implemented weighting type given. 
     }
 
     // Some features do not take into account the current point but only the neighborhood values

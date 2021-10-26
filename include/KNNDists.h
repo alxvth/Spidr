@@ -515,10 +515,10 @@ namespace hnswlib {
             ::std::vector<float> A(neighborhoodSize);
             switch (weighting)
             {
-            case loc_Neigh_Weighting::WEIGHT_UNIF: std::fill(A.begin(), A.end(), 1); break;
+            case loc_Neigh_Weighting::WEIGHT_UNIF: std::fill(A.begin(), A.end(), 1.0f); break;
             case loc_Neigh_Weighting::WEIGHT_BINO: A = BinomialKernel2D(_kernelWidth, norm_vec::NORM_MAX); break;        // weight the center with 1
             case loc_Neigh_Weighting::WEIGHT_GAUS: A = GaussianKernel2D(_kernelWidth, 1.0, norm_vec::NORM_NONE); break;
-            default:  std::fill(A.begin(), A.end(), -1);  break;  // no implemented weighting type given. 
+            default:  std::fill(A.begin(), A.end(), -1.0f);  break;  // no implemented weighting type given. 
             }
 
             Eigen::VectorXf weights = Eigen::Map<Eigen::VectorXf>(&A[0], neighborhoodSize);;
@@ -733,10 +733,10 @@ namespace hnswlib {
             ::std::vector<float> A(neighborhoodSize);
             switch (weighting)
             {
-            case loc_Neigh_Weighting::WEIGHT_UNIF: std::fill(A.begin(), A.end(), 1); break;
+            case loc_Neigh_Weighting::WEIGHT_UNIF: std::fill(A.begin(), A.end(), 1.0f); break;
             case loc_Neigh_Weighting::WEIGHT_BINO: A = BinomialKernel2D(_kernelWidth, norm_vec::NORM_MAX); break;        // weight the center with 1
             case loc_Neigh_Weighting::WEIGHT_GAUS: A = GaussianKernel2D(_kernelWidth, 1.0, norm_vec::NORM_NONE); break;
-            default:  std::fill(A.begin(), A.end(), -1);  break;  // no implemented weighting type given. 
+            default:  std::fill(A.begin(), A.end(), -1.0f);  break;  // no implemented weighting type given. 
             }
 
             params_ = { dim, A, neighborhoodSize, L2Sqr };
@@ -840,10 +840,10 @@ namespace hnswlib {
             ::std::vector<float> A(neighborhoodSize);
             switch (weighting)
             {
-            case loc_Neigh_Weighting::WEIGHT_UNIF: std::fill(A.begin(), A.end(), 1); break;
+            case loc_Neigh_Weighting::WEIGHT_UNIF: std::fill(A.begin(), A.end(), 1.0f); break;
             case loc_Neigh_Weighting::WEIGHT_BINO: A = BinomialKernel2D(_kernelWidth, norm_vec::NORM_MAX); break;        // weight the center with 1
             case loc_Neigh_Weighting::WEIGHT_GAUS: A = GaussianKernel2D(_kernelWidth, 1.0, norm_vec::NORM_NONE); break;
-            default:  std::fill(A.begin(), A.end(), -1);  break;  // no implemented weighting type given. 
+            default:  std::fill(A.begin(), A.end(), -1.0f);  break;  // no implemented weighting type given. 
             }
             Eigen::VectorXf weights = Eigen::Map<Eigen::VectorXf>(&A[0], neighborhoodSize);;
 
@@ -938,10 +938,10 @@ namespace hnswlib {
             ::std::vector<float> A(neighborhoodSize);
             switch (weighting)
             {
-            case loc_Neigh_Weighting::WEIGHT_UNIF: std::fill(A.begin(), A.end(), 1); break;
+            case loc_Neigh_Weighting::WEIGHT_UNIF: std::fill(A.begin(), A.end(), 1.0f); break;
             case loc_Neigh_Weighting::WEIGHT_BINO: A = BinomialKernel2D(_kernelWidth, norm_vec::NORM_MAX); break;        // weight the center with 1
             case loc_Neigh_Weighting::WEIGHT_GAUS: A = GaussianKernel2D(_kernelWidth, 1.0, norm_vec::NORM_NONE); break;
-            default:  std::fill(A.begin(), A.end(), -1);  break;  // no implemented weighting type given. 
+            default:  std::fill(A.begin(), A.end(), -1.0f);  break;  // no implemented weighting type given. 
             }
             Eigen::VectorXf weights = Eigen::Map<Eigen::VectorXf>(&A[0], neighborhoodSize);;
 
