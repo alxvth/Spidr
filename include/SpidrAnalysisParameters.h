@@ -5,6 +5,7 @@
 
 #include "spdlog/spdlog-inl.h"
 
+/*! Image width and height container */
 typedef struct ImgSize {
 	int width;
 	int height;
@@ -15,7 +16,7 @@ typedef struct ImgSize {
 } ImgSize;
 
 
-/*! kNN library that is used kNN computations
+/*! kNN algorithm that is used for kNN computations
  * The librarires are extended in order to work with different feature types
  */
 enum class knn_library : size_t
@@ -95,13 +96,11 @@ enum class loc_Neigh_Weighting : unsigned int
 	WEIGHT_GAUS = 2,    /*!< Weighting given by 2D gaussian */
 };
 
-/*!
- *
- *
+/*! Normalize to max, sum=1 or none
  */
 enum class norm_vec : unsigned int
 {
-	NORM_NONE = 0,   /*!< No normalization */
+	NORM_NONE = 0,  /*!< No normalization */
 	NORM_MAX = 1,   /*!< Normalization such that max = 1 (usually center value) */
 	NORM_SUM = 2,   /*!< Normalization such that sum = 1 */
 };
@@ -220,31 +219,31 @@ private:
 
 public:
 	// data
-	size_t              _numPoints;             /*!<> */
-	size_t              _numDims;               /*!<> */
-	ImgSize             _imgSize;               /*!<> */
-	std::string         _embeddingName;         /*!< Name of the embedding */
-    size_t              _numForegroundPoints;   /*!< _numForegroundPoints - number of background points */
+	size_t              _numPoints;             /*!< Number of points in the data set> */
+	size_t              _numDims;               /*!< Number of dimensions/channels> */
+	ImgSize             _imgSize;               /*!< Image height and width> */
+	std::string         _embeddingName;         /*!< Name of the embedding > */
+    size_t              _numForegroundPoints;   /*!< number of foreground points (background points are not included in the embedding > */
 	// features
-	feature_type        _featureType;           /*!< */
-	size_t              _numFeatureValsPerPoint;/*!< depending on the feature type, the features vector has a different length (scalar features vs vector features per dimension)> */
-	loc_Neigh_Weighting _neighWeighting;        /*!<> */
-    size_t              _numNeighborsInEachDirection;       /*!< number of neighbors in each direction, i.e. 1 yields a 3x3 neighborhood> */
+	feature_type        _featureType;           /*!< Type of data feature to be extracted > */
+	size_t              _numFeatureValsPerPoint;/*!< Depending on the feature type, the features vector has a different length (scalar features vs vector features per dimension)> */
+	loc_Neigh_Weighting _neighWeighting;        /*!< Weighting type of the neighborhood > */
+    size_t              _numNeighborsInEachDirection;       /*!< Number of neighbors in each direction, i.e. 1 yields a 3x3 neighborhood> */
     size_t              _kernelWidth;           /*!< (2 * _numNeighborsInEachDirection) + 1;> */
 	size_t              _neighborhoodSize;      /*!< _kernelWidth * _kernelWidth> */
-	size_t              _numHistBins;           /*!<> */
-    bool                _forceCalcBackgroundFeatures; /*!<> */
+	size_t              _numHistBins;           /*!< Number of bins in a histogram feature > */
+    bool                _forceCalcBackgroundFeatures; /*!< Usually features are not computed for the background, but you can force it anyway > */
 	// distance
-	knn_library         _aknn_algorithm;        /*!<> */
-	distance_metric     _aknn_metric;           /*!<> */
+	knn_library         _aknn_algorithm;        /*!< kNN algo type, e.g. exact kNN vs approximated kNN > */
+	distance_metric     _aknn_metric;           /*!< Distance between features/attributes > */
 	// embeddings
 	int                 _numIterations;         /*!< Number of gradient descent iterations> */
 	int                 _exaggeration;          /*!< Number of iterations for early exageration> */
 	int                 _expDecay;              /*!< exponential decay> */
 
 private:
-	size_t              _nn;                    // number of nearest neighbors, determined by _perplexity*_perplexity_multiplier + 1
-	const int           _perplexity_multiplier; //! Multiplied by the perplexity gives the number of nearest neighbors used
-	float               _perplexity;            //! Perplexity value in evert distribution.
+	size_t              _nn;                    /*!< Number of nearest neighbors, determined by _perplexity*_perplexity_multiplier + 1> */
+	const int           _perplexity_multiplier; /*!< Multiplied by the perplexity gives the number of nearest neighbors used> */
+	float               _perplexity;            /*!< Perplexity value in evert distribution.> */
 
 };
