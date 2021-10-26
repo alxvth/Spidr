@@ -29,6 +29,7 @@ PYBIND11_MODULE(SpidrWrapper, m) {
 		.value("exact_knn", knn_library::KKN_EXACT)
 		.value("full_dist_matrix", knn_library::FULL_DIST_BRUTE_FORCE);
 
+	// MAIN WRAPPER: here SpidrWrapper, on python side SpidrAnalysis
 	py::class_<SpidrWrapper> spidrAnalysis(m, "SpidrAnalysis");
 
 	spidrAnalysis.def(py::init<distance_metric, loc_Neigh_Weighting, size_t, size_t, knn_library, int, int, int, int, bool>(), "Init SpidrLib",

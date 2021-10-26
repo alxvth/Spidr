@@ -29,7 +29,12 @@ FeatureExtraction::FeatureExtraction() :
     std::fill(_neighborhoodWeights.begin(), _neighborhoodWeights.end(), 1);
 }
 
-
+FeatureExtraction::~FeatureExtraction() {
+	// define this deconstructor since otherwise the python wrapper
+	// seems to cause problems: using Eigen classes as member variables
+	// leads to some memory issues when deleting the python-wrapper class 
+	// creating a constructor seems to result in cleaner clean-up
+}
 
 void FeatureExtraction::compute() {
 	spdlog::info("Feature extraction: Started");
@@ -84,6 +89,7 @@ void FeatureExtraction::setup(const std::vector<unsigned int>& pointIDsGlobal, c
     _indices_mat_padded = padEdge(_indices_mat, _numLocNeighbors);
 
     assert(_attribute_data.size() == _numPoints * _numDims);
+    assert(_numLocNeighbors == ((_neighborhoodSize * 2) + 1) * ((_neighborhoodSize * 2) + 1));
 
     if (_featType == feature_type::TEXTURE_HIST_1D)
     {

@@ -18,7 +18,7 @@ enum class loc_Neigh_Weighting : unsigned int;
 class DistanceCalculation 
 {
 public:
-    DistanceCalculation();
+    //DistanceCalculation();
 
     /*!
      * 

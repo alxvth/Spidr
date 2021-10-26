@@ -17,6 +17,7 @@ class FeatureExtraction
 {
 public:
     FeatureExtraction();
+    ~FeatureExtraction();
 
     /*! Get feature data
      * 
@@ -28,7 +29,7 @@ public:
     void setNumLocNeighbors(size_t size);
     void setNeighborhoodWeighting(loc_Neigh_Weighting weighting);
     void setNumHistBins(size_t size);
-    void stopFeatureCopmutation();
+    void stopFeatureCopmutation();	// called in SpidrAnalysis::stopComputation() but currently does nothing
     bool requestedStop();
 
     loc_Neigh_Weighting getNeighborhoodWeighting();

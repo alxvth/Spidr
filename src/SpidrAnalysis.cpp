@@ -6,7 +6,7 @@
 #include "spdlog/spdlog-inl.h"
 
 
-SpidrAnalysis::SpidrAnalysis() {};
+//SpidrAnalysis::SpidrAnalysis() {};
 
 void SpidrAnalysis::setupData(const std::vector<float>& attribute_data, const std::vector<unsigned int>& pointIDsGlobal, const size_t numDimensions, const ImgSize imgSize, const std::string embeddingName, const std::vector<unsigned int>& backgroundIDsGlobal) {
     // TODO: there should be a function that calls setupData and initializeAnalysisSettings so that the user only see a single setup function. (as e.g. done in the python wrapper)

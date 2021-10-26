@@ -12,11 +12,11 @@
 #include <iterator>             // std::make_move_iterator, find
 #include <utility>              // std::move
 
-DistanceCalculation::DistanceCalculation() :
-    _knn_lib(knn_library::KNN_HNSW),
-    _knn_metric(distance_metric::METRIC_QF)
-{
-}
+//DistanceCalculation::DistanceCalculation() :
+//    _knn_lib(knn_library::KNN_HNSW),
+//    _knn_metric(distance_metric::METRIC_QF)
+//{
+//}
 
 
 void DistanceCalculation::setup(const Feature dataFeatures, const std::vector<unsigned int>& foregroundIDsGlobal, SpidrParameters& params) {

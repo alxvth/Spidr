@@ -18,7 +18,7 @@
 class SpidrAnalysis
 {
 public:
-    SpidrAnalysis();
+    //SpidrAnalysis();
 
     /*!
      * Call me before calling initializeAnalysisSettings
