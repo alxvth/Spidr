@@ -28,7 +28,7 @@ void DistanceCalculation::setup(const Feature dataFeatures, const std::vector<un
     _knn_lib = params._aknn_algorithm;
     _knn_metric = params._aknn_metric;
     _nn = params.get_nn();                           // see SpidrAnalysis::update_nn ->  (size_t)(params.get_perplexity() * params.get_perplexity_multiplier() + 1)
-    _neighborhoodSize = params._neighborhoodSize;    // square neighborhood with _numLocNeighbors to each side from the center
+    _neighborhoodSize = params._neighborhoodSize;    // square neighborhood with _numNeighborsInEachDirection to each side from the center
     _neighborhoodWeighting = params._neighWeighting;
 
     // Data

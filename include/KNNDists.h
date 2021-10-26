@@ -466,7 +466,7 @@ namespace hnswlib {
         const Eigen::VectorXf weights = sparam->weights;
         DISTFUNC<float> L2distfunc_ = sparam->L2distfunc_;
 
-        //Eigen::VectorXf colDistMins(valsN1.cols()); // (2 * (params._numLocNeighbors) + 1) * (2 * (params._numLocNeighbors) + 1)
+        //Eigen::VectorXf colDistMins(valsN1.cols()); // (2 * (params._numNeighborsInEachDirection) + 1) * (2 * (params._numNeighborsInEachDirection) + 1)
         //Eigen::VectorXf rowDistMins(valsN1.cols());
 
         Eigen::MatrixXf distMat(neighborhoodSize, neighborhoodSize);
@@ -561,7 +561,7 @@ namespace hnswlib {
 //        const float* dataVectorBegin;
 //        size_t dim;
 //        ::std::vector<float> A;         // neighborhood similarity matrix
-//        size_t neighborhoodSize;        //  (2 * (params._numLocNeighbors) + 1) * (2 * (params._numLocNeighbors) + 1)
+//        size_t neighborhoodSize;        //  (2 * (params._numNeighborsInEachDirection) + 1) * (2 * (params._numNeighborsInEachDirection) + 1)
 //        DISTFUNC<float> L2distfunc_;
 //    };
 //
@@ -681,7 +681,7 @@ namespace hnswlib {
     struct space_params_SSD {
         size_t dim;
         ::std::vector<float> A;         // neighborhood similarity matrix
-        size_t neighborhoodSize;        //  (2 * (params._numLocNeighbors) + 1) * (2 * (params._numLocNeighbors) + 1)
+        size_t neighborhoodSize;        //  (2 * (params._numNeighborsInEachDirection) + 1) * (2 * (params._numNeighborsInEachDirection) + 1)
         DISTFUNC<float> L2distfunc_;
     };
 
@@ -776,7 +776,7 @@ namespace hnswlib {
     struct space_params_Haus {
         size_t dim;
         Eigen::VectorXf weights;         // neighborhood similarity matrix
-        size_t neighborhoodSize;        //  (2 * (params._numLocNeighbors) + 1) * (2 * (params._numLocNeighbors) + 1)
+        size_t neighborhoodSize;        //  (2 * (params._numNeighborsInEachDirection) + 1) * (2 * (params._numNeighborsInEachDirection) + 1)
         DISTFUNC<float> L2distfunc_;
     };
 

@@ -109,8 +109,8 @@ void SpidrAnalysis::setKernelWeight(const loc_Neigh_Weighting loc_Neigh_Weightin
 }
 
 void SpidrAnalysis::setNumLocNeighbors(const size_t num) {
-    _params._numLocNeighbors = num;
-    _params._kernelWidth = (2 * _params._numLocNeighbors) + 1;
+    _params._numNeighborsInEachDirection = num;
+    _params._kernelWidth = (2 * _params._numNeighborsInEachDirection) + 1;
     _params._neighborhoodSize = _params._kernelWidth * _params._kernelWidth;;
 }
 

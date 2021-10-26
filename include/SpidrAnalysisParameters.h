@@ -157,7 +157,7 @@ class SpidrParameters {
 public:
     SpidrParameters() :
         _nn(-1), _numPoints(-1), _numDims(-1), _imgSize(-1, -1), _embeddingName(""),
-        _featureType(feature_type::TEXTURE_HIST_1D), _neighWeighting(loc_Neigh_Weighting::WEIGHT_UNIF), _numLocNeighbors(-1), _numHistBins(-1),
+        _featureType(feature_type::TEXTURE_HIST_1D), _neighWeighting(loc_Neigh_Weighting::WEIGHT_UNIF), _numNeighborsInEachDirection(-1), _numHistBins(-1),
         _kernelWidth(0), _neighborhoodSize(0), _numFeatureValsPerPoint(0), _forceCalcBackgroundFeatures(false),
 		_aknn_algorithm(knn_library::KNN_HNSW), _aknn_metric(distance_metric::METRIC_QF),
 		_perplexity(30), _perplexity_multiplier(3), _numIterations(1000), _exaggeration(250)
@@ -168,13 +168,13 @@ public:
 		knn_library aknn_algorithm, distance_metric aknn_metric, float MVNweight,
 		float perplexity, int numIterations, int exaggeration, bool forceCalcBackgroundFeatures = false) :
 		_numPoints(numPoints), _numDims(numDims), _imgSize(imgSize), _embeddingName(embeddingName),
-		_featureType(featureType), _neighWeighting(neighWeighting), _numLocNeighbors(numLocNeighbors), _numHistBins(numHistBins),
+		_featureType(featureType), _neighWeighting(neighWeighting), _numNeighborsInEachDirection(numLocNeighbors), _numHistBins(numHistBins),
 		_aknn_algorithm(aknn_algorithm), _aknn_metric(aknn_metric), _forceCalcBackgroundFeatures(forceCalcBackgroundFeatures),
 		_perplexity(perplexity), _perplexity_multiplier(3), _numIterations(numIterations), _exaggeration(exaggeration)
 	{
 		update_nn();	// sets nn based on perplexity
 		_numForegroundPoints = numPoints; // No background default to all points in the foreground
-		_kernelWidth = (2 * _numLocNeighbors) + 1;
+		_kernelWidth = (2 * _numNeighborsInEachDirection) + 1;
 		_neighborhoodSize = _kernelWidth * _kernelWidth;
 		_numFeatureValsPerPoint = NumFeatureValsPerPoint(_featureType, _numDims, _numHistBins, _neighborhoodSize);
 	}
@@ -184,12 +184,12 @@ public:
         knn_library aknn_algorithm, distance_metric aknn_metric,
         float perplexity, int numIterations, int exaggeration, bool forceCalcBackgroundFeatures = false) :
         _numPoints(numPoints), _numDims(numDims), _imgSize(imgSize), _embeddingName(embeddingName), _numForegroundPoints(numForegroundPoints),
-        _featureType(featureType), _neighWeighting(neighWeighting), _numLocNeighbors(numLocNeighbors), _numHistBins(numHistBins),
+        _featureType(featureType), _neighWeighting(neighWeighting), _numNeighborsInEachDirection(numLocNeighbors), _numHistBins(numHistBins),
         _aknn_algorithm(aknn_algorithm), _aknn_metric(aknn_metric), _forceCalcBackgroundFeatures(forceCalcBackgroundFeatures),
         _perplexity(perplexity), _perplexity_multiplier(3), _numIterations(numIterations), _exaggeration(exaggeration)
     {
 		update_nn();	// sets nn based on perplexity
-		_kernelWidth = (2 * _numLocNeighbors) + 1;
+		_kernelWidth = (2 * _numNeighborsInEachDirection) + 1;
         _neighborhoodSize = _kernelWidth * _kernelWidth;
         _numFeatureValsPerPoint = NumFeatureValsPerPoint(_featureType, _numDims, _numHistBins, _neighborhoodSize);
     }
@@ -229,9 +229,9 @@ public:
 	feature_type        _featureType;           /*!< */
 	size_t              _numFeatureValsPerPoint;/*!< depending on the feature type, the features vector has a different length (scalar features vs vector features per dimension)> */
 	loc_Neigh_Weighting _neighWeighting;        /*!<> */
-	size_t              _kernelWidth;           /*!< (2 * _numLocNeighbors) + 1;> */
+    size_t              _numNeighborsInEachDirection;       /*!< number of neighbors in each direction, i.e. 1 yields a 3x3 neighborhood> */
+    size_t              _kernelWidth;           /*!< (2 * _numNeighborsInEachDirection) + 1;> */
 	size_t              _neighborhoodSize;      /*!< _kernelWidth * _kernelWidth> */
-	size_t              _numLocNeighbors;       /*!<> */
 	size_t              _numHistBins;           /*!<> */
     bool                _forceCalcBackgroundFeatures; /*!<> */
 	// distance

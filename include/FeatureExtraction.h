@@ -142,8 +142,8 @@ private:
     feature_type _featType;                         /*!< Type of feature to extract */
     distance_metric _distType;                      /*!< Distance between features */
     size_t       _numFeatureValsPerPoint;           /*!< depending on the feature type, the features vector has a different length (scalar features vs vector features per dimension)> */
-    size_t       _numLocNeighbors;                  /*!< Number of neighbors in each direction */
-    size_t       _kernelWidth;                      /*!< Width of the kernel (2* _numLocNeighbors +1) */
+    size_t       _numNeighborsInEachDirection;                  /*!< Number of neighbors in each direction */
+    size_t       _kernelWidth;                      /*!< Width of the kernel (2* _numNeighborsInEachDirection +1) */
     size_t       _neighborhoodSize;                 /*!< Square neighborhood centered around an item with _neighborhoodSize neighbors to the left, right, top and buttom */
     loc_Neigh_Weighting _neighborhoodWeighting;     /*!< Weighting type of neighborhood kernel */
     std::vector<float> _neighborhoodWeights;        /*!< Weightings of neighborhood kernel */
@@ -165,7 +165,7 @@ private:
     std::vector<float> _meanVals;                   /*!< Avg for each dimension/channel, i.e. [mean_Ch0, meam_Ch1, ...] */
     std::vector<float> _varVals;                    /*!< Variance estimate for each dimension/channel, i.e. [mean_Ch0, meam_Ch1, ...] */
 
-    Eigen::MatrixXui _indices_mat_padded;            /*!< Eigen matrix of _pointIDsGlobal for easier neighborhood extraction, padded with pad size _numLocNeighbors and edge values> */
+    Eigen::MatrixXui _indices_mat_padded;            /*!< Eigen matrix of _pointIDsGlobal for easier neighborhood extraction, padded with pad size _numNeighborsInEachDirection and edge values> */
 
     // Output
     /*! Features for each item.

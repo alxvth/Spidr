@@ -17,16 +17,8 @@
 #include <chrono>       // std::chrono
 
 FeatureExtraction::FeatureExtraction() :
-    _neighborhoodSize(1),
-    _numHistBins(5),
     _stopFeatureComputation(false)
 {
-    // square neighborhood
-    _numLocNeighbors = ((_neighborhoodSize * 2) + 1) * ((_neighborhoodSize * 2) + 1);
-    // uniform weighting
-    _neighborhoodWeighting = loc_Neigh_Weighting::WEIGHT_UNIF;
-    _neighborhoodWeights.resize(_numLocNeighbors);
-    std::fill(_neighborhoodWeights.begin(), _neighborhoodWeights.end(), 1);
 }
 
 FeatureExtraction::~FeatureExtraction() {
@@ -60,7 +52,7 @@ void FeatureExtraction::setup(const std::vector<unsigned int>& pointIDsGlobal, c
 
     // SpidrParameters
     _numHistBins = params._numHistBins;
-    _numLocNeighbors = params._numLocNeighbors;
+    _numNeighborsInEachDirection = params._numNeighborsInEachDirection;
     _neighborhoodWeighting = params._neighWeighting;
 
     // Set neighborhood
@@ -85,11 +77,11 @@ void FeatureExtraction::setup(const std::vector<unsigned int>& pointIDsGlobal, c
     // Convert the background IDs into an Eigen matrix
     // there is no standard Eigen typedef for unsigned typesa and Eigen::MatrixXi does not work
     Eigen::MatrixXui _indices_mat = Eigen::Map<Eigen::MatrixXui>(&_pointIDsGlobal[0], _imgSize.width, _imgSize.height);
-    // pad the matrix in all directions with the pad with _numLocNeighbors with the edge (border value)
-    _indices_mat_padded = padEdge(_indices_mat, _numLocNeighbors);
+    // pad the matrix in all directions with the pad with _numNeighborsInEachDirection with the edge (border value)
+    _indices_mat_padded = padEdge(_indices_mat, _numNeighborsInEachDirection);
 
     assert(_attribute_data.size() == _numPoints * _numDims);
-    assert(_numLocNeighbors == ((_neighborhoodSize * 2) + 1) * ((_neighborhoodSize * 2) + 1));
+    assert(_neighborhoodSize == ((_numNeighborsInEachDirection * 2) + 1) * ((_numNeighborsInEachDirection * 2) + 1));
 
     if (_featType == feature_type::TEXTURE_HIST_1D)
     {
@@ -127,7 +119,7 @@ void FeatureExtraction::setup(const std::vector<unsigned int>& pointIDsGlobal, c
 		spdlog::error("Feature extraction: unknown feature type");
     }
 
-	spdlog::info("Feature extraction: Num neighbors (in each direction): {0} (total neighbors: {1}) Neighbor weighting: {2}", _numLocNeighbors , _neighborhoodSize, logging::neighborhood_weighting_name(_neighborhoodWeighting));
+	spdlog::info("Feature extraction: Num neighbors (in each direction): {0} (total neighbors: {1}) Neighbor weighting: {2}", _numNeighborsInEachDirection , _neighborhoodSize, logging::neighborhood_weighting_name(_neighborhoodWeighting));
 
 }
 
@@ -388,7 +380,7 @@ void FeatureExtraction::setNeighborhoodWeighting(loc_Neigh_Weighting weighting) 
 }
 
 void FeatureExtraction::setNumLocNeighbors(size_t size) {
-    _numLocNeighbors = size;
+    _numNeighborsInEachDirection = size;
     _kernelWidth = (2 * size) + 1;
     _neighborhoodSize = _kernelWidth * _kernelWidth;
 }
