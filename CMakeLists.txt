@@ -7,10 +7,14 @@ PROJECT(${SPIDRLIB})
 # find external packages
 find_package(OpenGL REQUIRED)
 find_package(OpenMP REQUIRED)
-find_package(HDILibSlim COMPONENTS hdiutils hdidata hdidimensionalityreduction PATHS $ENV{HDILIBSLIM_ROOT} CONFIG REQUIRED)
+if(DEFINED ENV{HDILIBSLIM_ROOT})
+    set(HDILIBSLIM_PATH $ENV{HDILIBSLIM_ROOT} CACHE PATH  "Path to HDILib_slim")
+endif()
+
+find_package(HDILibSlim COMPONENTS hdiutils hdidata hdidimensionalityreduction PATHS ${HDILIBSLIM_PATH} CONFIG REQUIRED)
 
 if(HDILibSlim_FOUND)
-	message(STATUS "HDILibSlim found at $ENV{HDILIBSLIM_ROOT} with inlcludes at ${HDILibSlim_INCLUDE_DIR}")	# make sure to manually set HDILIBSLIM_ROOT to the install dir of the HDILibSlim (fork of the HDILib with fewer dependencies)
+	message(STATUS "HDILibSlim found at ${HDILIBSLIM_PATH} with inlcludes at ${HDILibSlim_INCLUDE_DIR}")	# make sure to manually set HDILIBSLIM_ROOT to the install dir of the HDILibSlim (fork of the HDILib with fewer dependencies)
 endif()
 
 # set souce files of this project
