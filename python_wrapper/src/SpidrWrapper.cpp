@@ -99,7 +99,7 @@ std::tuple<std::vector<int>, std::vector<float>> SpidrWrapper::fit(
 	// Init settings, (Extract features), compute similarities, embed data
 	compute_fit(X, pointIDsGlobal, imgWidth, imgHight, backgroundIDsGlobal);
 
-	return _SpidrAnalysis->getKNN();
+	return _SpidrAnalysis->getKnn();
 }
 
 
