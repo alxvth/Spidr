@@ -14,7 +14,7 @@ endif()
 find_package(HDILibSlim COMPONENTS hdiutils hdidata hdidimensionalityreduction PATHS ${HDILIBSLIM_PATH} CONFIG REQUIRED)
 
 if(HDILibSlim_FOUND)
-	message(STATUS "HDILibSlim found at ${HDILIBSLIM_PATH} with inlcludes at ${HDILibSlim_INCLUDE_DIR}")	# make sure to manually set HDILIBSLIM_ROOT to the install dir of the HDILibSlim (fork of the HDILib with fewer dependencies)
+	message(STATUS "HDILibSlim found at ${HDILIBSLIM_PATH} with includes at ${HDILibSlim_INCLUDE_DIR}")	# make sure to manually set HDILIBSLIM_ROOT to the install dir of the HDILibSlim (fork of the HDILib with fewer dependencies)
 endif()
 
 # set souce files of this project
