@@ -55,6 +55,10 @@ add_library(${SPIDRLIB} STATIC ${SOURCES})
 # Request C++17
 target_compile_features(${SPIDRLIB} PRIVATE cxx_std_17)
 
+if (MSVC)
+    target_compile_options(${SPIDRLIB} PUBLIC /bigobj)
+endif()
+
 target_include_directories(${SPIDRLIB} PUBLIC "include")
 
 # Hardware accelations: SSE and AVX
