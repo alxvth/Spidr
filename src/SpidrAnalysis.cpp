@@ -60,7 +60,7 @@ void SpidrAnalysis::initializeAnalysisSettings(const feature_type featType, cons
     setExpDecay(expDecay);
 
     // Derived parameters
-	setNumFeatureValsPerPoint(featType, _params._numDims, _params._numHistBins, _params._neighborhoodSize);			// sets _params._numFeatureValsPerPoint
+	setNumFeatureValsPerPoint(featType, _params._numDims, _params._numHistBins, _params.get_neighborhoodSize());			// sets _params._numFeatureValsPerPoint
     setForceCalcBackgroundFeatures(forceCalcBackgroundFeatures);													// sets _params._forceCalcBackgroundFeatures
 
 	spdlog::info("SpidrAnalysis: Initialized all settings");
@@ -109,9 +109,9 @@ void SpidrAnalysis::setKernelWeight(const loc_Neigh_Weighting loc_Neigh_Weightin
 }
 
 void SpidrAnalysis::setNumLocNeighbors(const size_t num) {
-    _params._numNeighborsInEachDirection = num;
-    _params._kernelWidth = (2 * _params._numNeighborsInEachDirection) + 1;
-    _params._neighborhoodSize = _params._kernelWidth * _params._kernelWidth;;
+    _params.set_numNeighborsInEachDirection(num);
+    //_params._kernelWidth = (2 * _params.get_numNeighborsInEachDirection()) + 1;   // set in set_numNeighborsInEachDirection
+    //_params._neighborhoodSize = _params._kernelWidth * _params._kernelWidth;;
 }
 
 void SpidrAnalysis::setNumHistBins(const size_t num) {

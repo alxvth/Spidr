@@ -52,12 +52,12 @@ void FeatureExtraction::setup(const std::vector<unsigned int>& pointIDsGlobal, c
 
     // SpidrParameters
     _numHistBins = params._numHistBins;
-    _numNeighborsInEachDirection = params._numNeighborsInEachDirection;
+    _numNeighborsInEachDirection = params.get_numNeighborsInEachDirection();
     _neighborhoodWeighting = params._neighWeighting;
 
     // Set neighborhood
-    _kernelWidth = params._kernelWidth;
-    _neighborhoodSize = params._neighborhoodSize;
+    _kernelWidth = params.get_kernelWidth();
+    _neighborhoodSize = params.get_neighborhoodSize();
     weightNeighborhood(_neighborhoodWeighting);     // sets _neighborhoodWeights and _neighborhoodWeightsSum
 
     // Data

@@ -156,8 +156,8 @@ public:
         _nn(-1), _numPoints(-1), _numDims(-1), _imgSize(-1, -1), _embeddingName(""),
         _featureType(feature_type::TEXTURE_HIST_1D), _neighWeighting(loc_Neigh_Weighting::WEIGHT_UNIF), _numNeighborsInEachDirection(-1), _numHistBins(-1),
         _kernelWidth(0), _neighborhoodSize(0), _numFeatureValsPerPoint(0), _forceCalcBackgroundFeatures(false),
-		_aknn_algorithm(knn_library::KNN_HNSW), _aknn_metric(distance_metric::METRIC_QF),
-		_perplexity(30), _perplexity_multiplier(3), _numIterations(1000), _exaggeration(250)
+        _aknn_algorithm(knn_library::KNN_HNSW), _aknn_metric(distance_metric::METRIC_QF), _numForegroundPoints(-1),
+		_perplexity(30), _perplexity_multiplier(3), _numIterations(1000), _exaggeration(250), _expDecay(250)
 	{
         // the default constructor sets un-useable values - the user has to set them
     }
@@ -165,31 +165,29 @@ public:
 	SpidrParameters(size_t numPoints, size_t numDims, ImgSize imgSize, std::string embeddingName, const float* dataVecBegin,
 		feature_type featureType, loc_Neigh_Weighting neighWeighting, size_t numLocNeighbors, size_t numHistBins,
 		knn_library aknn_algorithm, distance_metric aknn_metric, float MVNweight,
-		float perplexity, int numIterations, int exaggeration, bool forceCalcBackgroundFeatures = false) :
+		float perplexity, int numIterations, int exaggeration, int expDecay=250, bool forceCalcBackgroundFeatures = false) :
 		_numPoints(numPoints), _numDims(numDims), _imgSize(imgSize), _embeddingName(embeddingName),
-		_featureType(featureType), _neighWeighting(neighWeighting), _numNeighborsInEachDirection(numLocNeighbors), _numHistBins(numHistBins),
+		_featureType(featureType), _neighWeighting(neighWeighting), _numHistBins(numHistBins),
 		_aknn_algorithm(aknn_algorithm), _aknn_metric(aknn_metric), _forceCalcBackgroundFeatures(forceCalcBackgroundFeatures),
-		_perplexity_multiplier(3), _numIterations(numIterations), _exaggeration(exaggeration)
+		_perplexity_multiplier(3), _numIterations(numIterations), _exaggeration(exaggeration), _expDecay(expDecay)
 	{
         set_perplexity(perplexity);  // sets nn based on perplexity
 		_numForegroundPoints = numPoints; // No background default to all points in the foreground
-		_kernelWidth = (2 * _numNeighborsInEachDirection) + 1;
-		_neighborhoodSize = _kernelWidth * _kernelWidth;
-		_numFeatureValsPerPoint = NumFeatureValsPerPoint(_featureType, _numDims, _numHistBins, _neighborhoodSize);
+        set_numNeighborsInEachDirection(numLocNeighbors);  // sets _kernelWidth and _neighborhoodSize
+        _numFeatureValsPerPoint = NumFeatureValsPerPoint(_featureType, _numDims, _numHistBins, _neighborhoodSize);
 	}
 
     SpidrParameters(size_t numPoints, size_t numDims, ImgSize imgSize, std::string embeddingName, const float* dataVecBegin, size_t numForegroundPoints,
         feature_type featureType, loc_Neigh_Weighting neighWeighting, size_t numLocNeighbors, size_t numHistBins,
         knn_library aknn_algorithm, distance_metric aknn_metric,
-        float perplexity, int numIterations, int exaggeration, bool forceCalcBackgroundFeatures = false) :
+        float perplexity, int numIterations, int exaggeration, int expDecay = 250, bool forceCalcBackgroundFeatures = false) :
         _numPoints(numPoints), _numDims(numDims), _imgSize(imgSize), _embeddingName(embeddingName), _numForegroundPoints(numForegroundPoints),
-        _featureType(featureType), _neighWeighting(neighWeighting), _numNeighborsInEachDirection(numLocNeighbors), _numHistBins(numHistBins),
+        _featureType(featureType), _neighWeighting(neighWeighting), _numHistBins(numHistBins),
         _aknn_algorithm(aknn_algorithm), _aknn_metric(aknn_metric), _forceCalcBackgroundFeatures(forceCalcBackgroundFeatures),
-        _perplexity_multiplier(3), _numIterations(numIterations), _exaggeration(exaggeration)
+        _perplexity_multiplier(3), _numIterations(numIterations), _exaggeration(exaggeration), _expDecay(expDecay)
     {
         set_perplexity(perplexity);  // sets nn based on perplexity
-        _kernelWidth = (2 * _numNeighborsInEachDirection) + 1;
-        _neighborhoodSize = _kernelWidth * _kernelWidth;
+        set_numNeighborsInEachDirection(numLocNeighbors);  // sets _kernelWidth and _neighborhoodSize
         _numFeatureValsPerPoint = NumFeatureValsPerPoint(_featureType, _numDims, _numHistBins, _neighborhoodSize);
     }
 
@@ -197,6 +195,10 @@ public:
 	size_t get_nn() const { return _nn; };
 	float get_perplexity() const { return _perplexity; };
 	int get_perplexity_multiplier() const { return _perplexity_multiplier; };
+
+    size_t get_kernelWidth() const { return _kernelWidth; };
+    size_t get_neighborhoodSize() const { return _neighborhoodSize; };
+    size_t get_numNeighborsInEachDirection() const { return _numNeighborsInEachDirection; };
 
 	// setting the perplexity also changes the number of knn
 	void set_perplexity(float perp) { 
@@ -208,6 +210,12 @@ public:
             _perplexity = perp;
 		update_nn();	// sets nn based on perplexity
 	}
+
+    void set_numNeighborsInEachDirection(size_t numNeighborsInEachDirection) {
+        _numNeighborsInEachDirection = numNeighborsInEachDirection;
+        _kernelWidth = (2 * _numNeighborsInEachDirection) + 1;
+        _neighborhoodSize = _kernelWidth * _kernelWidth;
+    }
 
 private:
 	void update_nn() {
@@ -233,9 +241,6 @@ public:
 	feature_type        _featureType;           /*!< Type of data feature to be extracted > */
 	size_t              _numFeatureValsPerPoint;/*!< Depending on the feature type, the features vector has a different length (scalar features vs vector features per dimension)> */
 	loc_Neigh_Weighting _neighWeighting;        /*!< Weighting type of the neighborhood > */
-    size_t              _numNeighborsInEachDirection;       /*!< Number of neighbors in each direction, i.e. 1 yields a 3x3 neighborhood> */
-    size_t              _kernelWidth;           /*!< (2 * _numNeighborsInEachDirection) + 1;> */
-	size_t              _neighborhoodSize;      /*!< _kernelWidth * _kernelWidth> */
 	size_t              _numHistBins;           /*!< Number of bins in a histogram feature > */
     bool                _forceCalcBackgroundFeatures; /*!< Usually features are not computed for the background, but you can force it anyway > */
 	// distance
@@ -250,5 +255,8 @@ private:
 	size_t              _nn;                    /*!< Number of nearest neighbors, determined by _perplexity*_perplexity_multiplier + 1> */
 	const int           _perplexity_multiplier; /*!< Multiplied by the perplexity gives the number of nearest neighbors used> */
 	float               _perplexity;            /*!< Perplexity value in evert distribution.> */
+    size_t              _kernelWidth;           /*!< (2 * _numNeighborsInEachDirection) + 1;> */
+    size_t              _neighborhoodSize;      /*!< _kernelWidth * _kernelWidth> */
+    size_t              _numNeighborsInEachDirection;       /*!< Number of neighbors in each direction, i.e. 1 yields a 3x3 neighborhood> */
 
 };
