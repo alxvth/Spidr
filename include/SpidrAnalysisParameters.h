@@ -2,6 +2,7 @@
 
 #include <string>
 #include <stdexcept>
+#include <tuple>
 
 #include "spdlog/spdlog-inl.h"
 
@@ -49,17 +50,6 @@ enum class distance_metric : size_t
 };
 
 
-/*!
- * Types of ground distance calculation that are used as the basis for bin similarities
- */
-enum class bin_sim : size_t
-{
-	SIM_EUC,    /*!< 1 - sqrt(Euclidean distance between bins)/(Max dist) */
-	SIM_EXP,    /*!< exp(-(Euclidean distance between bins)^2/(Max dist)) */
-	SIM_UNI,    /*!< 1 (uniform) */
-};
-
-
 /*! Types of neighborhood features
  *
  * Adding a new feature type? Make sure to adjust NumFeatureValsPerPoint()
@@ -72,6 +62,39 @@ enum class feature_type : unsigned int
 	PCLOUD = 3,             /*!< Point cloud, i.e. just the neighborhood, no transformations*/
 	MULTIVAR_NORM = 4,      /*!< Mean and covariance matrix  */
 	CHANNEL_HIST = 5,       /*!< Histogram with one bis per channel that counts active (>1) values */
+};
+
+
+/*! Main combination of distance and feature
+ *
+ */
+enum class feat_dist : size_t
+{
+    HIST_QF,       /*!< Channel histogram and QF distance */
+    HIST_HEL,      /*!< Channel histogram and Hellinger */
+    LMI_EUC,       /*!< Local Moran's I and euclidean distance */
+    LGC_EUC,       /*!< Local Geary's C and euclidean distance */
+    PC_CHA,        /*!< Point cloud distance: Chamfer */
+    PC_HAU,        /*!< Point cloud distance: Hausdorff */
+    MVN_BHAT,      /*!< Mean and covariance matrix feaure and Bhattacharyya distance */
+    MVN_FRO,       /*!< Mean and covariance matrix feaure and Frobenius norm of element-wise differences between covmatrices*/
+    CHIST_EUC,     /*!< Histogram with one bis per channel that counts active (>1) values and euclidean distance */
+};
+
+
+/*! Get the feature and distance metric from a feat_dist
+ *  use:  std::tie(feat, dist) = get_feat_and_dist(feat_dist)
+ */
+std::tuple< feature_type, distance_metric> get_feat_and_dist(feat_dist feat_dist);
+
+/*!
+ * Types of ground distance calculation that are used as the basis for bin similarities
+ */
+enum class bin_sim : size_t
+{
+    SIM_EUC,    /*!< 1 - sqrt(Euclidean distance between bins)/(Max dist) */
+    SIM_EXP,    /*!< exp(-(Euclidean distance between bins)^2/(Max dist)) */
+    SIM_UNI,    /*!< 1 (uniform) */
 };
 
 // Heuristic for setting the histogram bin size
