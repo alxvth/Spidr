@@ -89,7 +89,6 @@ void SpidrWrapper::compute_fit(
 }
 
 
-
 std::tuple<std::vector<int>, std::vector<float>> SpidrWrapper::fit(
 	py::array_t<float, py::array::c_style | py::array::forcecast> X,
 	py::array_t<unsigned int, py::array::c_style | py::array::forcecast> pointIDsGlobal,
@@ -100,6 +99,17 @@ std::tuple<std::vector<int>, std::vector<float>> SpidrWrapper::fit(
 	compute_fit(X, pointIDsGlobal, imgWidth, imgHight, backgroundIDsGlobal);
 
 	return _SpidrAnalysis->getKnn();
+}
+
+
+void SpidrWrapper::fit_noReturn(
+	py::array_t<float, py::array::c_style | py::array::forcecast> X,
+	py::array_t<unsigned int, py::array::c_style | py::array::forcecast> pointIDsGlobal,
+	int imgWidth, int imgHight,
+	std::optional<py::array_t<unsigned int, py::array::c_style | py::array::forcecast>> backgroundIDsGlobal) {
+
+	// Init settings, (Extract features), compute similarities, embed data
+	compute_fit(X, pointIDsGlobal, imgWidth, imgHight, backgroundIDsGlobal);
 }
 
 

@@ -52,6 +52,13 @@ PYBIND11_MODULE(SpidrWrapper, m) {
 		py::arg("imgHeight"),
 		py::arg("backgroundIDsGlobal") = py::none());
 
+	spidrAnalysis.def("fit_noReturn", &SpidrWrapper::fit_noReturn, "Compute kNN dists and indices, do not return anything",
+		py::arg("X"),
+		py::arg("pointIDsGlobal"),
+		py::arg("imgWidth"),
+		py::arg("imgHeight"),
+		py::arg("backgroundIDsGlobal") = py::none());
+
 	spidrAnalysis.def("transform", &SpidrWrapper::transform, "Compute embedding, fit() must have been called previously");
 
 	spidrAnalysis.def("fit_transform", &SpidrWrapper::fit_transform, "Compute embedding, calls fit()",

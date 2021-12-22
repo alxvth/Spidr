@@ -31,6 +31,14 @@ public:
 		int imgWidth, int imgHeight,
 		std::optional<py::array_t<unsigned int, py::array::c_style | py::array::forcecast>> backgroundIDsGlobal);
 
+	// same as fit() but does not return anything
+	void fit_noReturn(
+		py::array_t<float, py::array::c_style | py::array::forcecast> X,
+		py::array_t<unsigned int, py::array::c_style | py::array::forcecast> pointIDsGlobal,
+		int imgWidth, int imgHeight,
+		std::optional<py::array_t<unsigned int, py::array::c_style | py::array::forcecast>> backgroundIDsGlobal);
+
+
 	py::array_t<float, py::array::c_style> transform();
 
 	py::array_t<float, py::array::c_style> fit_transform(
