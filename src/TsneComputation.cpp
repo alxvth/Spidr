@@ -50,10 +50,6 @@ void TsneComputation::setup(const std::vector<int> knn_indices, const std::vecto
     _numForegroundPoints = params._numForegroundPoints;         // if no background IDs are given, _numForegroundPoints = _numPoints
     _perplexity_multiplier = params.get_perplexity_multiplier();
 
-    // Evaluation (for determining the filename when saving the embedding to disk)
-    _embeddingName = params._embeddingName;
-    _numDataDims = params._numDims;
-
     // Data
     _knn_indices = knn_indices;
     _knn_distances = knn_distances;

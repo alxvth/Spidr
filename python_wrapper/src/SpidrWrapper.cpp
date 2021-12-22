@@ -106,8 +106,9 @@ std::tuple<std::vector<int>, std::vector<float>> SpidrWrapper::fit(
 py::array_t<float, py::array::c_style> SpidrWrapper::transform() {
 
 	if (_fitted == false)
-		throw std::runtime_error("SpidrWrapper::transform:Call fit() before transform() or go with fit_transform()");
+		throw std::runtime_error("SpidrWrapper::transform: Call fit(...) before transform() or go with fit_transform() or set knn manually with set_kNN(...)");
 
+	// computes t-SNE based on previously computed high-dimensional distances
 	_SpidrAnalysis->computeEmbedding();
 	std::vector<float> emb = _SpidrAnalysis->outputWithBackground();
 
@@ -146,3 +147,33 @@ py::array_t<float, py::array::c_style> SpidrWrapper::fit_transform(
 
 }
 
+void SpidrWrapper::set_kNN(py::array_t<int, py::array::c_style | py::array::forcecast> knn_indices, py::array_t<float, py::array::c_style | py::array::forcecast> knn_distances) {
+	// copy data from py::array to std::vector
+	std::vector<int> indices(knn_indices.size());
+	std::memcpy(indices.data(), knn_indices.data(), knn_indices.size() * sizeof(float));
+	
+	std::vector<float> distances(knn_distances.size());
+	std::memcpy(distances.data(), knn_distances.data(), knn_distances.size() * sizeof(float));
+
+	// check values
+	if (indices.size() != distances.size())
+	{
+		spdlog::error("SpidrWrapper::setKNN: knn indices and distances do not align.");
+		return;
+	}
+
+	if (indices.size() % _nn != 0)
+	{
+		spdlog::error("SpidrWrapper::setKNN: size of indices vector must be multiple of number of neighbors.");
+		return;
+	}
+
+	// set knn values
+	_SpidrAnalysis->initializeAnalysisSettings(_featType, _kernelType, _numLocNeighbors, _numHistBins, _aknnAlgType, _distMetric, _numIterations, _perplexity, _exaggeration, _expDecay, _forceCalcBackgroundFeatures);
+	_SpidrAnalysis->setKnn(indices, distances);
+
+	_numPoints = indices.size() / _nn;
+
+	_fitted = true;
+
+}

@@ -61,7 +61,7 @@ void SpidrAnalysis::initializeAnalysisSettings(const feature_type featType, cons
 
     // Derived parameters
 	setNumFeatureValsPerPoint(featType, _params._numDims, _params._numHistBins, _params.get_neighborhoodSize());			// sets _params._numFeatureValsPerPoint
-    setForceCalcBackgroundFeatures(forceCalcBackgroundFeatures);													// sets _params._forceCalcBackgroundFeatures
+    setForceCalcBackgroundFeatures(forceCalcBackgroundFeatures);													        // sets _params._forceCalcBackgroundFeatures
 
 	spdlog::info("SpidrAnalysis: Initialized all settings");
 }
@@ -82,6 +82,12 @@ void SpidrAnalysis::computekNN() {
 }
 
 void SpidrAnalysis::computeEmbedding() {
+    if(_knn_indices.empty() | _knn_distances.empty())
+        spdlog::error("SpidrAnalysis: knn must not be empty");
+
+    if (_knn_indices.size() != _knn_distances.size())
+        spdlog::error("SpidrAnalysis: knn indices and knn distance do not align");
+
 	_tsne.setup(_knn_indices, _knn_distances, _params);
 	_tsne.compute();
 }
@@ -272,4 +278,20 @@ const std::vector<int> SpidrAnalysis::getKnnIndices() const {
 
 const std::vector<float> SpidrAnalysis::getKnnDistances() const {
     return _knn_distances;
+}
+
+void SpidrAnalysis::setKnn(std::vector<int>& indices, std::vector<float>& distances) {
+    _knn_indices = indices;
+    _knn_distances = distances;
+
+    // set meta data	
+    assert(_knn_indices.size() % _params.get_nn() == 0);        // knn size must align with perplexity
+
+    std::cout << "_knn_indices " << _knn_indices.size() << "\n";
+    std::cout << "_params.get_nn " << _params.get_nn() << "\n";
+
+    size_t num_points = _knn_indices.size() / _params.get_nn();
+
+    _params._numPoints = num_points;
+    _params._numForegroundPoints = num_points;
 }

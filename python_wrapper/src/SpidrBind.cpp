@@ -61,6 +61,10 @@ PYBIND11_MODULE(SpidrWrapper, m) {
 		py::arg("imgHeight"),
 		py::arg("backgroundIDsGlobal") = py::none());
 
+	spidrAnalysis.def("set_kNN", &SpidrWrapper::set_kNN, "Compute embedding, calls fit()",
+		py::arg("knn_indices"),
+		py::arg("knn_distances"));
+
 	spidrAnalysis.def_property_readonly("perplexity", &SpidrWrapper::get_perplexity, "t-SNE perplexity");
 	spidrAnalysis.def_property_readonly("iterations", &SpidrWrapper::get_numIterations, "t-SNE iterations");
 	spidrAnalysis.def_property_readonly("nn", &SpidrWrapper::get_nn, "Number of nearest neighbors");

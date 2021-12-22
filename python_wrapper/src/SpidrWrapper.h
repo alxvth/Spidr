@@ -43,6 +43,8 @@ public:
 	int get_perplexity() { return _perplexity; }
 	int get_numIterations() { return _numIterations; }
 
+	void set_kNN(py::array_t<int, py::array::c_style | py::array::forcecast> knn_indices, py::array_t<float, py::array::c_style | py::array::forcecast> knn_distances);
+
 private:
 	// utility function to circumvent code duplication in fit() and fit_transform()
 	void compute_fit(
@@ -70,7 +72,7 @@ private:
 	py::ssize_t _numPoints;
 	ImgSize _imgSize;
 
-	bool _fitted;
+	bool _fitted;	// whether transform can be called (can be called when knn are set)
 	size_t _nn;
 };
 

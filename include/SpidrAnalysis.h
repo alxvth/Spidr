@@ -113,6 +113,8 @@ public:
 
     const std::vector<float> getKnnDistances() const;
 
+    /* Set externally computed knn, automatically set number of points depending on  */
+    void setKnn(std::vector<int>& indices, std::vector<float>& distances);
 
     /* Add bg points to emb, uses the ID info set for an instance of this class */
     void addBackgroundToEmbedding(std::vector<float>& emb, const std::vector<float>& emb_wo_bg) const;
@@ -174,6 +176,8 @@ private:
 
     void setForceCalcBackgroundFeatures(const bool forceCalcBackgroundFeatures);
 
+
+
 private:
     // worker classes
     FeatureExtraction _featExtraction;					/*!<> */
@@ -191,7 +195,7 @@ private:
 	// features and knn
 	Feature _dataFeats;						            /*!<> */
 	std::vector<int> _knn_indices ;						/*!<> */
-	std::vector<float> _knn_distances;			/*!<> */
+	std::vector<float> _knn_distances;			        /*!<> */
 
 };
 
