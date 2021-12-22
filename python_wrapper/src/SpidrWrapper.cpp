@@ -172,6 +172,7 @@ void SpidrWrapper::set_kNN(py::array_t<int, py::array::c_style | py::array::forc
 	_SpidrAnalysis->initializeAnalysisSettings(_featType, _kernelType, _numLocNeighbors, _numHistBins, _aknnAlgType, _distMetric, _numIterations, _perplexity, _exaggeration, _expDecay, _forceCalcBackgroundFeatures);
 	_SpidrAnalysis->setKnn(indices, distances);
 
+	// set number of points as it is used in transform()
 	_numPoints = indices.size() / _nn;
 
 	_fitted = true;

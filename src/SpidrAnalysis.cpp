@@ -286,10 +286,6 @@ void SpidrAnalysis::setKnn(std::vector<int>& indices, std::vector<float>& distan
 
     // set meta data	
     assert(_knn_indices.size() % _params.get_nn() == 0);        // knn size must align with perplexity
-
-    std::cout << "_knn_indices " << _knn_indices.size() << "\n";
-    std::cout << "_params.get_nn " << _params.get_nn() << "\n";
-
     size_t num_points = _knn_indices.size() / _params.get_nn();
 
     _params._numPoints = num_points;
