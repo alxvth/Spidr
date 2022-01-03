@@ -12,7 +12,7 @@ SpidrWrapper::SpidrWrapper(distance_metric distMetric,
 	int expDecay,
 	bool forceCalcBackgroundFeatures
 ) : _kernelType(kernelType), _numHistBins(numHistBins), _aknnAlgType(aknnAlgType), _distMetric(distMetric), _numIterations(numIterations),
-    _perplexity(perplexity), _exaggeration(exaggeration), _expDecay(expDecay), _forceCalcBackgroundFeatures(forceCalcBackgroundFeatures), _fitted(false) 
+    _perplexity(perplexity), _exaggeration(exaggeration), _expDecay(expDecay), _forceCalcBackgroundFeatures(forceCalcBackgroundFeatures), _fitted(false), _transformed(false)
 {
 	if (numLocNeighbors <= 0)
 		throw std::runtime_error("SpidrWrapper::Constructor: Spatial Neighbors must be larger 0");
@@ -41,7 +41,7 @@ SpidrWrapper::SpidrWrapper(distance_metric distMetric,
 	}
 
 	_SpidrAnalysis = std::make_unique<SpidrAnalysis>();
-	_nn = _perplexity * 3 + 1;  // _perplexity_multiplier = 3
+	_nn = static_cast<size_t>(_perplexity) * 3 + 1;  // _perplexity_multiplier = 3
 
 }
 
@@ -85,7 +85,7 @@ void SpidrWrapper::compute_fit(
 	_SpidrAnalysis->computekNN();
 
 	_fitted = true;
-
+	_transformed = false;
 }
 
 
@@ -102,34 +102,26 @@ std::tuple<std::vector<int>, std::vector<float>> SpidrWrapper::fit(
 }
 
 
-void SpidrWrapper::fit_noReturn(
-	py::array_t<float, py::array::c_style | py::array::forcecast> X,
-	py::array_t<unsigned int, py::array::c_style | py::array::forcecast> pointIDsGlobal,
-	int imgWidth, int imgHight,
-	std::optional<py::array_t<unsigned int, py::array::c_style | py::array::forcecast>> backgroundIDsGlobal) {
+void SpidrWrapper::compute_transform() {
+	if (_fitted == false) {
+		spdlog::error("SpidrWrapper::compute_transform: Call fit(...) before transform() or go with fit_transform() or set knn manually with set_kNN(...)");
+		return;
+	}
 
-	// Init settings, (Extract features), compute similarities, embed data
-	compute_fit(X, pointIDsGlobal, imgWidth, imgHight, backgroundIDsGlobal);
+	// computes t-SNE based on previously computed high-dimensional distances
+	_SpidrAnalysis->computeEmbedding();
+
+	_transformed = true;
 }
 
 
 py::array_t<float, py::array::c_style> SpidrWrapper::transform() {
 
-	if (_fitted == false)
-		throw std::runtime_error("SpidrWrapper::transform: Call fit(...) before transform() or go with fit_transform() or set knn manually with set_kNN(...)");
+	// compute embedding
+	compute_transform();
 
-	// computes t-SNE based on previously computed high-dimensional distances
-	_SpidrAnalysis->computeEmbedding();
-	std::vector<float> emb = _SpidrAnalysis->outputWithBackground();
-
-	return py::array(py::buffer_info(
-		emb.data(),													/* data as contiguous array  */
-		sizeof(float),												/* size of one scalar        */
-		py::format_descriptor<float>::format(),						/* data type                 */
-		2,															/* number of dimensions      */
-		std::vector<py::ssize_t>{_numPoints, 2},					/* shape of the matrix       */
-		std::vector<py::ssize_t>{sizeof(float)*2, sizeof(float)}	/* strides for each axis     */
-	));
+	// return embedding
+	return get_embedding();
 }
 
 
@@ -139,22 +131,14 @@ py::array_t<float, py::array::c_style> SpidrWrapper::fit_transform(
 	int imgWidth, int imgHight,
 	std::optional<py::array_t<unsigned int, py::array::c_style | py::array::forcecast>> backgroundIDsGlobal) {
 
-	// Init settings, (Extract features), compute similarities, embed data
+	// Init settings, (Extract features), compute similarities
 	compute_fit(X, pointIDsGlobal, imgWidth, imgHight, backgroundIDsGlobal);
 
-	// transform
-	_SpidrAnalysis->computeEmbedding();
-	std::vector<float> emb = _SpidrAnalysis->outputWithBackground();
+	// embed data
+	compute_transform();
 
-	return py::array(py::buffer_info(
-		emb.data(),													/* data as contiguous array  */
-		sizeof(float),												/* size of one scalar        */
-		py::format_descriptor<float>::format(),						/* data type                 */
-		2,															/* number of dimensions      */
-		std::vector<py::ssize_t>{_numPoints, 2},					/* shape of the matrix       */
-		std::vector<py::ssize_t>{sizeof(float) * 2, sizeof(float)}	/* strides for each axis     */
-	));
-
+	// return embedding
+	return get_embedding();
 }
 
 void SpidrWrapper::set_kNN(py::array_t<int, py::array::c_style | py::array::forcecast> knn_indices, py::array_t<float, py::array::c_style | py::array::forcecast> knn_distances) {
@@ -186,5 +170,35 @@ void SpidrWrapper::set_kNN(py::array_t<int, py::array::c_style | py::array::forc
 	_numPoints = indices.size() / _nn;
 
 	_fitted = true;
+	_transformed = false;
+}
 
+py::array_t<float, py::array::c_style> SpidrWrapper::get_embedding() {
+	if (_transformed == false) {
+		spdlog::error("SpidrWrapper::get_embedding: Call compute_transform() or fit_transform() first");
+		return py::array_t<float>();
+	}
+
+	// get embedding
+	std::vector<float> emb = _SpidrAnalysis->outputWithBackground();
+
+	return py::array(py::buffer_info(
+		emb.data(),													/* data as contiguous array  */
+		sizeof(float),												/* size of one scalar        */
+		py::format_descriptor<float>::format(),						/* data type                 */
+		2,															/* number of dimensions      */
+		std::vector<py::ssize_t>{_numPoints, 2},					/* shape of the matrix       */
+		std::vector<py::ssize_t>{sizeof(float) * 2, sizeof(float)}	/* strides for each axis     */
+	));
+
+}
+
+std::tuple<std::vector<int>, std::vector<float>> SpidrWrapper::get_kNN()
+{
+	if (_fitted == false) {
+		spdlog::error("SpidrWrapper::get_kNN: Call fit(...) before transform() or go with fit_transform() or set knn manually with set_kNN(...)");
+		return std::make_tuple(std::vector<int>{ -1 }, std::vector<float>{ 0 });	// return dummy values
+	}
+
+	return _SpidrAnalysis->getKnn();
 }

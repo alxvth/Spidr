@@ -24,43 +24,47 @@ public:
 		int expDecay = 70,
 		bool forceCalcBackgroundFeatures = false);
 
-	// compute knn dists and ids (and as part of that also the features)
-	std::tuple<std::vector<int>, std::vector<float>> fit(
-		py::array_t<float, py::array::c_style | py::array::forcecast> X,
-		py::array_t<unsigned int, py::array::c_style | py::array::forcecast> pointIDsGlobal,
-		int imgWidth, int imgHeight,
-		std::optional<py::array_t<unsigned int, py::array::c_style | py::array::forcecast>> backgroundIDsGlobal);
-
-	// same as fit() but does not return anything
-	void fit_noReturn(
-		py::array_t<float, py::array::c_style | py::array::forcecast> X,
-		py::array_t<unsigned int, py::array::c_style | py::array::forcecast> pointIDsGlobal,
-		int imgWidth, int imgHeight,
-		std::optional<py::array_t<unsigned int, py::array::c_style | py::array::forcecast>> backgroundIDsGlobal);
-
-
-	py::array_t<float, py::array::c_style> transform();
-
-	py::array_t<float, py::array::c_style> fit_transform(
-		py::array_t<float, py::array::c_style | py::array::forcecast> X,
-		py::array_t<unsigned int, py::array::c_style | py::array::forcecast> pointIDsGlobal,
-		int imgWidth, int imgHeight,
-		std::optional<py::array_t<unsigned int, py::array::c_style | py::array::forcecast>> backgroundIDsGlobal);
-
-	int get_nn() { return static_cast<int>(_nn); }
-	int get_perplexity() { return _perplexity; }
-	int get_numIterations() { return _numIterations; }
-
-	void set_kNN(py::array_t<int, py::array::c_style | py::array::forcecast> knn_indices, py::array_t<float, py::array::c_style | py::array::forcecast> knn_distances);
-
-private:
-	// utility function to circumvent code duplication in fit() and fit_transform()
+	// compute knn dists and ids (and as part of that also the features), does not return knn
 	void compute_fit(
 		py::array_t<float, py::array::c_style | py::array::forcecast> X,
 		py::array_t<unsigned int, py::array::c_style | py::array::forcecast> pointIDsGlobal,
 		int imgWidth, int imgHeight,
 		std::optional<py::array_t<unsigned int, py::array::c_style | py::array::forcecast>> backgroundIDsGlobal);
 
+	// compute knn dists and ids (and as part of that also the features), returns knn
+	std::tuple<std::vector<int>, std::vector<float>> fit(
+		py::array_t<float, py::array::c_style | py::array::forcecast> X,
+		py::array_t<unsigned int, py::array::c_style | py::array::forcecast> pointIDsGlobal,
+		int imgWidth, int imgHeight,
+		std::optional<py::array_t<unsigned int, py::array::c_style | py::array::forcecast>> backgroundIDsGlobal);
+
+	// compute embedding based on knn, does not return knn
+	void compute_transform();
+
+	// compute embedding based on knn, returns knn
+	py::array_t<float, py::array::c_style> transform();
+
+	// computes knn and embedding, returns knn
+	py::array_t<float, py::array::c_style> fit_transform(
+		py::array_t<float, py::array::c_style | py::array::forcecast> X,
+		py::array_t<unsigned int, py::array::c_style | py::array::forcecast> pointIDsGlobal,
+		int imgWidth, int imgHeight,
+		std::optional<py::array_t<unsigned int, py::array::c_style | py::array::forcecast>> backgroundIDsGlobal);
+
+	// returns the computed embedding
+	py::array_t<float, py::array::c_style> get_embedding();
+
+	int get_nn() { return static_cast<int>(_nn); }
+	int get_perplexity() { return _perplexity; }
+	int get_numIterations() { return _numIterations; }
+
+	// sets externally computed knn, no need to call any *fit* function afterwards, just go with *transform
+	void set_kNN(py::array_t<int, py::array::c_style | py::array::forcecast> knn_indices, py::array_t<float, py::array::c_style | py::array::forcecast> knn_distances);
+
+	// returns the knn distances and indices computed in one of the *fit functions
+	std::tuple<std::vector<int>, std::vector<float>> get_kNN();
+
+private:
 
 	std::unique_ptr<SpidrAnalysis> _SpidrAnalysis;
 
@@ -80,7 +84,9 @@ private:
 	py::ssize_t _numPoints;
 	ImgSize _imgSize;
 
-	bool _fitted;	// whether transform can be called (can be called when knn are set)
+	bool _fitted;		// whether transform can be called (can be called when knn are set)
+	bool _transformed;	// whether an embedding was calculated and can be returned
 	size_t _nn;
+
 };
 

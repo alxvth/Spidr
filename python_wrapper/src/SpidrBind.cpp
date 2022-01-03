@@ -45,23 +45,25 @@ PYBIND11_MODULE(SpidrWrapper, m) {
 		py::arg("forceCalcBackgroundFeatures") = false);
 
 
-	spidrAnalysis.def("fit", &SpidrWrapper::fit, "Compute kNN dists and indices",
+	spidrAnalysis.def("fit", &SpidrWrapper::fit, "Compute kNN dists and indices and return them",
 		py::arg("X"),
 		py::arg("pointIDsGlobal"),
 		py::arg("imgWidth"),
 		py::arg("imgHeight"),
 		py::arg("backgroundIDsGlobal") = py::none());
 
-	spidrAnalysis.def("fit_noReturn", &SpidrWrapper::fit_noReturn, "Compute kNN dists and indices, do not return anything",
+	spidrAnalysis.def("compute_fit", &SpidrWrapper::compute_fit, "Compute kNN dists and indices, do not return anything",
 		py::arg("X"),
 		py::arg("pointIDsGlobal"),
 		py::arg("imgWidth"),
 		py::arg("imgHeight"),
 		py::arg("backgroundIDsGlobal") = py::none());
 
-	spidrAnalysis.def("transform", &SpidrWrapper::transform, "Compute embedding, fit() must have been called previously");
+	spidrAnalysis.def("transform", &SpidrWrapper::transform, "Compute embedding and return it, fit() must have been called previously");
 
-	spidrAnalysis.def("fit_transform", &SpidrWrapper::fit_transform, "Compute embedding, calls fit()",
+	spidrAnalysis.def("compute_transform", &SpidrWrapper::compute_transform, "Compute embedding but do not return anything, fit() must have been called previously");
+
+	spidrAnalysis.def("fit_transform", &SpidrWrapper::fit_transform, "Compute embedding and return it",
 		py::arg("X"),
 		py::arg("pointIDsGlobal"),
 		py::arg("imgWidth"),
@@ -71,6 +73,8 @@ PYBIND11_MODULE(SpidrWrapper, m) {
 	spidrAnalysis.def("set_kNN", &SpidrWrapper::set_kNN, "Compute embedding, calls fit()",
 		py::arg("knn_indices"),
 		py::arg("knn_distances"));
+
+	spidrAnalysis.def("get_kNN", &SpidrWrapper::get_kNN, "Returns the kNN dists and indices");
 
 	spidrAnalysis.def_property_readonly("perplexity", &SpidrWrapper::get_perplexity, "t-SNE perplexity");
 	spidrAnalysis.def_property_readonly("iterations", &SpidrWrapper::get_numIterations, "t-SNE iterations");
