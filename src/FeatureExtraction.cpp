@@ -363,7 +363,9 @@ void FeatureExtraction::addPixelLocationToAttributes(size_t pointInd, std::vecto
     attributesAndLocation.resize(_numDims + 2);
 
     // copy attribute data
-    std::copy(neighborValues.begin(), neighborValues.end(), attributesAndLocation.begin());
+    std::copy(_attribute_data.begin() + (pointInd * _numDims),      // data from here
+        _attribute_data.begin() + (pointInd * _numDims) + _numDims, // up to data here
+        attributesAndLocation.begin());
 
     // compute pixel location from data index
     float locHeight = std::floor(pointInd / _imgSize.width);         // height val, pixel pos in image
@@ -383,7 +385,9 @@ void FeatureExtraction::addPixelLocationNormedToAttributes(size_t pointInd, std:
     attributesAndLocation.resize(_numDims + 2);
 
     // copy attribute data
-    std::copy(neighborValues.begin(), neighborValues.end(), attributesAndLocation.begin());
+    std::copy(_attribute_data.begin() + (pointInd * _numDims),      // data from here
+        _attribute_data.begin() + (pointInd * _numDims) + _numDims, // up to data here
+        attributesAndLocation.begin());
 
     // compute pixel location from data index
     float locHeight = std::floor(pointInd / _imgSize.width);         // height val, pixel pos in image

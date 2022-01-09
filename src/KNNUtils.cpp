@@ -218,7 +218,7 @@ std::tuple<std::vector<int>, std::vector<float>> ComputeFullDistMat(const Featur
 }
 
 
-hnswlib::SpaceInterface<float>* CreateHNSWSpace(const distance_metric knn_metric, const size_t numDims, const size_t neighborhoodSize, const loc_Neigh_Weighting neighborhoodWeighting, const size_t numHistBins, const size_t imgWidth, const size_t numPoints) {
+hnswlib::SpaceInterface<float>* CreateHNSWSpace(const distance_metric knn_metric, const feature_type feature_type, const size_t numDims, const size_t neighborhoodSize, const loc_Neigh_Weighting neighborhoodWeighting, const size_t numHistBins) {
     // chose distance metric
     hnswlib::SpaceInterface<float> *space = NULL;
     spdlog::info("Distance calculation: Metric {}", logging::distance_metric_name(knn_metric));
@@ -235,7 +235,10 @@ hnswlib::SpaceInterface<float>* CreateHNSWSpace(const distance_metric knn_metric
         break;
 
     case distance_metric::METRIC_EUC:
-        space = new hnswlib::L2FeatSpace(numDims);
+        if ((feature_type == feature_type::PIXEL_LOCATION) || (feature_type == feature_type::PIXEL_LOCATION_NORM))
+            space = new hnswlib::L2FeatSpace(numDims+2);
+        else
+            space = new hnswlib::L2FeatSpace(numDims);
         break;
 
     case distance_metric::METRIC_CHA:

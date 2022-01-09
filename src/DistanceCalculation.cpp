@@ -68,7 +68,7 @@ void DistanceCalculation::computekNN() {
     auto t_start_CreateHNSWSpace = std::chrono::steady_clock::now();
 
     // setup hsnw index
-    hnswlib::SpaceInterface<float> *space = CreateHNSWSpace(_knn_metric, _numDims, _neighborhoodSize, _neighborhoodWeighting, _numHistBins, _imgWidth, _numForegroundPoints);
+    hnswlib::SpaceInterface<float> *space = CreateHNSWSpace(_knn_metric, _featureType, _numDims, _neighborhoodSize, _neighborhoodWeighting, _numHistBins);
     assert(space != NULL);
 
     auto t_end_CreateHNSWSpace = std::chrono::steady_clock::now();
