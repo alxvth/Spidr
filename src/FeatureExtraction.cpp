@@ -113,6 +113,16 @@ void FeatureExtraction::setup(const std::vector<unsigned int>& pointIDsGlobal, c
         featFunct = &FeatureExtraction::multivarNormDistDescriptor;
         spdlog::info("Feature extraction: Multivariate normal distribution descriptors (covaraince matrix and channel-wise mean)");
     }
+    else if (_featType == feature_type::PIXEL_LOCATION)
+    {
+        featFunct = &FeatureExtraction::addPixelLocationToAttributes;
+        spdlog::info("Feature extraction: Use x and y coordinates as extra features");
+    }
+    else if (_featType == feature_type::PIXEL_LOCATION_NORM)
+    {
+        featFunct = &FeatureExtraction::addPixelLocationNormedToAttributes;
+        spdlog::info("Feature extraction:Use x and y coordinates as extra features and norm their range to the attribute range: [0, largestPixelIndex] -> [_minAttriVal, _maxAttriVal] ");
+    }
     else
     {
         featFunct = NULL;
@@ -137,6 +147,22 @@ void FeatureExtraction::initExtraction() {
         _meanVals = CalcMeanPerChannel(_numPoints, _numDims, _attribute_data);
 		_varVals = CalcVarEstimate(_numPoints, _numDims, _attribute_data, _meanVals);
 	}
+    else if ((_featType == feature_type::PIXEL_LOCATION) | (_featType == feature_type::PIXEL_LOCATION_NORM)) {
+        // find min and max for each channel, resize the output larger due to vector features
+        _minMaxVals = CalcMinMaxPerChannel(_numPoints, _numDims, _attribute_data);
+
+        std::vector<float> minVals;
+        std::vector<float> maxVals;
+
+        bool toggle = false;
+        std::partition_copy(_minMaxVals.begin(), _minMaxVals.end(),
+            std::back_inserter(minVals),
+            std::back_inserter(maxVals),
+            [&toggle](int) { return toggle = !toggle; });   // toggles between minVals and maxVals, i.e. copy every second element from _minMaxVals into the other two vectors
+
+        _minAttriVal = *std::min_element(minVals.begin(), minVals.end());   // min_element returns an interator, thus the need for *
+        _maxAttriVal = *std::max_element(maxVals.begin(), maxVals.end());
+    }
 
 }
 
@@ -329,6 +355,49 @@ void FeatureExtraction::multivarNormDistDescriptor(size_t pointInd, std::vector<
 
 }
 
+void FeatureExtraction::addPixelLocationToAttributes(size_t pointInd, std::vector<float> neighborValues, std::vector<int> neighborIDs) {
+    assert(_minMaxVals.size() == 2 * _numDims);
+
+    // new vector with attribute data and x&y pixel location
+    std::vector<float> attributesAndLocation;
+    attributesAndLocation.resize(_numDims + 2);
+
+    // copy attribute data
+    std::copy(neighborValues.begin(), neighborValues.end(), attributesAndLocation.begin());
+
+    // compute pixel location from data index
+    float locHeight = std::floor(pointInd / _imgSize.width);         // height val, pixel pos in image
+    float locWidth = pointInd - (locHeight * _imgSize.width);        // width val, pixel pos in image
+
+    attributesAndLocation[_numDims] = locHeight;
+    attributesAndLocation[_numDims + 1] = locWidth;
+
+    _outFeatures.get_data_ptr()->at(pointInd) = new FeatureData<std::vector<float>>(attributesAndLocation);
+}
+
+void FeatureExtraction::addPixelLocationNormedToAttributes(size_t pointInd, std::vector<float> neighborValues, std::vector<int> neighborIDs) {
+    assert(_minMaxVals.size() == 2 * _numDims);
+
+    // new vector with attribute data and x&y pixel location
+    std::vector<float> attributesAndLocation;
+    attributesAndLocation.resize(_numDims + 2);
+
+    // copy attribute data
+    std::copy(neighborValues.begin(), neighborValues.end(), attributesAndLocation.begin());
+
+    // compute pixel location from data index
+    float locHeight = std::floor(pointInd / _imgSize.width);         // height val, pixel pos in image
+    float locWidth = pointInd - (locHeight * _imgSize.width);        // width val, pixel pos in image
+
+    // norm pixel range to attribute range: [0, largestPixelIndex] -> [_minAttriVal, _maxAttriVal]
+    locHeight *= (_maxAttriVal - _minAttriVal) / _imgSize.height + _minAttriVal;
+    locWidth *= (_maxAttriVal - _minAttriVal) / _imgSize.width + _minAttriVal;
+
+    attributesAndLocation[_numDims] = locHeight;
+    attributesAndLocation[_numDims + 1] = locWidth;
+
+    _outFeatures.get_data_ptr()->at(pointInd) = new FeatureData<std::vector<float>>(attributesAndLocation);
+}
 
 void FeatureExtraction::allNeighborhoodVals(size_t pointInd, std::vector<float> neighborValues, std::vector<int> neighborIDs) {
 

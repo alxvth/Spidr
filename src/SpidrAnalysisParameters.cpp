@@ -76,6 +76,15 @@ std::tuple< feature_type, distance_metric> get_feat_and_dist(feat_dist feat_dist
         feat = feature_type::CHANNEL_HIST;
         dist = distance_metric::METRIC_EUC;
         break;
+    case feat_dist::PIXEL_LOCATION:
+        feat = feature_type::PIXEL_LOCATION;
+        dist = distance_metric::METRIC_EUC;
+        break;
+    case feat_dist::PIXEL_LOCATION_NORM:
+        feat = feature_type::PIXEL_LOCATION_NORM;
+        dist = distance_metric::METRIC_EUC;
+        break;
+    default: spdlog::error("Feature extraction: unknown feature type");
     }
 
     return { feat , dist };

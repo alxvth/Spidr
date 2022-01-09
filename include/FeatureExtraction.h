@@ -102,13 +102,26 @@ private:
     */
     void calculateGearysC(size_t pointInd, std::vector<float> neighborValues, std::vector<int> neighborIDs);
 
-
     /*! multivariate normal distributions Descriptos: covaraince matrix and channel-wise mean
      * 
      * \param pointInd
      * \param neighborValues
     */
     void FeatureExtraction::multivarNormDistDescriptor(size_t pointInd, std::vector<float> neighborValues, std::vector<int> neighborIDs);
+
+    /*! Adds two features: x and y location of data point
+     *
+     * neighborIDs is unsused but necessary to stay consistent with featFunct
+     * \param weighting
+     */
+    void addPixelLocationToAttributes(size_t pointInd, std::vector<float> neighborValues, std::vector<int> neighborIDs);
+
+    /*! Adds two features: x and y location of data point
+     *
+     * neighborIDs is unsused but necessary to stay consistent with featFunct
+     * \param weighting
+     */
+    void addPixelLocationNormedToAttributes(size_t pointInd, std::vector<float> neighborValues, std::vector<int> neighborIDs);
 
     /*! Sets the Feature per element to all it's neighbors attributes
      * 
@@ -162,6 +175,8 @@ private:
     std::vector<unsigned int> _backgroundIDsGlobal;  /*!<> */
     std::vector<unsigned int> _foregroundIDsGlobal;  /*!<> */
     std::vector<float> _minMaxVals;                 /*!< Extrema for each dimension/channel, i.e. [min_Ch0, max_Ch0, min_Ch1, max_Ch1, ...] */
+    float _maxAttriVal;                             /*!< Max attribute value overall */
+    float _minAttriVal;                             /*!< Min attribute value overall */
     std::vector<float> _meanVals;                   /*!< Avg for each dimension/channel, i.e. [mean_Ch0, meam_Ch1, ...] */
     std::vector<float> _varVals;                    /*!< Variance estimate for each dimension/channel, i.e. [mean_Ch0, meam_Ch1, ...] */
 
