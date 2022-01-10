@@ -221,8 +221,14 @@ plt.show()
 from utils import write_binary
 save_path = ".\\embeddings\\"
 
+# spatially informed embeddings
 for sp_metric in sp_metrics:
     for embs_name, embs_dict in embs.items():
         perp_str = f"_P{perplexity}" if embs_name == "tsne" else ""
         save_name = f"{data_name.split('.')[0]}_sp-{embs_name}_emb{perp_str}_I1000_k1_{sp_metric.name}.bin"
         write_binary(embs_dict[sp_metric].flatten().astype(np.float32), save_path + save_name)
+
+# standard embeddings
+write_binary(emb_tsne_std.flatten().astype(np.float32), save_path + f"{data_name.split('.')[0]}_std-tsne_emb_I1000_P20.bin")
+write_binary(emb_umap_std.flatten().astype(np.float32), save_path + f"{data_name.split('.')[0]}_std-umap_emb_I1000.bin")
+write_binary(emb_mds_std.flatten().astype(np.float32), save_path + f"{data_name.split('.')[0]}_std-mds_emb_I1000.bin")
