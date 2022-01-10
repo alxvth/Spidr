@@ -149,13 +149,14 @@ emb_mds_std_colors = assign_embedding_colors(emb_mds_std, clm_path, rot90=3)
 fig, axs = plt.subplots(3, 8, figsize=(15, 5))
 #fig.suptitle('Embeddings and data colored based on embeddings')
 
-
 def pltColProj(row_n, col_n, title, emb, emb_cols):
     # emb scatter
-    #axs[row_n, col_n].title.set_text(title)
     axs[row_n, col_n].scatter(emb[:, 0], emb[:, 1], c=emb_cols, s=5, alpha=0.5)
-    axs[row_n, col_n].get_xaxis().set_visible(False)
-    axs[row_n, col_n].get_yaxis().set_visible(False)
+    #axs[row_n, col_n].title.set_text(title)
+
+    axs[row_n, col_n].tick_params(axis='x', which='both', bottom=False, labelbottom=False)
+    axs[row_n, col_n].tick_params(axis='y', which='both', left=False, labelleft=False)
+
     # img re-colored
     axs[row_n, col_n+1].imshow(emb_cols.reshape((imgHeight, imgWidth, 3)), aspect="auto")
     axs[row_n, col_n+1].xaxis.tick_top()
@@ -177,9 +178,9 @@ pltColProj(2, 0, 'MDS std', emb_mds_std, emb_mds_std_colors)
 # label rows
 # xytext depends on scatterplot ranges, automating this would be better
 pad = 5
-axs[0, 0].annotate("t-SNE", xy=(0, 0), xytext=(-75, 0), size=10)
-axs[1, 0].annotate("UMAP", xy=(0, 0), xytext=(-20, 2), size=10)
-axs[2, 0].annotate("MDS", xy=(0, 0), xytext=(-1.5, -.1), size=10)
+axs[0, 0].set_ylabel("t-SNE")
+axs[1, 0].set_ylabel("UMAP")
+axs[2, 0].set_ylabel("MDS")
 
 # label columns
 height_lab_c = 0.91
