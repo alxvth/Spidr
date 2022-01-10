@@ -411,19 +411,19 @@ namespace hnswlib {
             //data_size_ = dim * sizeof(float);
             data_size_ = sizeof(std::vector<float>);
 
-            params_ = { dim, L2Sqr };
-
 #if defined(USE_SSE) || defined(USE_AVX)
             if (dim % 16 == 0)
-                params_.L2distfunc_ = L2SqrSIMD16Ext;
+                fstdistfunc_ = L2SqrSIMD16Ext;
             else if (dim % 4 == 0)
-                params_.L2distfunc_ = L2SqrSIMD4Ext;
+                fstdistfunc_ = L2SqrSIMD4Ext;
             else if (dim > 16)
-                params_.L2distfunc_ = L2SqrSIMD16ExtResiduals;
+                fstdistfunc_ = L2SqrSIMD16ExtResiduals;
             else if (dim > 4)
-                params_.L2distfunc_ = L2SqrSIMD4ExtResiduals;
+                fstdistfunc_ = L2SqrSIMD4ExtResiduals;
 #endif
-       
+
+            params_ = { dim_, fstdistfunc_ };
+
         }
 
         size_t get_data_size() {

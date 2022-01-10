@@ -69,6 +69,15 @@ T CalcMedian(T* first, T* last, size_t vecSize) {
 template float CalcMedian<float>(float* first, float* last, size_t vecSize);
 
 
+void normalize_vector(float* data, float* norm_array, size_t dim) {
+    float norm = 0.0f;
+    for (int i = 0; i < dim; i++)
+        norm += data[i] * data[i];
+    norm = 1.0f / (sqrtf(norm) + 1e-30f);
+    for (int i = 0; i < dim; i++)
+        norm_array[i] = data[i] * norm;
+}
+
 std::vector<float> BinSimilarities(size_t num_bins, bin_sim sim_type, float sim_weight) {
 	std::vector<float> A(num_bins*num_bins, -1);
 	size_t ground_dist_max = num_bins - 1;
@@ -97,7 +106,7 @@ std::vector<float> BinSimilarities(size_t num_bins, bin_sim sim_type, float sim_
 	return A;
 }
 
-std::tuple<std::vector<int>, std::vector<float>> ComputeHNSWkNN(const Feature& dataFeatures, hnswlib::SpaceInterface<float> *space, const size_t indMultiplier, const std::vector<unsigned int>& foregroundIDsGlobal, const size_t nn) {
+std::tuple<std::vector<int>, std::vector<float>> ComputeHNSWkNN(const Feature& dataFeatures, hnswlib::SpaceInterface<float> *space, const bool normalize, const std::vector<unsigned int>& foregroundIDsGlobal, const size_t nn) {
     auto numForegroundPoints = foregroundIDsGlobal.size();
 
     std::vector<int> indices(numForegroundPoints * nn, -1);
@@ -107,60 +116,124 @@ std::tuple<std::vector<int>, std::vector<float>> ComputeHNSWkNN(const Feature& d
 
     hnswlib::HierarchicalNSW<float> appr_alg(space, numForegroundPoints, 16, 200, 0);   // use default HNSW values for M, ef_construction random_seed
 
-    // add data points: each data point holds indMultiplier values (number of feature values)
-    // add the first data point outside the parallel loop
-    //appr_alg.addPoint((void*)(dataFeatures.data() + foregroundIDsGlobal[0] * indMultiplier), (std::size_t) 0);
-    appr_alg.addPoint((void*)(dataFeatures.at(foregroundIDsGlobal[0])), (std::size_t) 0);
+    if (!normalize)
+    {
+        // add data points: each data point holds indMultiplier values (number of feature values)
+        // add the first data point outside the parallel loop
+        appr_alg.addPoint((void*)(dataFeatures.at(foregroundIDsGlobal[0])), (std::size_t)0);
 
 #ifdef NDEBUG
-    // This loop is for release mode, it's parallel loop implementation from hnswlib
-    int num_threads = std::thread::hardware_concurrency();
-    hnswlib::ParallelFor(1, numForegroundPoints, num_threads, [&](size_t i, size_t threadId) {
-        //appr_alg.addPoint((void*)(dataFeatures.data() + (foregroundIDsGlobal[i] *indMultiplier)), (hnswlib::labeltype) i);
-        appr_alg.addPoint((void*)(dataFeatures.at(foregroundIDsGlobal[i])), (hnswlib::labeltype) i);
-    });
+        // This loop is for release mode, it's parallel loop implementation from hnswlib
+        int num_threads = std::thread::hardware_concurrency();
+        hnswlib::ParallelFor(1, numForegroundPoints, num_threads, [&](size_t i, size_t threadId) {
+            appr_alg.addPoint((void*)(dataFeatures.at(foregroundIDsGlobal[i])), (hnswlib::labeltype)i);
+            });
 #else
-// This loop is for debugging, when you want to sequentially add points
-    for (int i = 1; i < numForegroundPoints; ++i)
-    {
-        //appr_alg.addPoint((void*)(dataFeatures.data() + (foregroundIDsGlobal[i] *indMultiplier)), (hnswlib::labeltype) i);
-        appr_alg.addPoint((void*)(dataFeatures.at(foregroundIDsGlobal[i])), (hnswlib::labeltype) i);
-    }
+        // This loop is for debugging, when you want to sequentially add points
+        for (int i = 1; i < numForegroundPoints; ++i)
+        {
+            appr_alg.addPoint((void*)(dataFeatures.at(foregroundIDsGlobal[i])), (hnswlib::labeltype)i);
+        }
 #endif
+    }
+    else
+    {
+        // for normalized data, be sure to use the InnerProductSpace
+        size_t dims = *(size_t*)(static_cast<hnswlib::InnerProductSpace*>(space)->get_dist_func_param());
+
+        std::vector<float> normalized_vector(dims);
+        normalize_vector(static_cast<FeatureData<std::vector<float>>*>(dataFeatures.at(foregroundIDsGlobal[0]))->data.data(), normalized_vector.data(), dims);
+        appr_alg.addPoint((void*)normalized_vector.data(), (std::size_t)0);
+
+#ifdef NDEBUG
+        int num_threads = std::thread::hardware_concurrency();
+        hnswlib::ParallelFor(1, numForegroundPoints, num_threads, [&](size_t i, size_t threadId) {
+            std::vector<float> normalized_vector(dims);
+            normalize_vector(static_cast<FeatureData<std::vector<float>>*>(dataFeatures.at(foregroundIDsGlobal[i]))->data.data(), normalized_vector.data(), dims);
+            appr_alg.addPoint((void*)normalized_vector.data(), (hnswlib::labeltype)i);
+            });
+#else
+        for (int i = 1; i < numForegroundPoints; ++i)
+        {
+            std::vector<float> normalized_vector(dims);
+            normalize_vector(static_cast<FeatureData<std::vector<float>>*>(dataFeatures.at(foregroundIDsGlobal[i]))->data.data(), normalized_vector.data(), dims);
+            appr_alg.addPoint((void*)normalized_vector.data(), (hnswlib::labeltype)i);
+        }
+#endif
+
+    }
 	spdlog::info("Distance calculation: Search akNN Index");
 
-    // query dataset
+    if (!normalize)
+    {
+        // query dataset
 #ifdef NDEBUG
 #pragma omp parallel for
 #endif
-    for (int i = 0; i < numForegroundPoints; ++i)
+        for (int i = 0; i < numForegroundPoints; ++i)
+        {
+            // find nearest neighbors
+            auto top_candidates = appr_alg.searchKnn((void*)(dataFeatures.at(foregroundIDsGlobal[i])), (hnswlib::labeltype)nn);
+            while (top_candidates.size() > nn) {
+                top_candidates.pop();
+            }
+
+            assert(top_candidates.size() == nn);
+
+            // save nn in _knn_indices and _knn_distances 
+            auto* distances_offset = distances_squared.data() + (i * nn);
+            auto indices_offset = indices.data() + (i * nn);
+            int j = 0;
+            while (top_candidates.size() > 0) {
+                auto rez = top_candidates.top();
+                distances_offset[nn - j - 1] = rez.first;
+                indices_offset[nn - j - 1] = appr_alg.getExternalLabel(rez.second);
+                top_candidates.pop();
+                ++j;
+            }
+        }
+    }
+    else
     {
-        // find nearest neighbors
-        //auto top_candidates = appr_alg.searchKnn((void*)(dataFeatures.data() + (foregroundIDsGlobal[i] *indMultiplier)), (hnswlib::labeltype)nn);
-        auto top_candidates = appr_alg.searchKnn((void*)(dataFeatures.at(foregroundIDsGlobal[i])), (hnswlib::labeltype)nn);
-        while (top_candidates.size() > nn) {
-            top_candidates.pop();
+        // query dataset
+#ifdef NDEBUG
+#pragma omp parallel for
+#endif
+                // for normalized data, be sure to use the InnerProductSpace
+        size_t dims = *(size_t*)(static_cast<hnswlib::InnerProductSpace*>(space)->get_dist_func_param());
+
+        for (int i = 0; i < numForegroundPoints; ++i)
+        {
+            std::vector<float> normalized_vector(dims);
+            normalize_vector(static_cast<FeatureData<std::vector<float>>*>(dataFeatures.at(foregroundIDsGlobal[i]))->data.data(), normalized_vector.data(), dims);
+
+            // find nearest neighbors
+            auto top_candidates = appr_alg.searchKnn((void*)normalized_vector.data(), (hnswlib::labeltype)nn);
+            while (top_candidates.size() > nn) {
+                top_candidates.pop();
+            }
+
+            assert(top_candidates.size() == nn);
+
+            // save nn in _knn_indices and _knn_distances 
+            auto* distances_offset = distances_squared.data() + (i * nn);
+            auto indices_offset = indices.data() + (i * nn);
+            int j = 0;
+            while (top_candidates.size() > 0) {
+                auto rez = top_candidates.top();
+                distances_offset[nn - j - 1] = rez.first;
+                indices_offset[nn - j - 1] = appr_alg.getExternalLabel(rez.second);
+                top_candidates.pop();
+                ++j;
+            }
         }
 
-        assert(top_candidates.size() == nn);
-
-        // save nn in _knn_indices and _knn_distances 
-        auto *distances_offset = distances_squared.data() + (i*nn);
-        auto indices_offset = indices.data() + (i*nn);
-        int j = 0;
-        while (top_candidates.size() > 0) {
-            auto rez = top_candidates.top();
-            distances_offset[nn - j - 1] = rez.first;
-            indices_offset[nn - j - 1] = appr_alg.getExternalLabel(rez.second);
-            top_candidates.pop();
-            ++j;
-        }
     }
 
     return std::make_tuple(indices, distances_squared);
 }
 
-std::tuple<std::vector<int>, std::vector<float>> ComputeExactKNN(const Feature& dataFeatures, hnswlib::SpaceInterface<float> *space, const size_t featureSize, const std::vector<unsigned int>& foregroundIDsGlobal, const size_t nn, bool fullDistMat) {
+std::tuple<std::vector<int>, std::vector<float>> ComputeExactKNN(const Feature& dataFeatures, hnswlib::SpaceInterface<float> *space, const bool normalize, const std::vector<unsigned int>& foregroundIDsGlobal, const size_t nn, bool fullDistMat) {
     auto numForegroundPoints = foregroundIDsGlobal.size();
     
     std::vector<std::pair<int, float>> indices_distances(numForegroundPoints);
@@ -181,9 +254,24 @@ std::tuple<std::vector<int>, std::vector<float>> ComputeExactKNN(const Feature& 
 #ifdef NDEBUG
 #pragma omp parallel for
 #endif
-		for (int j = 0; j < (int)numForegroundPoints; j++) {
-			indices_distances[j] = std::make_pair(j, distfunc(dataFeatures.at(foregroundIDsGlobal[i]), dataFeatures.at(foregroundIDsGlobal[j]), params));
-		}
+        if (!normalize)
+        {
+            for (int j = 0; j < (int)numForegroundPoints; j++) {
+                indices_distances[j] = std::make_pair(j, distfunc(dataFeatures.at(foregroundIDsGlobal[i]), dataFeatures.at(foregroundIDsGlobal[j]), params));
+            }
+        }
+        else
+        {
+            size_t dims = *(size_t*)(static_cast<hnswlib::InnerProductSpace*>(space)->get_dist_func_param());
+
+            for (int j = 0; j < (int)numForegroundPoints; j++) {
+                std::vector<float> normalized_vector_i(dims);
+                std::vector<float> normalized_vector_j(dims);
+                normalize_vector(static_cast<FeatureData<std::vector<float>>*>(dataFeatures.at(foregroundIDsGlobal[i]))->data.data(), normalized_vector_i.data(), dims);
+                normalize_vector(static_cast<FeatureData<std::vector<float>>*>(dataFeatures.at(foregroundIDsGlobal[j]))->data.data(), normalized_vector_j.data(), dims);
+                indices_distances[j] = std::make_pair(j, distfunc(normalized_vector_i.data(), normalized_vector_j.data(), &dims));
+            }
+        }
 
 		if (!fullDistMat)
 		{
@@ -212,9 +300,9 @@ std::tuple<std::vector<int>, std::vector<float>> ComputeExactKNN(const Feature& 
 	return std::make_tuple(knn_indices, knn_distances_squared);
 }
 
-std::tuple<std::vector<int>, std::vector<float>> ComputeFullDistMat(const Feature& dataFeatures, hnswlib::SpaceInterface<float> *space, const size_t featureSize, const std::vector<unsigned int>& foregroundIDsGlobal) {
+std::tuple<std::vector<int>, std::vector<float>> ComputeFullDistMat(const Feature& dataFeatures, hnswlib::SpaceInterface<float> *space, const bool normalize, const std::vector<unsigned int>& foregroundIDsGlobal) {
 	// set nn = numForegroundPoints and don't sort the nn
-	return ComputeExactKNN(dataFeatures, space, featureSize, foregroundIDsGlobal, foregroundIDsGlobal.size(), true);
+	return ComputeExactKNN(dataFeatures, space, normalize, foregroundIDsGlobal, foregroundIDsGlobal.size(), true);
 }
 
 
@@ -239,6 +327,13 @@ hnswlib::SpaceInterface<float>* CreateHNSWSpace(const distance_metric knn_metric
             space = new hnswlib::L2FeatSpace(numDims+2);
         else
             space = new hnswlib::L2FeatSpace(numDims);
+        break;
+
+    case distance_metric::METRIC_COS:
+        if ((feature_type == feature_type::PIXEL_LOCATION) || (feature_type == feature_type::PIXEL_LOCATION_NORM))
+            space = new hnswlib::InnerProductSpace(numDims + 2);
+        else
+            space = new hnswlib::InnerProductSpace(numDims);
         break;
 
     case distance_metric::METRIC_CHA:

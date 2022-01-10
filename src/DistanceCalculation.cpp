@@ -31,6 +31,11 @@ void DistanceCalculation::setup(const Feature dataFeatures, const std::vector<un
     _neighborhoodSize = params.get_neighborhoodSize();    // square neighborhood with _numNeighborsInEachDirection to each side from the center
     _neighborhoodWeighting = params._neighWeighting;
 
+    if (_knn_metric == distance_metric::METRIC_COS)
+        _normalize_data = true;
+    else
+        _normalize_data = false;
+
     // Data
     // Input
     _numPoints = params._numPoints;
@@ -80,19 +85,19 @@ void DistanceCalculation::computekNN() {
     if (_knn_lib == knn_library::KNN_HNSW) {
 		spdlog::info("Distance calculation: HNSWLib for knn computation");
 
-        std::tie(_knn_indices, _knn_distances) = ComputeHNSWkNN(_dataFeatures, space, _numFeatureValsPerPoint, _foregroundIDsGlobal, _nn);
+        std::tie(_knn_indices, _knn_distances) = ComputeHNSWkNN(_dataFeatures, space, _normalize_data, _foregroundIDsGlobal, _nn);
 
     }
     else if (_knn_lib == knn_library::KKN_EXACT) {
 		spdlog::info("Distance calculation: Exact kNN computation");
 
-        std::tie(_knn_indices, _knn_distances) = ComputeExactKNN(_dataFeatures, space, _numFeatureValsPerPoint, _foregroundIDsGlobal, _nn);
+        std::tie(_knn_indices, _knn_distances) = ComputeExactKNN(_dataFeatures, space, _normalize_data, _foregroundIDsGlobal, _nn);
 
     }
 	else if (_knn_lib == knn_library::FULL_DIST_BRUTE_FORCE) {
 		// Use entire distance matrix 
 		spdlog::info("Distance calculation: Calc full distance matrix brute force");
-		std::tie(_knn_indices, _knn_distances) = ComputeFullDistMat(_dataFeatures, space, _numFeatureValsPerPoint, _foregroundIDsGlobal);
+		std::tie(_knn_indices, _knn_distances) = ComputeFullDistMat(_dataFeatures, space, _normalize_data, _foregroundIDsGlobal);
 
 	}
 	else

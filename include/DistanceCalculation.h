@@ -56,6 +56,7 @@ private:
     feature_type _featureType;                      /*!<> */
     knn_library _knn_lib;                           /*!<> */
     distance_metric _knn_metric;                /*!<> */
+    bool _normalize_data;                     /*!< if distance_metric is METRIC_COS the data must be normalized in order to use the HNSW InnerProduct Implementation> */
     size_t _nn;                               /*!<> */
     size_t _neighborhoodSize;                       /*!< might be used for some distance metrics */
     loc_Neigh_Weighting _neighborhoodWeighting;     /*!< used when calculating distance directly from high-dim points (_featureType is no feature/PCLOUD) */

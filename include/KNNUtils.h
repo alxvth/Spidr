@@ -42,6 +42,15 @@ template<typename T>
 T CalcMedian(T* first, T* last, size_t vecSize);
 
 /*!
+ * Normalize a vector
+ * As in HNSW https://github.com/nmslib/hnswlib/blob/47bb1a131a17ccacc13564fbd21974d44ceca058/python_bindings/bindings.cpp#L698
+ * \param data input
+ * \param norm_array writes normed input here
+ * \param dim number of dimensions
+ */
+void normalize_vector(float* data, float* norm_array, size_t dim);
+
+/*!
  * Computes the similarities of bins of a 1D histogram.
  *
  * Entry A_ij refers to the sim between bin i and bin j. The diag entries should be 1, all others <= 1.
@@ -56,34 +65,34 @@ std::vector<float> BinSimilarities(size_t num_bins, bin_sim sim_type = bin_sim::
 /*! Compute approximated kNN with a custom metric using HNSWLib
  * \param dataFeatures Features used for distance calculation, dataFeatures->size() == (numPoints * indMultiplier)
  * \param space HNSWLib metric space
- * \param featureSize Size of one data item features
+ * \param normalize Should the data be normalized before being added to the HNSW space
  * \param foregroundIDsGlobal IDs of valid points in dataFeatures (for fore- and background distinction)
  * \param nn Number of kNN to compute
  * \return Tuple of knn Indices and respective squared distances
 */
-std::tuple<std::vector<int>, std::vector<float>> ComputeHNSWkNN(const Feature& dataFeatures, hnswlib::SpaceInterface<float> *space, const size_t featureSize, const std::vector<unsigned int>& foregroundIDsGlobal, const size_t nn);
+std::tuple<std::vector<int>, std::vector<float>> ComputeHNSWkNN(const Feature& dataFeatures, hnswlib::SpaceInterface<float> *space, const bool normalize, const std::vector<unsigned int>& foregroundIDsGlobal, const size_t nn);
 
 /*! Compute exact kNNs 
  * Calculate the distances between all point pairs and find closest neighbors
  * \param dataFeatures Features used for distance calculation, dataFeatures->size() == (numPoints * indMultiplier)
  * \param space HNSWLib metric space
- * \param featureSize Size of one data item features
+ * \param normalize Should the data be normalized before being added to the HNSW space
  * \param foregroundIDsGlobal IDs of valid points in dataFeatures (for fore- and background distinction)
  * \param nn Number of nearest neighbors
  * \param fullDistMat Whether to fullDistMat the nearest neighbor distances. Default is false. Set to true if nn == numPoints and you want to calculate the full distance matrix (which is what ComputeFullDistMat() does)
  * \return Tuple of indices and respective squared distances
 */
-std::tuple<std::vector<int>, std::vector<float>> ComputeExactKNN(const Feature& dataFeatures, hnswlib::SpaceInterface<float> *space, const size_t featureSize, const std::vector<unsigned int>& foregroundIDsGlobal, const size_t nn, const bool fullDistMat = false);
+std::tuple<std::vector<int>, std::vector<float>> ComputeExactKNN(const Feature& dataFeatures, hnswlib::SpaceInterface<float> *space, const bool normalize, const std::vector<unsigned int>& foregroundIDsGlobal, const size_t nn, const bool fullDistMat = false);
 
 /*! Compute the full distance matrix between all data points
  * Calls ComputeExactKNN with the correct parameters, basically syntactic sugar
  * \param dataFeatures Features used for distance calculation, dataFeatures->size() == (numPoints * indMultiplier)
  * \param space HNSWLib metric space
- * \param featureSize Size of one data item features
+ * \param normalize Should the data be normalized before being added to the HNSW space
  * \param foregroundIDsGlobal IDs of valid points in dataFeatures (for fore- and background distinction)
  * \return Tuple of indices and respective squared distances
 */
-std::tuple<std::vector<int>, std::vector<float>> ComputeFullDistMat(const Feature& dataFeatures, hnswlib::SpaceInterface<float> *space, const size_t featureSize, const std::vector<unsigned int>& foregroundIDsGlobal);
+std::tuple<std::vector<int>, std::vector<float>> ComputeFullDistMat(const Feature& dataFeatures, hnswlib::SpaceInterface<float> *space, const bool normalize, const std::vector<unsigned int>& foregroundIDsGlobal);
 
 /*! Creates a metric space used by HNSWLib to build a kNN index
  * 

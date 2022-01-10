@@ -46,7 +46,7 @@ enum class distance_metric : size_t
 	METRIC_FRECHET_Gen,      /*!< The Fréchet distance between multivariate normal distributions, https://doi.org/10.1016/0047-259X(82)90077-X */
     METRIC_FRECHET_CovMat,      /*!< The Fréchet distance between multivariate normal distributions but ignoring the means, https://doi.org/10.1016/0047-259X(82)90077-X */
 	METRIC_FROBENIUS_CovMat,      /*!< Frobenius norm of element-wise differences between covmatrices */
-
+    METRIC_COS,     /*!< Cosine similarity */
 };
 
 
@@ -82,6 +82,7 @@ enum class feat_dist : size_t
 	MVN_FRO,       /*!< Mean and covariance matrix feaure and Frobenius norm of element-wise differences between covmatrices*/
 	CHIST_EUC,     /*!< Histogram with one bis per channel that counts active (>1) values and euclidean distance */
 	PIXEL_LOCATION,/*!< Add pixel location (x,y) as feature, euclidean norm */
+	PIXEL_LOCATION_COS, /*!< Add pixel location (x,y) as feature, cosine similarity (normalizes data) */
 	PIXEL_LOCATION_NORM,	/*!< Add pixel location (x,y) as feature, norm the x and y range to the attribute range: [0, largestPixelIndex] -> [_minAttriVal, _maxAttriVal], euclidean norm */
 };
 
