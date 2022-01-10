@@ -1,7 +1,7 @@
 #include "SpidrWrapper.h"
 #include "spdlog/spdlog-inl.h"
 
-SpidrWrapper::SpidrWrapper(distance_metric distMetric,
+SpidrWrapper::SpidrWrapper(feat_dist featDist,
 	loc_Neigh_Weighting kernelType,
 	size_t numLocNeighbors,
 	size_t numHistBins,
@@ -11,38 +11,21 @@ SpidrWrapper::SpidrWrapper(distance_metric distMetric,
 	int exaggeration,
 	int expDecay,
 	bool forceCalcBackgroundFeatures
-) : _kernelType(kernelType), _numHistBins(numHistBins), _aknnAlgType(aknnAlgType), _distMetric(distMetric), _numIterations(numIterations),
+) : _kernelType(kernelType), _numHistBins(numHistBins), _aknnAlgType(aknnAlgType), _featDist(featDist), _numIterations(numIterations), _numLocNeighbors(numLocNeighbors),
     _perplexity(perplexity), _exaggeration(exaggeration), _expDecay(expDecay), _forceCalcBackgroundFeatures(forceCalcBackgroundFeatures), _fitted(false), _transformed(false)
 {
-	if (numLocNeighbors <= 0)
+	if (_numLocNeighbors <= 0)
 		throw std::runtime_error("SpidrWrapper::Constructor: Spatial Neighbors must be larger 0");
-	else
-		_numLocNeighbors = numLocNeighbors;
 
-	// set _featType depending on distMetric
-	switch (_distMetric) {
-	case distance_metric::METRIC_QF:
-	case distance_metric::METRIC_HEL: 
-		_featType = feature_type::TEXTURE_HIST_1D; 
-		
+	// set _featType and _distMetric based on _feat_dist (not all feat_dist are exposed in the python wrapper, see SpiderBind.cpp)
+	std::tie(_featType, _distMetric) = get_feat_and_dist(_featDist);
+
+	if (_featType == feature_type::TEXTURE_HIST_1D)
 		if (_numHistBins <= 0)
 			throw std::runtime_error("SpidrWrapper::Constructor: Number of histogram bins must be larger than 0");
 
-		break;
-	case distance_metric::METRIC_CHA:
-	case distance_metric::METRIC_HAU:
-		_featType = feature_type::PCLOUD; break;
-	case distance_metric::METRIC_EUC:
-		_featType = feature_type::LOCALMORANSI; break;
-	case distance_metric::METRIC_BHATTACHARYYA:
-		_featType = feature_type::MULTIVAR_NORM; break;
-	default:
-		throw std::runtime_error("SpidrWrapper::Constructor: Specified distMetric not supported");
-	}
-
 	_SpidrAnalysis = std::make_unique<SpidrAnalysis>();
 	_nn = static_cast<size_t>(_perplexity) * 3 + 1;  // _perplexity_multiplier = 3
-
 }
 
 

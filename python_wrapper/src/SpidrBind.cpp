@@ -11,20 +11,22 @@ PYBIND11_MODULE(SpidrWrapper, m) {
 	m.doc() = "SpidrWrapper";
 
 	// ENUMS
-	py::enum_<distance_metric>(m, "DistMetric", "Distance metric, the choice of distance will set the feature type: scalar, histogram or point cloud")
-		.value("QF_hist", distance_metric::METRIC_QF)
-		.value("Hel_hist", distance_metric::METRIC_HEL)
-		.value("Chamfer_pc", distance_metric::METRIC_CHA)
-		.value("Hausdorff_pc", distance_metric::METRIC_HAU)
-		.value("Morans_I", distance_metric::METRIC_EUC)
-		.value("Bhattacharyya", distance_metric::METRIC_BHATTACHARYYA);
+	py::enum_<feat_dist>(m, "DistMetric", "Distance metric, the choice of distance will set the feature type")
+		.value("QF_hist", feat_dist::HIST_QF)
+		.value("Hel_hist", feat_dist::HIST_HEL)
+		.value("Chamfer_pc", feat_dist::PC_CHA)
+		.value("Hausdorff_pc", feat_dist::PC_HAU)
+		.value("Morans_I", feat_dist::LMI_EUC)
+		.value("Bhattacharyya", feat_dist::MVN_BHAT)
+		.value("Pixel loc", feat_dist::PIXEL_LOCATION)
+		.value("Pixel loc (normed)", feat_dist::PIXEL_LOCATION_NORM);
 
-	py::enum_<loc_Neigh_Weighting>(m, "WeightLoc", "Distance metric, the choice of distance will set the feature type: scalar, histogram or point cloud")
+	py::enum_<loc_Neigh_Weighting>(m, "WeightLoc", "Local neighborhood weighting")
 		.value("uniform", loc_Neigh_Weighting::WEIGHT_UNIF)
 		.value("bino", loc_Neigh_Weighting::WEIGHT_BINO)
 		.value("gauss", loc_Neigh_Weighting::WEIGHT_GAUS);
 
-	py::enum_<knn_library>(m, "KnnAlgorithm", "Distance metric, the choice of distance will set the feature type: scalar, histogram or point cloud")
+	py::enum_<knn_library>(m, "KnnAlgorithm", "kNN computation: exact, approximated or full distance matrix")
 		.value("hnsw", knn_library::KNN_HNSW)
 		.value("exact_knn", knn_library::KKN_EXACT)
 		.value("full_dist_matrix", knn_library::FULL_DIST_BRUTE_FORCE);
@@ -32,8 +34,8 @@ PYBIND11_MODULE(SpidrWrapper, m) {
 	// MAIN WRAPPER: here SpidrWrapper, on python side SpidrAnalysis
 	py::class_<SpidrWrapper> spidrAnalysis(m, "SpidrAnalysis");
 
-	spidrAnalysis.def(py::init<distance_metric, loc_Neigh_Weighting, size_t, size_t, knn_library, int, int, int, int, bool>(), "Init SpidrLib",
-		py::arg("distMetric") = distance_metric::METRIC_CHA,
+	spidrAnalysis.def(py::init<feat_dist, loc_Neigh_Weighting, size_t, size_t, knn_library, int, int, int, int, bool>(), "Init SpidrLib",
+		py::arg("distMetric") = feat_dist::PC_CHA,
 		py::arg("kernelType") = loc_Neigh_Weighting::WEIGHT_UNIF,
 		py::arg("numLocNeighbors") = 0,
 		py::arg("numHistBins") = 0,

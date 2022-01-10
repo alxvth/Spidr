@@ -13,7 +13,7 @@ namespace py = pybind11;
 class SpidrWrapper {
 public:
 	SpidrWrapper(
-		distance_metric distMetric = distance_metric::METRIC_CHA,
+		feat_dist featDist = feat_dist::PC_CHA,
 		loc_Neigh_Weighting kernelType = loc_Neigh_Weighting::WEIGHT_UNIF,
 		size_t numLocNeighbors = 0,
 		size_t numHistBins = 0,
@@ -68,12 +68,13 @@ private:
 
 	std::unique_ptr<SpidrAnalysis> _SpidrAnalysis;
 
+	feat_dist _featDist;
 	feature_type _featType;
+	distance_metric _distMetric;
 	loc_Neigh_Weighting _kernelType;
 	size_t _numLocNeighbors;
 	size_t _numHistBins;
 	knn_library _aknnAlgType;
-	distance_metric _distMetric;
 	int _numIterations;
 	int _perplexity;
 	int _exaggeration;
