@@ -158,7 +158,7 @@ void FeatureExtraction::initExtraction() {
         std::partition_copy(_minMaxVals.begin(), _minMaxVals.end(),
             std::back_inserter(minVals),
             std::back_inserter(maxVals),
-            [&toggle](int) { return toggle = !toggle; });   // toggles between minVals and maxVals, i.e. copy every second element from _minMaxVals into the other two vectors
+            [&toggle](bool) { return toggle = !toggle; });   // toggles between minVals and maxVals, i.e. copy every second element from _minMaxVals into the other two vectors
 
         _minAttriVal = *std::min_element(minVals.begin(), minVals.end());   // min_element returns an interator, thus the need for *
         _maxAttriVal = *std::max_element(maxVals.begin(), maxVals.end());
