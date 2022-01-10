@@ -32,12 +32,19 @@ sp_metrics = [spidr.DistMetric.Chamfer_pc, spidr.DistMetric.QF_hist, spidr.DistM
 sp_weight = spidr.WeightLoc.uniform
 sp_neighborhoodSize = 1  # one neighbor in each direction, i.e. a 3x3 neighborhood
 
+numHistBins = 5
+
+# only t-SNE
+perplexity = 20
+
 #################################
 # spatially informed embeddings #
 #################################
 embs_tsne_sp = {}
 embs_umap_sp = {}
 embs_mds_sp = {}
+
+embs = {"tsne":embs_tsne_sp, "umap":embs_umap_sp, "mds":embs_mds_sp}
 
 for sp_metric in sp_metrics:
     print(f"Metric: {sp_metric}")
@@ -46,11 +53,11 @@ for sp_metric in sp_metrics:
     #########
     print("# Texture-aware t-SNE with HDILib (nptsne)")
     # instantiate spidrlib
-    alg_spidr = spidr.SpidrAnalysis(distMetric=sp_metric, kernelType=sp_weight, perplexity=20, numHistBins=5,
+    alg_spidr = spidr.SpidrAnalysis(distMetric=sp_metric, kernelType=sp_weight, perplexity=perplexity, numHistBins=numHistBins,
                                     numLocNeighbors=sp_neighborhoodSize, aknnAlgType=spidr.KnnAlgorithm.hnsw)
 
     # embed with t-SNE
-    embs_tsne_sp[sp_metric] = alg_spidr.fit_transform(X=data, pointIDsGlobal=data_glob_ids, imgWidth=imgWidth, imgHeight=imgHeight)
+    embs["tsne"][sp_metric] = alg_spidr.fit_transform(X=data, pointIDsGlobal=data_glob_ids, imgWidth=imgWidth, imgHeight=imgHeight)
 
 
     ########
@@ -58,7 +65,7 @@ for sp_metric in sp_metrics:
     ########
     print("# Texture-aware UMAP with umap-learn")
     # instantiate spidrlib
-    alg_spidr = spidr.SpidrAnalysis(distMetric=sp_metric, kernelType=sp_weight, numHistBins=5,
+    alg_spidr = spidr.SpidrAnalysis(distMetric=sp_metric, kernelType=sp_weight, numHistBins=numHistBins,
                                     numLocNeighbors=sp_neighborhoodSize, aknnAlgType=spidr.KnnAlgorithm.hnsw)
     nn = alg_spidr.nn
 
@@ -75,7 +82,7 @@ for sp_metric in sp_metrics:
     # embed with umap
     seed_umap = 123
     alg_umap = UMAP(random_state=seed_umap)
-    embs_umap_sp[sp_metric] = alg_umap.fit_transform(knn_csr)
+    embs["umap"][sp_metric] = alg_umap.fit_transform(knn_csr)
 
 
     #######
@@ -83,7 +90,7 @@ for sp_metric in sp_metrics:
     #######
     print("# Texture-aware MDS with scikit-learn")
     # instantiate spidrlib
-    alg_spidr = spidr.SpidrAnalysis(distMetric=sp_metric, kernelType=sp_weight, numHistBins=5,
+    alg_spidr = spidr.SpidrAnalysis(distMetric=sp_metric, kernelType=sp_weight, numHistBins=numHistBins,
                                     numLocNeighbors=sp_neighborhoodSize, aknnAlgType=spidr.KnnAlgorithm.full_dist_matrix)
 
     # get full dist matrix to compute mds
@@ -95,7 +102,7 @@ for sp_metric in sp_metrics:
     # embed with MDS
     seed_mds = 123456
     alg_mds = MDS(dissimilarity='precomputed', n_jobs=-1, random_state=seed_mds)
-    embs_mds_sp[sp_metric] = alg_mds.fit_transform(knn_dists)
+    embs["mds"][sp_metric] = alg_mds.fit_transform(knn_dists)
 
 
 #######################
@@ -130,9 +137,9 @@ embs_umap_sp_colors = {}
 embs_mds_sp_colors = {}
 
 for sp_metric in sp_metrics:
-    embs_tsne_sp_colors[sp_metric] = assign_embedding_colors(embs_tsne_sp[sp_metric], clm_path, rot90=3)
-    embs_umap_sp_colors[sp_metric] = assign_embedding_colors(embs_umap_sp[sp_metric], clm_path, rot90=3)
-    embs_mds_sp_colors[sp_metric] = assign_embedding_colors(embs_mds_sp[sp_metric], clm_path, rot90=3)
+    embs_tsne_sp_colors[sp_metric] = assign_embedding_colors(embs["tsne"][sp_metric], clm_path, rot90=3)
+    embs_umap_sp_colors[sp_metric] = assign_embedding_colors(embs["umap"][sp_metric], clm_path, rot90=3)
+    embs_mds_sp_colors[sp_metric] = assign_embedding_colors(embs["mds"][sp_metric], clm_path, rot90=3)
 
 emb_umap_std_colors = assign_embedding_colors(emb_umap_std, clm_path, rot90=3)
 emb_tsne_std_colors = assign_embedding_colors(emb_tsne_std, clm_path, rot90=3)
@@ -159,9 +166,9 @@ def pltColProj(row_n, col_n, title, emb, emb_cols):
 
 for metric_id, sp_metric in enumerate(sp_metrics):
     col_id = 2 + 2*metric_id
-    pltColProj(0, col_id, f't-SNE w/ {sp_metric.name}', embs_tsne_sp[sp_metric], embs_tsne_sp_colors[sp_metric])
-    pltColProj(1, col_id, f'UMAP w/ {sp_metric.name}', embs_umap_sp[sp_metric], embs_umap_sp_colors[sp_metric])
-    pltColProj(2, col_id, f'MDS w/ {sp_metric.name}', embs_mds_sp[sp_metric], embs_mds_sp_colors[sp_metric])
+    pltColProj(0, col_id, f't-SNE w/ {sp_metric.name}', embs["tsne"][sp_metric], embs_tsne_sp_colors[sp_metric])
+    pltColProj(1, col_id, f'UMAP w/ {sp_metric.name}', embs["umap"][sp_metric], embs_umap_sp_colors[sp_metric])
+    pltColProj(2, col_id, f'MDS w/ {sp_metric.name}', embs["mds"][sp_metric], embs_mds_sp_colors[sp_metric])
 
 pltColProj(0, 0, 't-SNE std', emb_tsne_std, emb_tsne_std_colors)
 pltColProj(1, 0, 'UMAP std', emb_umap_std, emb_umap_std_colors)
@@ -211,7 +218,10 @@ plt.show()
 # Save embeddings #
 ###################
 from utils import write_binary
-savepath = "D:\\Documents\\SURFdrive\\Documents\\Project 2020a\\SpidrEvaluation\\Data\\Embeddings\\Artificial Test Images\\CheckerBoxed_PlusHom_2Ch_32 - 211001\\"
-write_binary(embs_mds_sp[spidr.DistMetric.Bhattacharyya].flatten().astype(np.float32),
-             savepath + "CB_2Ch_32_sp-tsne_emb_P20_I1000_k1_Bat.bin")
+save_path = ".\\embeddings\\"
 
+for sp_metric in sp_metrics:
+    for embs_name, embs_dict in embs.items():
+        perp_str = f"_P{perplexity}" if embs_name == "tsne" else ""
+        save_name = f"{data_name.split('.')[0]}_sp-{embs_name}_emb{perp_str}_I1000_k1_{sp_metric.name}.bin"
+        write_binary(embs_dict[sp_metric].flatten().astype(np.float32), save_path + save_name)

@@ -159,6 +159,7 @@ static const size_t NumFeatureValsPerPoint(const feature_type featureType, const
 	case feature_type::LOCALMORANSI:    // same as Geary's C, one scalar value per channel
 	case feature_type::LOCALGEARYC:     featureSize = numDims; break;
 	case feature_type::PCLOUD:          featureSize = neighborhoodSize; break; // numDims * neighborhoodSize for copying data instead of IDs
+	case feature_type::MULTIVAR_NORM: featureSize = numDims + numDims * numDims + 2; break; // channel-wise means + covaraince matrix
 	case feature_type::PIXEL_LOCATION:  // same as PIXEL_LOCATION_NORM, attribute feature + x and y pixel location
 	case feature_type::PIXEL_LOCATION_NORM:   featureSize = numDims + 2; break;
     default: throw std::runtime_error("No feature size defined for this feature");
