@@ -65,6 +65,14 @@ std::tuple< feature_type, distance_metric> get_feat_and_dist(feat_dist feat_dist
         feat = feature_type::PCLOUD;
         dist = distance_metric::METRIC_HAU;
         break;
+    case feat_dist::PC_HAU_MED:
+        feat = feature_type::PCLOUD;
+        dist = distance_metric::METRIC_HAU_med;
+        break;
+    case feat_dist::PC_SSD:
+        feat = feature_type::PCLOUD;
+        dist = distance_metric::METRIC_SSD;
+        break;
     case feat_dist::MVN_BHAT:
         feat = feature_type::MULTIVAR_NORM;
         dist = distance_metric::METRIC_BHATTACHARYYA;
