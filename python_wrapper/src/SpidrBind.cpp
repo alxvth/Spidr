@@ -15,10 +15,13 @@ PYBIND11_MODULE(SpidrWrapper, m) {
 		.value("QF_hist", feat_dist::HIST_QF)
 		.value("Hel_hist", feat_dist::HIST_HEL)
 		.value("Chamfer_pc", feat_dist::PC_CHA)
+		.value("Hausdorff_med_pc", feat_dist::PC_HAU_MED)
+		.value("SSD_pc", feat_dist::PC_SSD)
 		.value("Hausdorff_pc", feat_dist::PC_HAU)
 		.value("Morans_I", feat_dist::LMI_EUC)
 		.value("Bhattacharyya", feat_dist::MVN_BHAT)
 		.value("Pixel loc", feat_dist::PIXEL_LOCATION)
+		.value("Pixel loc (cosine sim)", feat_dist::PIXEL_LOCATION_COS)
 		.value("Pixel loc (normed)", feat_dist::PIXEL_LOCATION_NORM);
 
 	py::enum_<loc_Neigh_Weighting>(m, "WeightLoc", "Local neighborhood weighting")
