@@ -411,18 +411,20 @@ namespace hnswlib {
             //data_size_ = dim * sizeof(float);
             data_size_ = sizeof(std::vector<float>);
 
+            // The actual L2 norm function is a pointed to in the params since L2FeatSqr 
+            // has to access the feature vector correctly before calling it
+            params_ = { dim_, L2Sqr };
+
 #if defined(USE_SSE) || defined(USE_AVX)
             if (dim % 16 == 0)
-                fstdistfunc_ = L2SqrSIMD16Ext;
+                params_.L2distfunc_ = L2SqrSIMD16Ext;
             else if (dim % 4 == 0)
-                fstdistfunc_ = L2SqrSIMD4Ext;
+                params_.L2distfunc_ = L2SqrSIMD4Ext;
             else if (dim > 16)
-                fstdistfunc_ = L2SqrSIMD16ExtResiduals;
+                params_.L2distfunc_ = L2SqrSIMD16ExtResiduals;
             else if (dim > 4)
-                fstdistfunc_ = L2SqrSIMD4ExtResiduals;
+                params_.L2distfunc_ = L2SqrSIMD4ExtResiduals;
 #endif
-
-            params_ = { dim_, fstdistfunc_ };
 
         }
 
