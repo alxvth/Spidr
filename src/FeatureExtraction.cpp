@@ -121,7 +121,12 @@ void FeatureExtraction::setup(const std::vector<unsigned int>& pointIDsGlobal, c
     else if (_featType == feature_type::PIXEL_LOCATION_NORM)
     {
         featFunct = &FeatureExtraction::addPixelLocationNormedToAttributes;
-        spdlog::info("Feature extraction:Use x and y coordinates as extra features and norm their range to the attribute range: [0, largestPixelIndex] -> [_minAttriVal, _maxAttriVal] ");
+        spdlog::info("Feature extraction: Use x and y coordinates as extra features and norm their range to the attribute range: [0, largestPixelIndex] -> [_minAttriVal, _maxAttriVal] ");
+    }
+    else if (_featType == feature_type::PIXEL_LOCATION_NORM_sep)
+    {
+        featFunct = &FeatureExtraction::addPixelLocationNormSeperately;
+        spdlog::info("Feature extraction: Use x and y coordinates as features and norm both attribute and pos features seperately");
     }
     else
     {
@@ -400,6 +405,29 @@ void FeatureExtraction::addPixelLocationNormedToAttributes(size_t pointInd, std:
     attributesAndLocation[_numDims] = locHeight;
     attributesAndLocation[_numDims + 1] = locWidth;
 
+    _outFeatures.get_data_ptr()->at(pointInd) = new FeatureData<std::vector<float>>(attributesAndLocation);
+}
+
+void FeatureExtraction::addPixelLocationNormSeperately(size_t pointInd, std::vector<float> neighborValues, std::vector<int> neighborIDs) {
+    assert(_minMaxVals.size() == 2 * _numDims);
+
+    // new vector with attribute data and x&y pixel location
+    std::vector<float> attributesAndLocation;
+    attributesAndLocation.resize(_numDims + 2);
+
+    // copy and norm attribute data
+    normalize_vector(_attribute_data.data() + (pointInd * _numDims), attributesAndLocation.data(), _numDims);
+
+    // compute pixel location from data index
+    float locHeight = std::floor(pointInd / _imgSize.width);         // height val, pixel pos in image
+    float locWidth = pointInd - (locHeight * _imgSize.width);        // width val, pixel pos in image
+
+    std::vector<float> pixelPos{ locHeight , locWidth };
+
+    // norm pixel location
+    normalize_vector(pixelPos.data(), _attribute_data.data() + _numDims, 2);
+
+    // set feature
     _outFeatures.get_data_ptr()->at(pointInd) = new FeatureData<std::vector<float>>(attributesAndLocation);
 }
 

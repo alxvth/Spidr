@@ -336,6 +336,10 @@ hnswlib::SpaceInterface<float>* CreateHNSWSpace(const distance_metric knn_metric
             space = new hnswlib::InnerProductSpace(numDims);
         break;
 
+    case distance_metric::METRIC_COS_sep:
+        space = new hnswlib::CosSepSpace(numDims + 2);
+        break;
+
     case distance_metric::METRIC_CHA:
         space = new hnswlib::ChamferSpace(numDims, neighborhoodSize, neighborhoodWeighting);
         break;

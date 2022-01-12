@@ -442,6 +442,87 @@ namespace hnswlib {
     };
 
 
+
+    // ---------------
+    //    Adapt InnerProductSpace
+    //          For usage with PIXEL_LOCATION_NORM_sep
+    //          Essentially: Each data vector consistets of two normed sub-vectors (attributes and posXY)
+    //          Thus, the innerproduct is equivalent with the cosine similarity
+    //          Compute it between the two parts respectively and average the results
+    // ---------------
+
+    struct space_paramsCosSepFeat {
+        size_t dim;
+        DISTFUNC<float> IPdistfunc_;
+    };
+
+
+    static float
+        CosSepFeatSqr(const void* pVect1v, const void* pVect2v, const void* qty_ptr) {
+        //FeatureData<std::vector<float>>* histos1 = static_cast<FeatureData<std::vector<float>>*>((IFeatureData*)pVect1v);
+        //FeatureData<std::vector<float>>* histos2 = static_cast<FeatureData<std::vector<float>>*>((IFeatureData*)pVect2v);
+        float* pVect1 = (static_cast<FeatureData<std::vector<float>>*>((IFeatureData*)pVect1v)->data).data();
+        float* pVect2 = (static_cast<FeatureData<std::vector<float>>*>((IFeatureData*)pVect2v)->data).data();
+
+        const space_params_L2Feat* sparam = (space_params_L2Feat*)qty_ptr;
+        DISTFUNC<float> IPdistfunc_ = sparam->L2distfunc_;
+        size_t pixelpos_dims = 2;
+        size_t attribute_dims = sparam->dim - pixelpos_dims;
+
+        float attribute_dist = IPdistfunc_(pVect1, pVect2, &attribute_dims);
+        float pixelpos_dist = IPdistfunc_(pVect1 + attribute_dims, pVect2 + attribute_dims, &pixelpos_dims);
+
+        return (attribute_dist + pixelpos_dist) / 2.0f;
+    }
+
+
+    class CosSepSpace : public SpaceInterface<float> {
+
+        DISTFUNC<float> fstdistfunc_;
+        size_t data_size_;
+        size_t dim_;
+
+        space_paramsCosSepFeat params_;
+
+    public:
+        CosSepSpace(size_t dim) {
+            spdlog::info("KNNDist: create CosSepSpace");
+            fstdistfunc_ = InnerProduct;
+
+            dim_ = dim;
+            //data_size_ = dim * sizeof(float);
+            data_size_ = sizeof(std::vector<float>);
+
+#if defined(USE_AVX) || defined(USE_SSE)
+            if (dim % 16 == 0)
+                fstdistfunc_ = InnerProductSIMD16Ext;
+            else if (dim % 4 == 0)
+                fstdistfunc_ = InnerProductSIMD4Ext;
+            else if (dim > 16)
+                fstdistfunc_ = InnerProductSIMD16ExtResiduals;
+            else if (dim > 4)
+                fstdistfunc_ = InnerProductSIMD4ExtResiduals;
+
+            params_ = { dim_, fstdistfunc_ };
+
+        }
+
+        size_t get_data_size() {
+            return data_size_;
+        }
+
+        DISTFUNC<float> get_dist_func() {
+            return fstdistfunc_;
+        }
+
+        void* get_dist_func_param() {
+            return &params_;
+        }
+
+        ~CosSepSpace() {}
+    };
+
+
     // ---------------
     //    Point cloud distance (Chamfer)
     // ---------------

@@ -123,6 +123,13 @@ private:
      */
     void addPixelLocationNormedToAttributes(size_t pointInd, std::vector<float> neighborValues, std::vector<int> neighborIDs);
 
+    /*! Adds two features: x and y location of data point
+     *
+     * neighborIDs is unsused but necessary to stay consistent with featFunct
+     * \param weighting
+     */
+    void addPixelLocationNormSeperately(size_t pointInd, std::vector<float> neighborValues, std::vector<int> neighborIDs);
+    
     /*! Sets the Feature per element to all it's neighbors attributes
      * 
      * neighborIDs is unsused but necessary to stay consistent with featFunct

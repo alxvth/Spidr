@@ -19,6 +19,7 @@ namespace logging {
         case distance_metric::METRIC_FRECHET_CovMat: return "Fréchet distance but ignoring the means";
         case distance_metric::METRIC_FROBENIUS_CovMat: return "Frobenius norm of element-wise differences";
         case distance_metric::METRIC_COS: return "Cosine similarity";
+        case distance_metric::METRIC_COS_sep: return "Cosine similarity seperately between attribtues and features";
         default: return "";
         }
     }
@@ -84,6 +85,10 @@ std::tuple< feature_type, distance_metric> get_feat_and_dist(feat_dist feat_dist
     case feat_dist::PIXEL_LOCATION_COS:
         feat = feature_type::PIXEL_LOCATION;
         dist = distance_metric::METRIC_COS;
+        break;
+    case feat_dist::PIXEL_LOCATION_COS_sep:
+        feat = feature_type::PIXEL_LOCATION;
+        dist = distance_metric::METRIC_COS_sep;
         break;
     case feat_dist::PIXEL_LOCATION_NORM:
         feat = feature_type::PIXEL_LOCATION_NORM;
