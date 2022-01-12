@@ -460,7 +460,7 @@ namespace hnswlib {
 
 
     static float
-        CosSepFeatSqr(const void* pVect1v, const void* pVect2v, const void* qty_ptr) {
+        CosSepFeatDist(const void* pVect1v, const void* pVect2v, const void* qty_ptr) {
         //FeatureData<std::vector<float>>* histos1 = static_cast<FeatureData<std::vector<float>>*>((IFeatureData*)pVect1v);
         //FeatureData<std::vector<float>>* histos2 = static_cast<FeatureData<std::vector<float>>*>((IFeatureData*)pVect2v);
         float* pVect1 = (static_cast<FeatureData<std::vector<float>>*>((IFeatureData*)pVect1v)->data).data();
@@ -489,23 +489,26 @@ namespace hnswlib {
     public:
         CosSepSpace(size_t dim) {
             spdlog::info("KNNDist: create CosSepSpace");
-            fstdistfunc_ = InnerProduct;
+            fstdistfunc_ = CosSepFeatDist;
 
             dim_ = dim;
             //data_size_ = dim * sizeof(float);
             data_size_ = sizeof(std::vector<float>);
 
-#if defined(USE_AVX) || defined(USE_SSE)
-            if (dim % 16 == 0)
-                fstdistfunc_ = InnerProductSIMD16Ext;
-            else if (dim % 4 == 0)
-                fstdistfunc_ = InnerProductSIMD4Ext;
-            else if (dim > 16)
-                fstdistfunc_ = InnerProductSIMD16ExtResiduals;
-            else if (dim > 4)
-                fstdistfunc_ = InnerProductSIMD4ExtResiduals;
+            // The actual L2 norm function is a pointed to in the params since L2FeatSqr 
+            // has to access the feature vector correctly before calling it
+            params_ = { dim_, InnerProduct };
 
-            params_ = { dim_, fstdistfunc_ };
+#if defined(USE_SSE) || defined(USE_AVX)
+            if (dim % 16 == 0)
+                params_.IPdistfunc_ = InnerProductSIMD16Ext;
+            else if (dim % 4 == 0)
+                params_.IPdistfunc_ = InnerProductSIMD4Ext;
+            else if (dim > 16)
+                params_.IPdistfunc_ = InnerProductSIMD16ExtResiduals;
+            else if (dim > 4)
+                params_.IPdistfunc_ = InnerProductSIMD4ExtResiduals;
+#endif
 
         }
 
