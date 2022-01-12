@@ -125,8 +125,8 @@ void FeatureExtraction::setup(const std::vector<unsigned int>& pointIDsGlobal, c
     }
     else if (_featType == feature_type::PIXEL_LOCATION_NORM_sep)
     {
-        featFunct = &FeatureExtraction::addPixelLocationNormSeperately;
-        spdlog::info("Feature extraction: Use x and y coordinates as features and norm both attribute and pos features seperately");
+        featFunct = &FeatureExtraction::addPixelLocationNormSeparately;
+        spdlog::info("Feature extraction: Use x and y coordinates as features and norm both attribute and pos features separately");
     }
     else
     {
@@ -152,7 +152,7 @@ void FeatureExtraction::initExtraction() {
         _meanVals = CalcMeanPerChannel(_numPoints, _numDims, _attribute_data);
 		_varVals = CalcVarEstimate(_numPoints, _numDims, _attribute_data, _meanVals);
 	}
-    else if ((_featType == feature_type::PIXEL_LOCATION) | (_featType == feature_type::PIXEL_LOCATION_NORM)) {
+    else if (_featType == feature_type::PIXEL_LOCATION_NORM) {
         // find min and max for each channel, resize the output larger due to vector features
         _minMaxVals = CalcMinMaxPerChannel(_numPoints, _numDims, _attribute_data);
 
@@ -361,8 +361,6 @@ void FeatureExtraction::multivarNormDistDescriptor(size_t pointInd, std::vector<
 }
 
 void FeatureExtraction::addPixelLocationToAttributes(size_t pointInd, std::vector<float> neighborValues, std::vector<int> neighborIDs) {
-    assert(_minMaxVals.size() == 2 * _numDims);
-
     // new vector with attribute data and x&y pixel location
     std::vector<float> attributesAndLocation;
     attributesAndLocation.resize(_numDims + 2);
@@ -408,9 +406,7 @@ void FeatureExtraction::addPixelLocationNormedToAttributes(size_t pointInd, std:
     _outFeatures.get_data_ptr()->at(pointInd) = new FeatureData<std::vector<float>>(attributesAndLocation);
 }
 
-void FeatureExtraction::addPixelLocationNormSeperately(size_t pointInd, std::vector<float> neighborValues, std::vector<int> neighborIDs) {
-    assert(_minMaxVals.size() == 2 * _numDims);
-
+void FeatureExtraction::addPixelLocationNormSeparately(size_t pointInd, std::vector<float> neighborValues, std::vector<int> neighborIDs) {
     // new vector with attribute data and x&y pixel location
     std::vector<float> attributesAndLocation;
     attributesAndLocation.resize(_numDims + 2);
@@ -425,7 +421,7 @@ void FeatureExtraction::addPixelLocationNormSeperately(size_t pointInd, std::vec
     std::vector<float> pixelPos{ locHeight , locWidth };
 
     // norm pixel location
-    normalize_vector(pixelPos.data(), _attribute_data.data() + _numDims, 2);
+    normalize_vector(pixelPos.data(), attributesAndLocation.data() + _numDims, 2);
 
     // set feature
     _outFeatures.get_data_ptr()->at(pointInd) = new FeatureData<std::vector<float>>(attributesAndLocation);

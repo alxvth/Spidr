@@ -128,7 +128,7 @@ private:
      * neighborIDs is unsused but necessary to stay consistent with featFunct
      * \param weighting
      */
-    void addPixelLocationNormSeperately(size_t pointInd, std::vector<float> neighborValues, std::vector<int> neighborIDs);
+    void addPixelLocationNormSeparately(size_t pointInd, std::vector<float> neighborValues, std::vector<int> neighborIDs);
     
     /*! Sets the Feature per element to all it's neighbors attributes
      * 

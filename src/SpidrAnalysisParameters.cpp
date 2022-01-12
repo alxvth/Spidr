@@ -95,7 +95,7 @@ std::tuple< feature_type, distance_metric> get_feat_and_dist(feat_dist feat_dist
         dist = distance_metric::METRIC_COS;
         break;
     case feat_dist::PIXEL_LOCATION_COS_sep:
-        feat = feature_type::PIXEL_LOCATION;
+        feat = feature_type::PIXEL_LOCATION_NORM_sep;
         dist = distance_metric::METRIC_COS_sep;
         break;
     case feat_dist::PIXEL_LOCATION_NORM:

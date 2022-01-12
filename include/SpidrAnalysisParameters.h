@@ -47,7 +47,7 @@ enum class distance_metric : size_t
     METRIC_FRECHET_CovMat,      /*!< The Fréchet distance between multivariate normal distributions but ignoring the means, https://doi.org/10.1016/0047-259X(82)90077-X */
 	METRIC_FROBENIUS_CovMat,      /*!< Frobenius norm of element-wise differences between covmatrices */
     METRIC_COS,     /*!< Cosine similarity */
-    METRIC_COS_sep,     /*!< Cosine similarity seperate for attributes and features */
+    METRIC_COS_sep,     /*!< Cosine similarity separate for attributes and features */
 };
 
 
@@ -65,7 +65,7 @@ enum class feature_type : unsigned int
 	CHANNEL_HIST = 5,       /*!< Histogram with one bis per channel that counts active (>1) values */
 	PIXEL_LOCATION = 6,     /*!< Add pixel location (x,y) as feature */
 	PIXEL_LOCATION_NORM = 7,/*!< Add pixel location (x,y) as feature, norm the x and y range to the attribute range: [0, largestPixelIndex] -> [_minAttriVal, _maxAttriVal]  */
-	PIXEL_LOCATION_NORM_sep = 8,/*!< Add pixel location (x,y) as feature, norm the x and y range and the pos seperately so that you can use METRIC_COS_sep */
+	PIXEL_LOCATION_NORM_sep = 8,/*!< Add pixel location (x,y) as feature, norm the x and y range and the pos separately so that you can use METRIC_COS_sep */
 };
 
 
@@ -167,6 +167,7 @@ static const size_t NumFeatureValsPerPoint(const feature_type featureType, const
 	case feature_type::PCLOUD:          featureSize = neighborhoodSize; break; // numDims * neighborhoodSize for copying data instead of IDs
 	case feature_type::MULTIVAR_NORM: featureSize = numDims + numDims * numDims + 2; break; // channel-wise means + covaraince matrix
 	case feature_type::PIXEL_LOCATION:  // same as PIXEL_LOCATION_NORM, attribute feature + x and y pixel location
+	case feature_type::PIXEL_LOCATION_NORM_sep:  // same as PIXEL_LOCATION_NORM, attribute feature + x and y pixel location
 	case feature_type::PIXEL_LOCATION_NORM:   featureSize = numDims + 2; break;
     default: throw std::runtime_error("No feature size defined for this feature");
 	}

@@ -471,6 +471,20 @@ namespace hnswlib {
         size_t pixelpos_dims = 2;
         size_t attribute_dims = sparam->dim - pixelpos_dims;
 
+        // Just to test
+        //auto t1 = *(pVect1);
+        //auto t2 = *(pVect1 + 1);
+        //auto t3 = *(pVect1 + 2);
+        //auto t4 = *(pVect1 + 3);
+
+        //auto s1 = *(pVect2);
+        //auto s2 = *(pVect2 + 1);
+        //auto s3 = *(pVect2 + 2);
+        //auto s4 = *(pVect2 + 3);
+
+        std::vector<float> t{ pVect1 , pVect1 + sparam->dim };
+        std::vector<float> s{ pVect2 , pVect2 + sparam->dim };
+
         float attribute_dist = IPdistfunc_(pVect1, pVect2, &attribute_dims);
         float pixelpos_dist = IPdistfunc_(pVect1 + attribute_dims, pVect2 + attribute_dims, &pixelpos_dims);
 
@@ -499,14 +513,15 @@ namespace hnswlib {
             // has to access the feature vector correctly before calling it
             params_ = { dim_, InnerProduct };
 
+            size_t dim_attributes = dim_ - 2;
 #if defined(USE_SSE) || defined(USE_AVX)
-            if (dim % 16 == 0)
+            if (dim_attributes % 16 == 0)
                 params_.IPdistfunc_ = InnerProductSIMD16Ext;
-            else if (dim % 4 == 0)
+            else if (dim_attributes % 4 == 0)
                 params_.IPdistfunc_ = InnerProductSIMD4Ext;
-            else if (dim > 16)
+            else if (dim_attributes > 16)
                 params_.IPdistfunc_ = InnerProductSIMD16ExtResiduals;
-            else if (dim > 4)
+            else if (dim_attributes > 4)
                 params_.IPdistfunc_ = InnerProductSIMD4ExtResiduals;
 #endif
 
