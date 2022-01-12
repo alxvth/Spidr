@@ -118,7 +118,7 @@ void FeatureExtraction::setup(const std::vector<unsigned int>& pointIDsGlobal, c
         featFunct = &FeatureExtraction::addPixelLocationToAttributes;
         spdlog::info("Feature extraction: Use x and y coordinates as extra features");
     }
-    else if (_featType == feature_type::PIXEL_LOCATION_NORM)
+    else if (_featType == feature_type::PIXEL_LOCATION_NORM_range)
     {
         featFunct = &FeatureExtraction::addPixelLocationNormedToAttributes;
         spdlog::info("Feature extraction: Use x and y coordinates as extra features and norm their range to the attribute range: [0, largestPixelIndex] -> [_minAttriVal, _maxAttriVal] ");
@@ -152,7 +152,7 @@ void FeatureExtraction::initExtraction() {
         _meanVals = CalcMeanPerChannel(_numPoints, _numDims, _attribute_data);
 		_varVals = CalcVarEstimate(_numPoints, _numDims, _attribute_data, _meanVals);
 	}
-    else if (_featType == feature_type::PIXEL_LOCATION_NORM) {
+    else if (_featType == feature_type::PIXEL_LOCATION_NORM_range) {
         // find min and max for each channel, resize the output larger due to vector features
         _minMaxVals = CalcMinMaxPerChannel(_numPoints, _numDims, _attribute_data);
 

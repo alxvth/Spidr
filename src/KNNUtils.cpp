@@ -322,14 +322,14 @@ hnswlib::SpaceInterface<float>* CreateHNSWSpace(const distance_metric knn_metric
         break;
 
     case distance_metric::METRIC_EUC:
-        if ((feature_type == feature_type::PIXEL_LOCATION) || (feature_type == feature_type::PIXEL_LOCATION_NORM))
+        if ((feature_type == feature_type::PIXEL_LOCATION) || (feature_type == feature_type::PIXEL_LOCATION_NORM_range))
             space = new hnswlib::L2FeatSpace(numDims+2);
         else
             space = new hnswlib::L2FeatSpace(numDims);
         break;
 
     case distance_metric::METRIC_COS:
-        if ((feature_type == feature_type::PIXEL_LOCATION) || (feature_type == feature_type::PIXEL_LOCATION_NORM))
+        if ((feature_type == feature_type::PIXEL_LOCATION) || (feature_type == feature_type::PIXEL_LOCATION_NORM_range))
             space = new hnswlib::InnerProductSpace(numDims + 2);
         else
             space = new hnswlib::InnerProductSpace(numDims);

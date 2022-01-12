@@ -65,7 +65,7 @@ enum class feature_type : unsigned int
 	MULTIVAR_NORM = 4,      /*!< Mean and covariance matrix  */
 	CHANNEL_HIST = 5,       /*!< Histogram with one bis per channel that counts active (>1) values */
 	PIXEL_LOCATION = 6,     /*!< Add pixel location (x,y) as feature */
-	PIXEL_LOCATION_NORM = 7,/*!< Add pixel location (x,y) as feature, norm the x and y range to the attribute range: [0, largestPixelIndex] -> [_minAttriVal, _maxAttriVal]  */
+	PIXEL_LOCATION_NORM_range = 7,/*!< Add pixel location (x,y) as feature, norm the x and y range to the attribute range: [0, largestPixelIndex] -> [_minAttriVal, _maxAttriVal]  */
 	PIXEL_LOCATION_NORM_sep = 8,/*!< Add pixel location (x,y) as feature, norm the x and y range and the pos separately so that you can use METRIC_COS_sep */
 };
 
@@ -89,8 +89,9 @@ enum class feat_dist : size_t
 	PIXEL_LOCATION,/*!< Add pixel location (x,y) as feature, euclidean norm */
 	PIXEL_LOCATION_COS, /*!< Add pixel location (x,y) as feature, cosine similarity (normalizes data) */
 	PIXEL_LOCATION_COS_sep, /*!< Add pixel location (x,y) as feature, cosine similarity between attributes and features seperately and then add them */
-	PIXEL_LOCATION_NORM,	/*!< Add pixel location (x,y) as feature, norm the x and y range to the attribute range: [0, largestPixelIndex] -> [_minAttriVal, _maxAttriVal], euclidean norm */
+	PIXEL_LOCATION_NORM_range,	/*!< Add pixel location (x,y) as feature, norm the x and y range to the attribute range: [0, largestPixelIndex] -> [_minAttriVal, _maxAttriVal], euclidean norm */
     PIXEL_LOCATION_sep,     /*!< Add pixel location (x,y) as feature, compute euc norm separately and combine with weight */
+    PIXEL_LOCATION_NORM_sep,     /*!< Add pixel location (x,y) as feature, norm feature and pos, then compute euc norm separately and combine with weight */
 };
 
 
@@ -170,7 +171,7 @@ static const size_t NumFeatureValsPerPoint(const feature_type featureType, const
 	case feature_type::MULTIVAR_NORM: featureSize = numDims + numDims * numDims + 2; break; // channel-wise means + covaraince matrix
 	case feature_type::PIXEL_LOCATION:  // same as PIXEL_LOCATION_NORM, attribute feature + x and y pixel location
 	case feature_type::PIXEL_LOCATION_NORM_sep:  // same as PIXEL_LOCATION_NORM, attribute feature + x and y pixel location
-	case feature_type::PIXEL_LOCATION_NORM:   featureSize = numDims + 2; break;
+	case feature_type::PIXEL_LOCATION_NORM_range:   featureSize = numDims + 2; break;
     default: throw std::runtime_error("No feature size defined for this feature");
 	}
 
