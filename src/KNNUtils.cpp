@@ -336,7 +336,7 @@ hnswlib::SpaceInterface<float>* CreateHNSWSpace(const distance_metric knn_metric
         break;
 
     case distance_metric::METRIC_COS_sep:
-        space = new hnswlib::CosSepSpace(numDims + 2);
+        space = new hnswlib::CosSepSpace(numDims + 2, pixelWeight);
         break;
 
     case distance_metric::METRIC_CHA:

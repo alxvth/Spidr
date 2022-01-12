@@ -126,7 +126,7 @@ void FeatureExtraction::setup(const std::vector<unsigned int>& pointIDsGlobal, c
     else if (_featType == feature_type::PIXEL_LOCATION_NORM_sep)
     {
         featFunct = &FeatureExtraction::addPixelLocationNormSeparately;
-        spdlog::info("Feature extraction: Use x and y coordinates as features and norm both attribute and pos features separately");
+        spdlog::info("Feature extraction: Use x and y coordinates as features and norm both attribute and pos features separately (for use with cosine sim)");
     }
     else
     {
