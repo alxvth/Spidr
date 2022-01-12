@@ -16,7 +16,7 @@ from utils import load_binary, assign_embedding_colors
 
 # load data
 data_path = up(up(getcwd())) + "\\example\\data\\"
-data_name = "CheckeredBoxes_2Ch_32.bin"
+data_name = "CheckeredBoxes_2Ch_64.bin"
 data_raw = load_binary(data_path + data_name)
 
 # prep data
@@ -28,14 +28,36 @@ numPoints = data.shape[0]
 data_img = data.reshape((imgHeight, imgWidth, 2))
 
 # settings
-sp_metrics = [spidr.DistMetric.Chamfer_pc, spidr.DistMetric.QF_hist, spidr.DistMetric.Bhattacharyya]
+sp_metrics = [spidr.DistMetric.Bhattacharyya, spidr.DistMetric.QF_hist, spidr.DistMetric.Chamfer_pc]
 sp_weight = spidr.WeightLoc.uniform
 sp_neighborhoodSize = 1  # one neighbor in each direction, i.e. a 3x3 neighborhood
 
+iterations = 1000
+
+# histogram qf distance
 numHistBins = 5
 
 # only t-SNE
 perplexity = 20
+
+##################
+# Plots the data #
+##################
+data_min = np.min(data_img)
+data_max = np.max(data_img)
+
+fig, axs = plt.subplots(1, 2, figsize=(12, 5))
+#fig.suptitle('Data channels and embeddings')
+
+axs[0].title.set_text('Channel 1')
+im1 = axs[0].imshow(data_img[:, :, 0], aspect="auto", vmin=data_min, vmax=data_max)
+axs[1].title.set_text('Channel 2')
+im2 = axs[1].imshow(data_img[:, :, 1], aspect="auto", vmin=data_min, vmax=data_max)
+
+fig.colorbar(im2, ax=axs.ravel().tolist())
+
+plt.show()
+
 
 #################################
 # spatially informed embeddings #
@@ -46,6 +68,7 @@ embs_mds_sp = {}
 
 embs = {"tsne":embs_tsne_sp, "umap":embs_umap_sp, "mds":embs_mds_sp}
 
+print("# Begin computing spatially informed embeddings")
 for sp_metric in sp_metrics:
     print(f"Metric: {sp_metric}")
     #########
@@ -54,7 +77,8 @@ for sp_metric in sp_metrics:
     print("# Texture-aware t-SNE with HDILib (nptsne)")
     # instantiate spidrlib
     alg_spidr = spidr.SpidrAnalysis(distMetric=sp_metric, kernelType=sp_weight, perplexity=perplexity, numHistBins=numHistBins,
-                                    numLocNeighbors=sp_neighborhoodSize, aknnAlgType=spidr.KnnAlgorithm.hnsw)
+                                    numLocNeighbors=sp_neighborhoodSize, aknnAlgType=spidr.KnnAlgorithm.hnsw,
+                                    numIterations=iterations)
 
     # embed with t-SNE
     embs["tsne"][sp_metric] = alg_spidr.fit_transform(X=data, pointIDsGlobal=data_glob_ids, imgWidth=imgWidth, imgHeight=imgHeight)
@@ -64,6 +88,7 @@ for sp_metric in sp_metrics:
     # UMAP #
     ########
     print("# Texture-aware UMAP with umap-learn")
+    print("# Texture-aware UMAP with umap-learn: compute knn")
     # instantiate spidrlib
     alg_spidr = spidr.SpidrAnalysis(distMetric=sp_metric, kernelType=sp_weight, numHistBins=numHistBins,
                                     numLocNeighbors=sp_neighborhoodSize, aknnAlgType=spidr.KnnAlgorithm.hnsw)
@@ -80,8 +105,9 @@ for sp_metric in sp_metrics:
     knn_csr = csr_matrix((knn_dists, (knn_ind_row, knn_ind)), shape=(numPoints, numPoints))
 
     # embed with umap
+    print("# Texture-aware UMAP with umap-learn: compute transformation")
     seed_umap = 123
-    alg_umap = UMAP(random_state=seed_umap)
+    alg_umap = UMAP(random_state=seed_umap, n_epochs=iterations)
     embs["umap"][sp_metric] = alg_umap.fit_transform(knn_csr)
 
 
@@ -89,6 +115,7 @@ for sp_metric in sp_metrics:
     # MDS #
     #######
     print("# Texture-aware MDS with scikit-learn")
+    print("# Texture-aware MDS with scikit-learn: compute full distance matrix")
     # instantiate spidrlib
     alg_spidr = spidr.SpidrAnalysis(distMetric=sp_metric, kernelType=sp_weight, numHistBins=numHistBins,
                                     numLocNeighbors=sp_neighborhoodSize, aknnAlgType=spidr.KnnAlgorithm.full_dist_matrix)
@@ -99,31 +126,48 @@ for sp_metric in sp_metrics:
     # create full distance matrix
     knn_dists = np.array(knn_dists).reshape((numPoints, numPoints))
 
+    # check if symmetric
+    if not np.allclose(knn_dists, knn_dists.T, atol=1E-10):
+        # This condition must be met for the scipy MDS implementation
+        # make sure, that the asymmetry is due to numeric issues
+        for tol in [1E-3, 1E-4, 1E-5, 1E-8, 1E-7, 1E-8, 1E-9, 1E-10]:
+            if not np.allclose(knn_dists, knn_dists.T, atol=tol):
+                break
+        if tol >= 1E-3:
+            raise ValueError("knn_dists is not symmetric")
+        else:
+            print(f"# Texture-aware MDS with scikit-learn: knn_dists is only symmetric up to a tolerance of {tol} due "
+                  "to numeric issues. Automatically making it symmetric.")
+            knn_dists = (knn_dists + knn_dists.T) / 2
+
     # embed with MDS
+    print("# Texture-aware MDS with scikit-learn: compute transformation")
     seed_mds = 123456
-    alg_mds = MDS(dissimilarity='precomputed', n_jobs=-1, random_state=seed_mds)
+    alg_mds = MDS(dissimilarity='precomputed', n_jobs=-1, random_state=seed_mds, max_iter=iterations)
     embs["mds"][sp_metric] = alg_mds.fit_transform(knn_dists)
 
+print("# Finished computing spatially informed embeddings")
 
 #######################
 # standard embeddings #
 #######################
-
+print("# Begin computing standard embeddings")
 # standard t-SNE
 print("# Standard t-SNE with HDILib (nptsne)")
-alg_tsne = TSNE(perplexity=20)
+alg_tsne = TSNE(perplexity=20, iterations=iterations)
 emb_tsne_std = alg_tsne.fit_transform(data).reshape((numPoints, 2))
 
 # standard UMAP
 print("# Standard UMAP with umap-learn")
-alg_umap = UMAP()
+alg_umap = UMAP(n_epochs=iterations)
 emb_umap_std = alg_umap.fit_transform(data)
 
 # standard MDS
 print("# Standard MDS with scikit-learn")
-alg_mds = MDS(dissimilarity='euclidean', n_jobs=-1)
+alg_mds = MDS(dissimilarity='euclidean', n_jobs=-1, max_iter=iterations)
 emb_mds_std = alg_mds.fit_transform(data)
 
+print("# Finished computing standard embeddings")
 
 ####################
 # Plots embeddings #
@@ -193,27 +237,6 @@ plt.figtext(0.81, height_lab_c, "Bhattacharyya", va="center", ha="center", size=
 #plt.show()
 plt.savefig("example_several_DR_and_metrics.pdf", format="pdf", bbox_inches="tight")
 
-##################
-# Plots the data #
-##################
-
-data_min = np.min(data_img)
-data_max = np.max(data_img)
-
-fig, axs = plt.subplots(1, 2, figsize=(12, 5))
-#fig.suptitle('Data channels and embeddings')
-
-axs[0].title.set_text('Channel 1')
-im1 = axs[0].imshow(data_img[:, :, 0], aspect="auto", vmin=data_min, vmax=data_max)
-axs[1].title.set_text('Channel 2')
-im2 = axs[1].imshow(data_img[:, :, 1], aspect="auto", vmin=data_min, vmax=data_max)
-
-fig.colorbar(im2, ax=axs.ravel().tolist())
-
-#plt.tight_layout()
-plt.show()
-#plt.savefig("example_data_channels.pdf", format="pdf", bbox_inches="tight")
-
 
 ###################
 # Save embeddings #
@@ -221,6 +244,7 @@ plt.show()
 from utils import write_binary
 save_path = ".\\embeddings\\"
 
+print(f"# Saving all embeddings to: {save_path}")
 # spatially informed embeddings
 for sp_metric in sp_metrics:
     for embs_name, embs_dict in embs.items():

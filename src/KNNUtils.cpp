@@ -196,12 +196,11 @@ std::tuple<std::vector<int>, std::vector<float>> ComputeHNSWkNN(const Feature& d
     else
     {
         // query dataset
+                // for normalized data, be sure to use the InnerProductSpace
+        size_t dims = *(size_t*)(static_cast<hnswlib::InnerProductSpace*>(space)->get_dist_func_param());
 #ifdef NDEBUG
 #pragma omp parallel for
 #endif
-                // for normalized data, be sure to use the InnerProductSpace
-        size_t dims = *(size_t*)(static_cast<hnswlib::InnerProductSpace*>(space)->get_dist_func_param());
-
         for (int i = 0; i < numForegroundPoints; ++i)
         {
             std::vector<float> normalized_vector(dims);
@@ -251,11 +250,11 @@ std::tuple<std::vector<int>, std::vector<float>> ComputeExactKNN(const Feature& 
 	// and take the nn smallest as kNN
 	for (int i = 0; i < (int)numForegroundPoints; i++) {
 		// Calculate distance to all points  using the respective metric
+        if (!normalize)
+        {
 #ifdef NDEBUG
 #pragma omp parallel for
 #endif
-        if (!normalize)
-        {
             for (int j = 0; j < (int)numForegroundPoints; j++) {
                 indices_distances[j] = std::make_pair(j, distfunc(dataFeatures.at(foregroundIDsGlobal[i]), dataFeatures.at(foregroundIDsGlobal[j]), params));
             }

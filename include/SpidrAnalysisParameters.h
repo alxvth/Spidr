@@ -80,6 +80,8 @@ enum class feat_dist : size_t
 	LGC_EUC,       /*!< Local Geary's C and euclidean distance */
 	PC_CHA,        /*!< Point cloud distance: Chamfer */
 	PC_HAU,        /*!< Point cloud distance: Hausdorff */
+	PC_HAU_MED,    /*!< Point cloud distance: Hausdorff median*/
+	PC_SSD,        /*!< Point cloud distance: SSD */
 	MVN_BHAT,      /*!< Mean and covariance matrix feaure and Bhattacharyya distance */
 	MVN_FRO,       /*!< Mean and covariance matrix feaure and Frobenius norm of element-wise differences between covmatrices*/
 	CHIST_EUC,     /*!< Histogram with one bis per channel that counts active (>1) values and euclidean distance */
