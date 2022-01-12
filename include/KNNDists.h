@@ -455,6 +455,7 @@ namespace hnswlib {
 
     struct space_paramsCosSepFeat {
         size_t dim;
+        float weight;
         DISTFUNC<float> IPdistfunc_;
     };
 
@@ -466,29 +467,17 @@ namespace hnswlib {
         float* pVect1 = (static_cast<FeatureData<std::vector<float>>*>((IFeatureData*)pVect1v)->data).data();
         float* pVect2 = (static_cast<FeatureData<std::vector<float>>*>((IFeatureData*)pVect2v)->data).data();
 
-        const space_params_L2Feat* sparam = (space_params_L2Feat*)qty_ptr;
-        DISTFUNC<float> IPdistfunc_ = sparam->L2distfunc_;
+        const space_paramsCosSepFeat* sparam = (space_paramsCosSepFeat*)qty_ptr;
+        DISTFUNC<float> IPdistfunc_ = sparam->IPdistfunc_;
+        float weight = sparam->weight;
+
         size_t pixelpos_dims = 2;
         size_t attribute_dims = sparam->dim - pixelpos_dims;
-
-        // Just to test
-        //auto t1 = *(pVect1);
-        //auto t2 = *(pVect1 + 1);
-        //auto t3 = *(pVect1 + 2);
-        //auto t4 = *(pVect1 + 3);
-
-        //auto s1 = *(pVect2);
-        //auto s2 = *(pVect2 + 1);
-        //auto s3 = *(pVect2 + 2);
-        //auto s4 = *(pVect2 + 3);
-
-        std::vector<float> t{ pVect1 , pVect1 + sparam->dim };
-        std::vector<float> s{ pVect2 , pVect2 + sparam->dim };
 
         float attribute_dist = IPdistfunc_(pVect1, pVect2, &attribute_dims);
         float pixelpos_dist = IPdistfunc_(pVect1 + attribute_dims, pVect2 + attribute_dims, &pixelpos_dims);
 
-        return (attribute_dist + pixelpos_dist) / 2.0f;
+        return (1.0f - weight) * attribute_dist + weight * pixelpos_dist;
     }
 
 
@@ -501,7 +490,7 @@ namespace hnswlib {
         space_paramsCosSepFeat params_;
 
     public:
-        CosSepSpace(size_t dim) {
+        CosSepSpace(size_t dim, float weight = 0.5f) {
             spdlog::info("KNNDist: create CosSepSpace");
             fstdistfunc_ = CosSepFeatDist;
 
@@ -511,7 +500,7 @@ namespace hnswlib {
 
             // The actual L2 norm function is a pointed to in the params since L2FeatSqr 
             // has to access the feature vector correctly before calling it
-            params_ = { dim_, InnerProduct };
+            params_ = { dim_, weight, InnerProduct };
 
             size_t dim_attributes = dim_ - 2;
 #if defined(USE_SSE) || defined(USE_AVX)
@@ -540,6 +529,90 @@ namespace hnswlib {
         }
 
         ~CosSepSpace() {}
+    };
+
+
+    // ---------------
+    //    Adapt L2 space with weights like the InnerProduct above
+    //    For use with attribtues + pos features
+    // ---------------
+
+    struct space_params_L2sepFeat {
+        size_t dim;
+        float weight;
+        DISTFUNC<float> L2distfunc_;
+    };
+
+
+    static float
+        L2sepFeatSqr(const void* pVect1v, const void* pVect2v, const void* qty_ptr) {
+        //FeatureData<std::vector<float>>* histos1 = static_cast<FeatureData<std::vector<float>>*>((IFeatureData*)pVect1v);
+        //FeatureData<std::vector<float>>* histos2 = static_cast<FeatureData<std::vector<float>>*>((IFeatureData*)pVect2v);
+        float* pVect1 = (static_cast<FeatureData<std::vector<float>>*>((IFeatureData*)pVect1v)->data).data();
+        float* pVect2 = (static_cast<FeatureData<std::vector<float>>*>((IFeatureData*)pVect2v)->data).data();
+
+        const space_params_L2sepFeat* sparam = (space_params_L2sepFeat*)qty_ptr;
+        DISTFUNC<float> L2distfunc_ = sparam->L2distfunc_;
+        float weight = sparam->weight;
+
+        size_t pixelpos_dims = 2;
+        size_t attribute_dims = sparam->dim - pixelpos_dims;
+
+        float attribute_dist = L2distfunc_(pVect1, pVect2, &attribute_dims);
+        float pixelpos_dist = L2distfunc_(pVect1 + attribute_dims, pVect2 + attribute_dims, &pixelpos_dims);
+
+        return (1.0f - weight) * attribute_dist + weight * pixelpos_dist;
+    }
+
+
+    class L2sepFeatSpace : public SpaceInterface<float> {
+
+        DISTFUNC<float> fstdistfunc_;
+        size_t data_size_;
+        size_t dim_;
+
+        space_params_L2sepFeat params_;
+
+    public:
+        L2sepFeatSpace(size_t dim, float weight = 0.5f) {
+            spdlog::info("KNNDist: create L2sepFeatSpace with weight {}", weight);
+            fstdistfunc_ = L2sepFeatSqr;
+
+            dim_ = dim;
+            //data_size_ = dim * sizeof(float);
+            data_size_ = sizeof(std::vector<float>);
+
+            // The actual L2 norm function is a pointed to in the params since L2FeatSqr 
+            // has to access the feature vector correctly before calling it
+            params_ = { dim_, weight, L2Sqr };
+
+            size_t dim_attributes = dim_ - 2;
+#if defined(USE_SSE) || defined(USE_AVX)
+            if (dim_attributes % 16 == 0)
+                params_.L2distfunc_ = L2SqrSIMD16Ext;
+            else if (dim_attributes % 4 == 0)
+                params_.L2distfunc_ = L2SqrSIMD4Ext;
+            else if (dim_attributes > 16)
+                params_.L2distfunc_ = L2SqrSIMD16ExtResiduals;
+            else if (dim_attributes > 4)
+                params_.L2distfunc_ = L2SqrSIMD4ExtResiduals;
+#endif
+
+        }
+
+        size_t get_data_size() {
+            return data_size_;
+        }
+
+        DISTFUNC<float> get_dist_func() {
+            return fstdistfunc_;
+        }
+
+        void* get_dist_func_param() {
+            return &params_;
+        }
+
+        ~L2sepFeatSpace() {}
     };
 
 

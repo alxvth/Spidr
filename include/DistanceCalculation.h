@@ -60,6 +60,7 @@ private:
     size_t _nn;                               /*!<> */
     size_t _neighborhoodSize;                       /*!< might be used for some distance metrics */
     loc_Neigh_Weighting _neighborhoodWeighting;     /*!< used when calculating distance directly from high-dim points (_featureType is no feature/PCLOUD) */
+    float _pixelWeight;                      /*!< For METRIC_EUC_sep: 0 is only attribute dist, 1 is only pixel dist > */
 
     // Data
     // Input

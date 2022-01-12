@@ -61,7 +61,7 @@ void SpidrWrapper::compute_fit(
 	}
 
 	// Init all settings (setupData must have been called before initing the settings.)
-	_SpidrAnalysis->initializeAnalysisSettings(_featType, _kernelType, _numLocNeighbors, _numHistBins, _aknnAlgType, _distMetric, _numIterations, _perplexity, _exaggeration, _expDecay, _forceCalcBackgroundFeatures);
+	_SpidrAnalysis->initializeAnalysisSettings(_featType, _kernelType, _numLocNeighbors, _numHistBins, 0.5, _aknnAlgType, _distMetric, _numIterations, _perplexity, _exaggeration, _expDecay, _forceCalcBackgroundFeatures);
 
 	// Compute knn dists and inds
 	_SpidrAnalysis->computeFeatures();
@@ -146,7 +146,7 @@ void SpidrWrapper::set_kNN(py::array_t<int, py::array::c_style | py::array::forc
 	}
 
 	// set knn values
-	_SpidrAnalysis->initializeAnalysisSettings(_featType, _kernelType, _numLocNeighbors, _numHistBins, _aknnAlgType, _distMetric, _numIterations, _perplexity, _exaggeration, _expDecay, _forceCalcBackgroundFeatures);
+	_SpidrAnalysis->initializeAnalysisSettings(_featType, _kernelType, _numLocNeighbors, _numHistBins, 0.5, _aknnAlgType, _distMetric, _numIterations, _perplexity, _exaggeration, _expDecay, _forceCalcBackgroundFeatures);
 	_SpidrAnalysis->setKnn(indices, distances);
 
 	// set number of points as it is used in transform()

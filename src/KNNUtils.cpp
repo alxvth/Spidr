@@ -305,7 +305,7 @@ std::tuple<std::vector<int>, std::vector<float>> ComputeFullDistMat(const Featur
 }
 
 
-hnswlib::SpaceInterface<float>* CreateHNSWSpace(const distance_metric knn_metric, const feature_type feature_type, const size_t numDims, const size_t neighborhoodSize, const loc_Neigh_Weighting neighborhoodWeighting, const size_t numHistBins) {
+hnswlib::SpaceInterface<float>* CreateHNSWSpace(const distance_metric knn_metric, const feature_type feature_type, const size_t numDims, const size_t neighborhoodSize, const loc_Neigh_Weighting neighborhoodWeighting, const size_t numHistBins, const float pixelWeight) {
     // chose distance metric
     hnswlib::SpaceInterface<float> *space = NULL;
     spdlog::info("Distance calculation: Metric {}", logging::distance_metric_name(knn_metric));
@@ -363,6 +363,10 @@ hnswlib::SpaceInterface<float>* CreateHNSWSpace(const distance_metric knn_metric
     case distance_metric::METRIC_FRECHET_CovMat:
     case distance_metric::METRIC_FROBENIUS_CovMat:
         space = new hnswlib::MultiVarCovMat_Space(knn_metric);
+        break;
+
+    case distance_metric::METRIC_EUC_sep:
+        space = new hnswlib::L2sepFeatSpace(numDims+2, pixelWeight);
         break;
 
     default:

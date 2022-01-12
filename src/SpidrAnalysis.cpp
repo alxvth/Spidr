@@ -35,7 +35,7 @@ void SpidrAnalysis::setupData(const std::vector<float>& attribute_data, const st
     assert(_params._numForegroundPoints + _backgroundIDsGlobal.size() == _params._numPoints);
 }
 
-void SpidrAnalysis::initializeAnalysisSettings(const feature_type featType, const loc_Neigh_Weighting kernelWeightType, const size_t numLocNeighbors, const size_t numHistBins,\
+void SpidrAnalysis::initializeAnalysisSettings(const feature_type featType, const loc_Neigh_Weighting kernelWeightType, const size_t numLocNeighbors, const size_t numHistBins, float pixelWeight, \
                                                const knn_library aknnAlgType, const distance_metric aknnMetric,\
                                                const int numIterations, const float perplexity, const int exaggeration, const int expDecay, bool forceCalcBackgroundFeatures) {
 	if (_params._numDims < 0 || _params._numHistBins < 0)
@@ -47,6 +47,7 @@ void SpidrAnalysis::initializeAnalysisSettings(const feature_type featType, cons
     setKernelWeight(kernelWeightType);
     setNumLocNeighbors(numLocNeighbors);    // Sets both _params._kernelWidth and _params._neighborhoodSize
     setNumHistBins(numHistBins);
+    setPixelWeight(pixelWeight);
 
     // initialize Distance Calculation Settings
     // number of nn is dertermined by perplexity, set in setPerplexity
@@ -146,6 +147,10 @@ void SpidrAnalysis::setExaggeration(const unsigned exag) {
 
 void SpidrAnalysis::setExpDecay(const unsigned expDecay) {
     _params._expDecay = expDecay;
+}
+
+void SpidrAnalysis::setPixelWeight(const float pixelWeight) {
+    _params._pixelWeight = pixelWeight;
 }
 
 void SpidrAnalysis::setNumFeatureValsPerPoint(feature_type featType, size_t numDims, size_t numHistBins, size_t neighborhoodSize) {

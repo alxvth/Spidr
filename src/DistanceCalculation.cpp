@@ -30,6 +30,7 @@ void DistanceCalculation::setup(const Feature dataFeatures, const std::vector<un
     _nn = params.get_nn();                           // see SpidrAnalysis::update_nn ->  (size_t)(params.get_perplexity() * params.get_perplexity_multiplier() + 1)
     _neighborhoodSize = params.get_neighborhoodSize();    // square neighborhood with _numNeighborsInEachDirection to each side from the center
     _neighborhoodWeighting = params._neighWeighting;
+    _pixelWeight = params._pixelWeight;
 
     if (_knn_metric == distance_metric::METRIC_COS)
         _normalize_data = true;
@@ -73,7 +74,7 @@ void DistanceCalculation::computekNN() {
     auto t_start_CreateHNSWSpace = std::chrono::steady_clock::now();
 
     // setup hsnw index
-    hnswlib::SpaceInterface<float> *space = CreateHNSWSpace(_knn_metric, _featureType, _numDims, _neighborhoodSize, _neighborhoodWeighting, _numHistBins);
+    hnswlib::SpaceInterface<float> *space = CreateHNSWSpace(_knn_metric, _featureType, _numDims, _neighborhoodSize, _neighborhoodWeighting, _numHistBins, _pixelWeight);
     assert(space != NULL);
 
     auto t_end_CreateHNSWSpace = std::chrono::steady_clock::now();

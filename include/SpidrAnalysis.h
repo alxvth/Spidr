@@ -48,7 +48,7 @@ public:
 	 * \param expDecay
 	 * \param forceCalcBackgroundFeatures
 	 */
-	void initializeAnalysisSettings(const feature_type featType, const loc_Neigh_Weighting kernelType, const size_t numLocNeighbors, const size_t numHistBins, \
+	void initializeAnalysisSettings(const feature_type featType, const loc_Neigh_Weighting kernelType, const size_t numLocNeighbors, const size_t numHistBins, const float pixelWeight, \
 		const knn_library aknnAlgType, const distance_metric aknnMetric, \
 		const int numIterations, const float perplexity, const int exaggeration, const int expDecay, bool forceCalcBackgroundFeatures = false);
 
@@ -170,6 +170,9 @@ private:
 
     /*! Sets the exponential decay during gradient descent */
     void setExpDecay(const unsigned expDacay);
+
+    /*! Sets the pixelWeight for weighting attribute and pos distance with distance_metric::METRIC_EUC_sep */
+    void setPixelWeight(const float pixelWeight);
 
     /*! Sets the size of a feature, derived from other parameters */
     void setNumFeatureValsPerPoint(feature_type featType, size_t numDims, size_t numHistBins, size_t neighborhoodSize);

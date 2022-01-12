@@ -48,6 +48,7 @@ enum class distance_metric : size_t
 	METRIC_FROBENIUS_CovMat,      /*!< Frobenius norm of element-wise differences between covmatrices */
     METRIC_COS,     /*!< Cosine similarity */
     METRIC_COS_sep,     /*!< Cosine similarity separate for attributes and features */
+    METRIC_EUC_sep,     /*!< Add pixel location (x,y) as feature, compute euc norm separately and combine with weight */
 };
 
 
@@ -89,6 +90,7 @@ enum class feat_dist : size_t
 	PIXEL_LOCATION_COS, /*!< Add pixel location (x,y) as feature, cosine similarity (normalizes data) */
 	PIXEL_LOCATION_COS_sep, /*!< Add pixel location (x,y) as feature, cosine similarity between attributes and features seperately and then add them */
 	PIXEL_LOCATION_NORM,	/*!< Add pixel location (x,y) as feature, norm the x and y range to the attribute range: [0, largestPixelIndex] -> [_minAttriVal, _maxAttriVal], euclidean norm */
+    PIXEL_LOCATION_sep,     /*!< Add pixel location (x,y) as feature, compute euc norm separately and combine with weight */
 };
 
 
@@ -191,7 +193,7 @@ public:
     SpidrParameters() :
         _nn(-1), _numPoints(-1), _numDims(-1), _imgSize(-1, -1), _embeddingName(""),
         _featureType(feature_type::TEXTURE_HIST_1D), _neighWeighting(loc_Neigh_Weighting::WEIGHT_UNIF), _numNeighborsInEachDirection(-1), _numHistBins(-1),
-        _kernelWidth(0), _neighborhoodSize(0), _numFeatureValsPerPoint(0), _forceCalcBackgroundFeatures(false),
+        _kernelWidth(0), _neighborhoodSize(0), _numFeatureValsPerPoint(0), _forceCalcBackgroundFeatures(false), _pixelWeight(0.5),
         _aknn_algorithm(knn_library::KNN_HNSW), _aknn_metric(distance_metric::METRIC_QF), _numForegroundPoints(-1),
 		_perplexity(30), _perplexity_multiplier(3), _numIterations(1000), _exaggeration(250), _expDecay(250)
 	{
@@ -200,10 +202,10 @@ public:
 
 	SpidrParameters(size_t numPoints, size_t numDims, ImgSize imgSize, std::string embeddingName, const float* dataVecBegin,
 		feature_type featureType, loc_Neigh_Weighting neighWeighting, size_t numLocNeighbors, size_t numHistBins,
-		knn_library aknn_algorithm, distance_metric aknn_metric, float MVNweight,
+		knn_library aknn_algorithm, distance_metric aknn_metric, float pixelWeight,
 		float perplexity, int numIterations, int exaggeration, int expDecay=250, bool forceCalcBackgroundFeatures = false) :
 		_numPoints(numPoints), _numDims(numDims), _imgSize(imgSize), _embeddingName(embeddingName),
-		_featureType(featureType), _neighWeighting(neighWeighting), _numHistBins(numHistBins),
+		_featureType(featureType), _neighWeighting(neighWeighting), _numHistBins(numHistBins), _pixelWeight(pixelWeight),
 		_aknn_algorithm(aknn_algorithm), _aknn_metric(aknn_metric), _forceCalcBackgroundFeatures(forceCalcBackgroundFeatures),
 		_perplexity_multiplier(3), _numIterations(numIterations), _exaggeration(exaggeration), _expDecay(expDecay)
 	{
@@ -214,11 +216,11 @@ public:
 	}
 
     SpidrParameters(size_t numPoints, size_t numDims, ImgSize imgSize, std::string embeddingName, const float* dataVecBegin, size_t numForegroundPoints,
-        feature_type featureType, loc_Neigh_Weighting neighWeighting, size_t numLocNeighbors, size_t numHistBins,
+        feature_type featureType, loc_Neigh_Weighting neighWeighting, size_t numLocNeighbors, size_t numHistBins, float pixelWeight,
         knn_library aknn_algorithm, distance_metric aknn_metric,
         float perplexity, int numIterations, int exaggeration, int expDecay = 250, bool forceCalcBackgroundFeatures = false) :
         _numPoints(numPoints), _numDims(numDims), _imgSize(imgSize), _embeddingName(embeddingName), _numForegroundPoints(numForegroundPoints),
-        _featureType(featureType), _neighWeighting(neighWeighting), _numHistBins(numHistBins),
+        _featureType(featureType), _neighWeighting(neighWeighting), _numHistBins(numHistBins), _pixelWeight(pixelWeight),
         _aknn_algorithm(aknn_algorithm), _aknn_metric(aknn_metric), _forceCalcBackgroundFeatures(forceCalcBackgroundFeatures),
         _perplexity_multiplier(3), _numIterations(numIterations), _exaggeration(exaggeration), _expDecay(expDecay)
     {
@@ -278,6 +280,7 @@ public:
 	size_t              _numFeatureValsPerPoint;/*!< Depending on the feature type, the features vector has a different length (scalar features vs vector features per dimension)> */
 	loc_Neigh_Weighting _neighWeighting;        /*!< Weighting type of the neighborhood > */
 	size_t              _numHistBins;           /*!< Number of bins in a histogram feature > */
+    float               _pixelWeight;           /*!< For METRIC_EUC_sep: 0 is only attribute dist, 1 is only pixel dist > */
     bool                _forceCalcBackgroundFeatures; /*!< Usually features are not computed for the background, but you can force it anyway > */
 	// distance
 	knn_library         _aknn_algorithm;        /*!< kNN algo type, e.g. exact kNN vs approximated kNN > */
