@@ -477,7 +477,24 @@ namespace hnswlib {
         float attribute_dist = IPdistfunc_(pVect1, pVect2, &attribute_dims);
         float pixelpos_dist = IPdistfunc_(pVect1 + attribute_dims, pVect2 + attribute_dims, &pixelpos_dims);
 
-        return (1.0f - weight) * attribute_dist + weight * pixelpos_dist;
+        //if (attribute_dist < 0)
+        //{
+        //    std::cout << attribute_dist << "\n";
+
+        //    for (auto i : std::vector<float>{ pVect1, pVect1 + sparam->dim })
+        //        std::cout << i << " ";
+        //    std::cout << "\n";
+
+        //    for (auto i : std::vector<float>{ pVect2, pVect2 + sparam->dim })
+        //        std::cout << i << " ";
+        //    std::cout << "\n";
+
+        //}
+
+        float dist = (1.0f - weight) * attribute_dist + weight * pixelpos_dist;
+
+        return std::clamp(attribute_dist, 0.0f, 2.0f);
+        //return dist;
     }
 
 
@@ -491,7 +508,7 @@ namespace hnswlib {
 
     public:
         CosSepSpace(size_t dim, float weight = 0.5f) {
-            spdlog::info("KNNDist: create CosSepSpace");
+            spdlog::info("KNNDist: create CosSepSpace with weight {} - THERE IS A BUG IN HERE", weight);
             fstdistfunc_ = CosSepFeatDist;
 
             dim_ = dim;
@@ -561,7 +578,9 @@ namespace hnswlib {
         float attribute_dist = L2distfunc_(pVect1, pVect2, &attribute_dims);
         float pixelpos_dist = L2distfunc_(pVect1 + attribute_dims, pVect2 + attribute_dims, &pixelpos_dims);
 
-        return (1.0f - weight) * attribute_dist + weight * pixelpos_dist;
+        float dist = (1.0f - weight) * attribute_dist + weight * pixelpos_dist;
+
+        return dist;
     }
 
 
