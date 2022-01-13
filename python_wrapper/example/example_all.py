@@ -32,13 +32,13 @@ sp_metrics = [spidr.DistMetric.Bhattacharyya, spidr.DistMetric.QF_hist, spidr.Di
 sp_weight = spidr.WeightLoc.uniform
 sp_neighborhoodSize = 1  # one neighbor in each direction, i.e. a 3x3 neighborhood
 
-iterations = 1000
+iterations = 2000
 
 # histogram qf distance
 numHistBins = 5
 
 # only t-SNE
-perplexity = 20
+perplexity = 30
 
 ##################
 # Plots the data #
@@ -154,7 +154,7 @@ print("# Finished computing spatially informed embeddings")
 print("# Begin computing standard embeddings")
 # standard t-SNE
 print("# Standard t-SNE with HDILib (nptsne)")
-alg_tsne = TSNE(perplexity=20, iterations=iterations)
+alg_tsne = TSNE(perplexity=perplexity, iterations=iterations)
 emb_tsne_std = alg_tsne.fit_transform(data).reshape((numPoints, 2))
 
 # standard UMAP
@@ -249,10 +249,10 @@ print(f"# Saving all embeddings to: {save_path}")
 for sp_metric in sp_metrics:
     for embs_name, embs_dict in embs.items():
         perp_str = f"_P{perplexity}" if embs_name == "tsne" else ""
-        save_name = f"{data_name.split('.')[0]}_sp-{embs_name}_emb{perp_str}_I1000_k1_{sp_metric.name}.bin"
+        save_name = f"{data_name.split('.')[0]}_sp-{embs_name}_emb{perp_str}_I{iterations}_k1_{sp_metric.name}.bin"
         write_binary(embs_dict[sp_metric].flatten().astype(np.float32), save_path + save_name)
 
 # standard embeddings
-write_binary(emb_tsne_std.flatten().astype(np.float32), save_path + f"{data_name.split('.')[0]}_std-tsne_emb_I1000_P20.bin")
-write_binary(emb_umap_std.flatten().astype(np.float32), save_path + f"{data_name.split('.')[0]}_std-umap_emb_I1000.bin")
-write_binary(emb_mds_std.flatten().astype(np.float32), save_path + f"{data_name.split('.')[0]}_std-mds_emb_I1000.bin")
+write_binary(emb_tsne_std.flatten().astype(np.float32), save_path + f"{data_name.split('.')[0]}_std-tsne_emb_I{iterations}_P{perplexity}.bin")
+write_binary(emb_umap_std.flatten().astype(np.float32), save_path + f"{data_name.split('.')[0]}_std-umap_emb_I{iterations}.bin")
+write_binary(emb_mds_std.flatten().astype(np.float32), save_path + f"{data_name.split('.')[0]}_std-mds_emb_I{iterations}.bin")
