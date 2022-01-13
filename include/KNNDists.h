@@ -475,7 +475,7 @@ namespace hnswlib {
         size_t attribute_dims = sparam->dim - pixelpos_dims;
 
         float attribute_dist = IPdistfunc_(pVect1, pVect2, &attribute_dims);
-        float pixelpos_dist = IPdistfunc_(pVect1 + attribute_dims, pVect2 + attribute_dims, &pixelpos_dims);
+        float pixelpos_dist = InnerProduct(pVect1 + attribute_dims, pVect2 + attribute_dims, &pixelpos_dims);
 
         //if (attribute_dist < 0)
         //{
@@ -576,7 +576,7 @@ namespace hnswlib {
         size_t attribute_dims = sparam->dim - pixelpos_dims;
 
         float attribute_dist = L2distfunc_(pVect1, pVect2, &attribute_dims);
-        float pixelpos_dist = L2distfunc_(pVect1 + attribute_dims, pVect2 + attribute_dims, &pixelpos_dims);
+        float pixelpos_dist = L2Sqr(pVect1 + attribute_dims, pVect2 + attribute_dims, &pixelpos_dims);
 
         float dist = (1.0f - weight) * attribute_dist + weight * pixelpos_dist;
 
