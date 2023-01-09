@@ -1,5 +1,7 @@
 # Spatial Information in Dimensionality Reduction (Spidr)
 
+A more up-to-date version of this library can be found at the fork https://github.com/biovault/Spidr .
+
 Introduces spatial neighborhood information in dimensionality reduction for high-dimensional images. 
 Extends t-SNE such that similarities are based on a point's spatial neighborhood instead of only the high-dimensional point itself.
 
